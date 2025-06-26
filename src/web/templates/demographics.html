@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block title %}Demographics - ReViision{% endblock %}
+
+{% block header %}Customer Demographics Analysis{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>Age Distribution</h3>
+        <div class="tooltip">
+            <i class="fas fa-info-circle"></i>
+            <span class="tooltip-text">Age breakdown of store visitors</span>
+        </div>
+    </div>
+    <div class="chart-container">
+        <canvas id="ageChart"></canvas>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Gender Distribution</h3>
+        <div class="tooltip">
+            <i class="fas fa-info-circle"></i>
+            <span class="tooltip-text">Gender breakdown of store visitors</span>
+        </div>
+    </div>
+    <div class="chart-container">
+        <canvas id="genderChart"></canvas>
+    </div>
+</div>
+
+<div class="row">
+    <div class="card" style="width: 100%;">
+        <div class="card-header">
+            <h3>Demographic Trends Over Time</h3>
+            <div class="tooltip">
+                <i class="fas fa-info-circle"></i>
+                <span class="tooltip-text">Changes in demographics over time period</span>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="demographicTrends"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Detailed Demographics Data</h3>
+        <div class="tooltip">
+            <i class="fas fa-info-circle"></i>
+            <span class="tooltip-text">Raw demographic data</span>
+        </div>
+    </div>
+    <div class="table-container">
+        <table class="data-table" id="demographicsTable">
+            <thead>
+                <tr>
+                    <th>Date & Time</th>
+                    <th>Age Group</th>
+                    <th>Gender</th>
+                    <th>Emotion</th>
+                    <th>Dwell Time (min)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="5" class="text-center">Loading data...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Fetch demographic data when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchDemographicData();
+    });
+    
+    // Update data when time range changes
+    document.getElementById('time-range').addEventListener('change', function() {
+        fetchDemographicData();
+    });
+    
+    function fetchDemographicData() {
+        const timeRange = document.getElementById('time-range').value;
+        const dates = getTimeRangeDates(timeRange);
+        
+        // In a real implementation, we would fetch from the API
+        // For now we'll use sample data
+        setTimeout(() => {
+            createAgeChart();
+            createGenderChart();
+            createDemographicTrendsChart(dates.start, dates.end);
+            populateDemographicsTable();
+        }, 300);
+    }
+    
+    function getTimeRangeDates(range) {
+        const end = new Date();
+        let start = new Date();
+        
+        switch(range) {
+            case '1h':
+                start.setHours(end.getHours() - 1);
+                break;
+            case '6h':
+                start.setHours(end.getHours() - 6);
+                break;
+            case '24h':
+                start.setDate(end.getDate() - 1);
+                break;
+            case '7d':
+                start.setDate(end.getDate() - 7);
+                break;
+            case '30d':
+                start.setDate(end.getDate() - 30);
+                break;
+            default:
+                start.setDate(end.getDate() - 1);
+        }
+        
+        return { start, end };
+    }
+    
+    function createAgeChart() {
+        const ctx = document.getElementById('ageChart').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'],
+                datasets: [{
+                    label: 'Visitors by Age Group',
+                    data: [120, 190, 150, 110, 85, 55],
+                    backgroundColor: [
+                        'rgba(52, 152, 219, 0.7)',
+                        'rgba(46, 204, 113, 0.7)',
+                        'rgba(155, 89, 182, 0.7)',
+                        'rgba(241, 196, 15, 0.7)',
+                        'rgba(230, 126, 34, 0.7)',
+                        'rgba(231, 76, 60, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(52, 152, 219, 1)',
+                        'rgba(46, 204, 113, 1)',
+                        'rgba(155, 89, 182, 1)',
+                        'rgba(241, 196, 15, 1)',
+                        'rgba(230, 126, 34, 1)',
+                        'rgba(231, 76, 60, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Visitors'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Age Group'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function createGenderChart() {
+        const ctx = document.getElementById('genderChart').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Male', 'Female', 'Other/Unknown'],
+                datasets: [{
+                    data: [55, 42, 3],
+                    backgroundColor: [
+                        'rgba(52, 152, 219, 0.7)',
+                        'rgba(231, 76, 60, 0.7)',
+                        'rgba(149, 165, 166, 0.7)'
+                    ],
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.formattedValue || '';
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((acc, data) => acc + data, 0);
+                                const percentage = Math.round((context.raw / total) * 100);
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function createDemographicTrendsChart(start, end) {
+        const ctx = document.getElementById('demographicTrends').getContext('2d');
+        
+        // Generate dates between start and end
+        const dates = [];
+        const maleData = [];
+        const femaleData = [];
+        
+        // Create days between start and end
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const step = Math.max(1, Math.ceil(diffDays / 7)); // Max 7 data points
+        
+        for (let i = 0; i <= diffDays; i += step) {
+            const date = new Date(start);
+            date.setDate(date.getDate() + i);
+            dates.push(date.toLocaleDateString());
+            
+            // Random gender data
+            maleData.push(Math.floor(Math.random() * 100) + 50);
+            femaleData.push(Math.floor(Math.random() * 80) + 40);
+        }
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [
+                    {
+                        label: 'Male',
+                        data: maleData,
+                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Female',
+                        data: femaleData,
+                        backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                        borderColor: 'rgba(231, 76, 60, 1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Visitors'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function populateDemographicsTable() {
+        const table = document.getElementById('demographicsTable').getElementsByTagName('tbody')[0];
+        
+        // Clear existing rows
+        table.innerHTML = '';
+        
+        // Sample data
+        const sampleData = [
+            { datetime: '2025-04-28 08:15', age: '25-34', gender: 'Male', emotion: 'Neutral', dwellTime: 4.2 },
+            { datetime: '2025-04-28 09:30', age: '35-44', gender: 'Female', emotion: 'Happy', dwellTime: 12.5 },
+            { datetime: '2025-04-28 10:45', age: '18-24', gender: 'Male', emotion: 'Neutral', dwellTime: 2.1 },
+            { datetime: '2025-04-28 11:20', age: '45-54', gender: 'Female', emotion: 'Neutral', dwellTime: 8.7 },
+            { datetime: '2025-04-28 12:05', age: '25-34', gender: 'Male', emotion: 'Happy', dwellTime: 15.3 },
+            { datetime: '2025-04-28 13:40', age: '35-44', gender: 'Female', emotion: 'Surprised', dwellTime: 3.8 },
+            { datetime: '2025-04-28 14:25', age: '55-64', gender: 'Male', emotion: 'Neutral', dwellTime: 5.6 },
+            { datetime: '2025-04-28 15:10', age: '25-34', gender: 'Female', emotion: 'Happy', dwellTime: 9.2 }
+        ];
+        
+        // Populate table
+        sampleData.forEach(item => {
+            const row = table.insertRow();
+            
+            const datetimeCell = row.insertCell(0);
+            datetimeCell.textContent = new Date(item.datetime).toLocaleString();
+            
+            const ageCell = row.insertCell(1);
+            ageCell.textContent = item.age;
+            
+            const genderCell = row.insertCell(2);
+            genderCell.textContent = item.gender;
+            
+            const emotionCell = row.insertCell(3);
+            emotionCell.textContent = item.emotion;
+            
+            const dwellTimeCell = row.insertCell(4);
+            dwellTimeCell.textContent = item.dwellTime.toFixed(1);
+        });
+    }
+</script>
+{% endblock %} 

@@ -1,0 +1,1779 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis{% endblock %}
+
+{% block extra_css %}
+<style>
+    .analysis-container {
+        height: calc(100vh - 100px);
+        overflow: hidden;
+    }
+    
+    .video-feed {
+        width: 100%;
+        height: 400px;
+        background: #000;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .video-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
+        color: #666;
+        font-size: 18px;
+    }
+    
+    .video-frame {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .overlay-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 10;
+    }
+    
+    /* Person detection elements */
+    .person-element {
+        position: absolute;
+        box-sizing: border-box;
+        pointer-events: none;
+        z-index: 20;
+        transition: all 0.1s ease;
+    }
+    
+    .person-label {
+        position: absolute;
+        top: -25px;
+        left: 0;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: bold;
+        white-space: nowrap;
+        z-index: 30;
+        pointer-events: none;
+    }
+    
+    .facial-label {
+        top: -50px;
+        background: rgba(255, 153, 0, 0.9);
+        color: white;
+    }
+    
+    .dwell-label {
+        background: rgba(255, 0, 255, 0.9);
+        color: white;
+    }
+    
+    /* Overlay elements */
+    .heatmap-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        z-index: 5;
+    }
+    
+    .path-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        z-index: 15;
+    }
+    
+    .demographic-overlay,
+    .path-legend,
+    .dwell-summary {
+        z-index: 25;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .timer-circle {
+        z-index: 35;
+        pointer-events: none;
+    }
+    
+    .controls-panel {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .stats-panel {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .stats-panel:last-child {
+        border-bottom: none;
+    }
+    
+    .chart-container {
+        position: relative;
+        width: 100%;
+        height: 300px;
+    }
+    
+    .overlay-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-items: center;
+    }
+    
+    .form-check-inline {
+        margin-right: 15px;
+    }
+    
+    #overlay-specific-options {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #ddd;
+    }
+    
+    #overlay-specific-options h6 {
+        color: #495057;
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Camera Feed Control</span>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary" id="start-analysis">Start Analysis</button>
+                    <button class="btn btn-sm btn-outline-danger" id="stop-analysis" disabled>Stop</button>
+                    <select class="form-select form-select-sm d-inline-block ml-2" style="width: auto;" id="camera-select">
+                        <option value="main">Main Entrance</option>
+                        <option value="checkout">Checkout Area</option>
+                        <option value="electronics">Electronics Section</option>
+                        <option value="clothing">Clothing Section</option>
+                    </select>
+                    <select class="form-select form-select-sm d-inline-block ml-2" style="width: auto;" id="video-source">
+                        <option value="asian-store">Asian Store - Multi Customer</option>
+                        <option value="trolley-multi">Man with Trolley - Multi Scene</option>
+                        <option value="trolley-single">Man with Trolley - Single Scene</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Original Camera Feed -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Original Feed</div>
+            <div class="card-body p-0">
+                <div class="feed-container">
+                    <div class="feed-label">Original</div>
+                    <div id="original-feed" class="feed-placeholder">
+                        <span>Camera feed will appear here</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Analysis Feed with Overlays -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Analysis View</div>
+            <div class="card-body p-0">
+                <div class="feed-container">
+                    <div class="feed-label" id="active-overlay-label">No Active Overlay</div>
+                    <div id="analysis-feed" class="feed-placeholder" style="position: relative;">
+                        <span>Analysis feed will appear here</span>
+                        <div id="overlay-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">Overlay Controls</div>
+            <div class="card-body">
+                <div class="overlay-controls">
+                    <div class="mb-3">
+                        <h6>Visualization Overlays</h6>
+                        <div class="overlay-toggle">
+                            <input type="radio" name="overlay" id="none-overlay" value="none" checked>
+                            <label for="none-overlay">None</label>
+                        </div>
+                        <div class="overlay-toggle">
+                            <input type="radio" name="overlay" id="facial-overlay" value="facial">
+                            <label for="facial-overlay">Facial Recognition</label>
+                        </div>
+                        <div class="overlay-toggle">
+                            <input type="radio" name="overlay" id="heatmap-overlay" value="heatmap">
+                            <label for="heatmap-overlay">Traffic Heatmap</label>
+                        </div>
+                        <div class="overlay-toggle">
+                            <input type="radio" name="overlay" id="path-overlay" value="path">
+                            <label for="path-overlay">Customer Paths</label>
+                        </div>
+                        <div class="overlay-toggle">
+                            <input type="radio" name="overlay" id="demographic-overlay" value="demographic">
+                            <label for="demographic-overlay">Demographics</label>
+                        </div>
+                        <div class="overlay-toggle">
+                            <input type="radio" name="overlay" id="dwell-overlay" value="dwell">
+                            <label for="dwell-overlay">Dwell Time</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Display Options</h6>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="show-bounding-boxes" checked>
+                            <label class="form-check-label" for="show-bounding-boxes">Bounding Boxes</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="show-labels" checked>
+                            <label class="form-check-label" for="show-labels">Labels</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="show-paths" checked>
+                            <label class="form-check-label" for="show-paths">Movement Paths</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="show-metrics" checked>
+                            <label class="form-check-label" for="show-metrics">Metrics</label>
+                        </div>
+                    </div>
+                    
+                    <div id="overlay-specific-options">
+                        <!-- These options change based on selected overlay -->
+                        <div id="heatmap-options" style="display:none;">
+                            <h6>Heatmap Options</h6>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="heatmap-type" id="traffic-heatmap" checked>
+                                <label class="form-check-label" for="traffic-heatmap">Traffic Density</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="heatmap-type" id="dwell-heatmap">
+                                <label class="form-check-label" for="dwell-heatmap">Dwell Time</label>
+                            </div>
+                            <div class="mb-2">
+                                <label for="heatmap-opacity" class="form-label">Opacity: <span id="opacity-value">15%</span></label>
+                                <input type="range" class="form-range" min="5" max="50" value="15" id="heatmap-opacity">
+                            </div>
+                        </div>
+                        
+                        <div id="facial-options" style="display:none;">
+                            <h6>Facial Analysis Options</h6>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="show-age" checked>
+                                <label class="form-check-label" for="show-age">Age</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="show-gender" checked>
+                                <label class="form-check-label" for="show-gender">Gender</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="show-emotion" checked>
+                                <label class="form-check-label" for="show-emotion">Emotion</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">Real-time Statistics</div>
+            <div class="card-body">
+                <div class="stats-panel">
+                    <strong>Current View:</strong> <span id="current-camera">Main Entrance</span>
+                </div>
+                <div class="stats-panel">
+                    <strong>People Detected:</strong> <span id="people-count">0</span><br>
+                    <strong>Male/Female Ratio:</strong> <span id="gender-ratio">0/0</span><br>
+                    <strong>Average Age:</strong> <span id="avg-age">--</span>
+                </div>
+                <div class="stats-panel">
+                    <strong>Current Traffic:</strong> <span id="current-traffic">Low</span><br>
+                    <strong>Average Dwell Time:</strong> <span id="current-dwell-time">-- sec</span>
+                </div>
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle"></i> Select different overlays to visualize various aspects of the vision analytics.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">Historical Data</div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="historyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let analysisActive = false;
+    let captureInterval = null;
+    let selectedVideo = 'asian-store';
+    let selectedOverlay = 'none';
+    let detectedObjects = [];
+    let movementHistory = [];
+    let lastAnalysisTime = 0;
+    let analysisDelay = 500; // milliseconds between analyses
+    
+    // Initialize on document ready
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up event listeners
+        document.getElementById('start-analysis').addEventListener('click', startAnalysis);
+        document.getElementById('stop-analysis').addEventListener('click', stopAnalysis);
+        document.getElementById('video-source').addEventListener('change', function() {
+            selectedVideo = this.value;
+            if (analysisActive) {
+                resetFeedPlaceholders();
+                initializeVideoFeeds();
+                captureVideoFrames();
+            }
+        });
+        
+        // Overlay selection
+        document.querySelectorAll('input[name="overlay"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                selectedOverlay = this.value;
+                updateActiveOverlayLabel();
+                updateOverlayOptions();
+                
+                if (analysisActive) {
+                    updateAnalysisView();
+                }
+            });
+        });
+        
+        // Heatmap opacity slider
+        const opacitySlider = document.getElementById('heatmap-opacity');
+        if (opacitySlider) {
+            opacitySlider.addEventListener('input', function() {
+                document.getElementById('opacity-value').textContent = this.value + '%';
+                if (selectedOverlay === 'heatmap' && analysisActive) {
+                    updateAnalysisView();
+                }
+            });
+        }
+        
+        // Display option checkboxes
+        document.querySelectorAll('.form-check-input').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                if (analysisActive) {
+                    updateAnalysisView();
+                }
+            });
+        });
+        
+        // Camera selector
+        document.getElementById('camera-select').addEventListener('change', function() {
+            if (analysisActive) {
+                resetFeedPlaceholders();
+                initializeVideoFeeds();
+                captureVideoFrames();
+            }
+        });
+        
+        // Auto-start analysis by default
+        setTimeout(() => {
+            startAnalysis();
+        }, 1000); // Small delay to ensure everything is initialized
+    });
+    
+    function updateOverlayOptions() {
+        // Hide all overlay-specific options
+        document.getElementById('heatmap-options').style.display = 'none';
+        document.getElementById('facial-options').style.display = 'none';
+        document.getElementById('demographic-options').style.display = 'none';
+        document.getElementById('dwell-options').style.display = 'none';
+        
+        // Show options for the selected overlay
+        if (selectedOverlay === 'heatmap') {
+            document.getElementById('heatmap-options').style.display = 'block';
+        } else if (selectedOverlay === 'facial') {
+            document.getElementById('facial-options').style.display = 'block';
+        } else if (selectedOverlay === 'demographic') {
+            document.getElementById('demographic-options').style.display = 'block';
+        } else if (selectedOverlay === 'dwell') {
+            document.getElementById('dwell-options').style.display = 'block';
+        }
+    }
+    
+    function updateActiveOverlayLabel() {
+        const label = document.getElementById('active-overlay-label');
+        if (!label) return;
+        
+        let overlayName = 'No Overlay';
+        if (selectedOverlay === 'facial') overlayName = 'Facial Recognition';
+        else if (selectedOverlay === 'heatmap') overlayName = 'Traffic Heatmap';
+        else if (selectedOverlay === 'path') overlayName = 'Customer Paths';
+        else if (selectedOverlay === 'demographic') overlayName = 'Demographics';
+        else if (selectedOverlay === 'dwell') overlayName = 'Dwell Time';
+        
+        label.textContent = overlayName;
+    }
+    
+    function startAnalysis() {
+        // Reset any previous analysis
+        detectedObjects = [];
+        movementHistory = [];
+        
+        // Update UI
+        document.getElementById('start-analysis').disabled = true;
+        document.getElementById('stop-analysis').disabled = false;
+        
+        // Set analysis active flag
+        analysisActive = true;
+        
+        // Initialize video feeds
+        resetFeedPlaceholders();
+        initializeVideoFeeds();
+        
+        // Start frame capture loop
+        captureVideoFrames();
+        
+        // Update the overlay label
+        updateActiveOverlayLabel();
+        
+        // Show appropriate overlay controls
+        updateOverlayOptions();
+    }
+    
+    function stopAnalysis() {
+        console.log('Stopping analysis...');
+        
+        // Set flag to false first to stop new operations
+        analysisActive = false;
+        
+        // Cancel any pending frame processing
+        if (captureInterval) {
+            cancelAnimationFrame(captureInterval);
+            captureInterval = null;
+        }
+        
+        // Clear any other timeouts/intervals that might be running
+        clearTimeout(captureInterval);
+        
+        // Update UI
+        document.getElementById('start-analysis').disabled = false;
+        document.getElementById('stop-analysis').disabled = true;
+        
+        // Clear overlays
+        const overlayContainer = document.getElementById('overlay-container');
+        if (overlayContainer) {
+            overlayContainer.innerHTML = '';
+        }
+        
+        // Clear detected objects and movement history
+        detectedObjects = [];
+        movementHistory = [];
+        
+        // Reset feeds
+        resetFeedPlaceholders();
+        
+        console.log('Analysis stopped successfully');
+    }
+    
+    function initializeVideoFeeds() {
+        const originalFeed = document.getElementById('original-feed');
+        const analysisFeed = document.getElementById('analysis-feed');
+        
+        // Clear the feeds
+        originalFeed.innerHTML = '';
+        analysisFeed.innerHTML = '';
+        
+        // Show loading message
+        originalFeed.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#666;">Loading video feed...</div>';
+        analysisFeed.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#666;">Initializing analysis...</div>';
+        
+        // Create video feed image
+        const feedImage = document.createElement('img');
+        feedImage.id = 'original-feed-image';
+        feedImage.style.width = '100%';
+        feedImage.style.height = '100%';
+        feedImage.style.objectFit = 'cover';
+        
+        // Set source to backend video stream
+        const streamUrl = `/video_stream/${selectedVideo}`;
+        console.log('Loading video stream:', streamUrl);
+        
+        // Add load handler
+        feedImage.onload = function() {
+            console.log('Video stream loaded successfully');
+            originalFeed.innerHTML = '';
+            originalFeed.appendChild(feedImage);
+            
+            // Create a copy for the analysis feed
+            const analysisImage = feedImage.cloneNode(true);
+            analysisImage.id = 'analysis-feed-image';
+            
+            // Clear analysis feed and add image
+            analysisFeed.innerHTML = '';
+            analysisFeed.appendChild(analysisImage);
+            
+            // Ensure overlay container exists
+            let overlayContainer = document.getElementById('overlay-container');
+            if (!overlayContainer) {
+                overlayContainer = document.createElement('div');
+                overlayContainer.id = 'overlay-container';
+                overlayContainer.style.position = 'absolute';
+                overlayContainer.style.top = '0';
+                overlayContainer.style.left = '0';
+                overlayContainer.style.width = '100%';
+                overlayContainer.style.height = '100%';
+                overlayContainer.style.pointerEvents = 'none';
+                analysisFeed.appendChild(overlayContainer);
+            }
+            
+            // Position the analysis feed container as relative to allow absolute positioning of overlays
+            analysisFeed.style.position = 'relative';
+        };
+        
+        // Add error handler
+        feedImage.onerror = function() {
+            console.error('Video stream error occurred for URL:', streamUrl);
+            const errorMessage = `
+                <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;background:#333;text-align:center;padding:20px;">
+                    <i class="fas fa-exclamation-triangle fa-3x mb-3" style="color:#ffc107;"></i>
+                    <h5>Video Stream Failed</h5>
+                    <p>Could not load video stream: ${streamUrl}</p>
+                    <p style="font-size:0.9em;">Please check:</p>
+                    <ul style="text-align:left;font-size:0.8em;">
+                        <li>Camera service is running</li>
+                        <li>Video file exists: ${selectedVideo}</li>
+                        <li>Network connection</li>
+                    </ul>
+                    <button class="btn btn-sm btn-warning mt-2" onclick="initializeVideoFeeds()">Retry</button>
+                </div>
+            `;
+            originalFeed.innerHTML = errorMessage;
+            analysisFeed.innerHTML = errorMessage;
+        };
+        
+        // Set the source - this will trigger either onload or onerror
+        feedImage.src = streamUrl;
+    }
+
+    function resetFeedPlaceholders() {
+        const originalFeed = document.getElementById('original-feed');
+        const analysisFeed = document.getElementById('analysis-feed');
+        
+        // Clear the feeds
+        originalFeed.innerHTML = '<div class="empty-feed">Camera feed will appear here</div>';
+        analysisFeed.innerHTML = '<div class="empty-feed">Analysis feed will appear here</div>';
+    }
+
+    function captureVideoFrames() {
+        // Check if analysis is still active before proceeding
+        if (!analysisActive) {
+            console.log('Analysis stopped, ending frame capture');
+            captureInterval = null;
+            return;
+        }
+        
+        const feedImage = document.getElementById('original-feed-image');
+        if (!feedImage || !feedImage.complete) {
+            // Image not loaded yet, retry only if analysis is still active
+            if (analysisActive) {
+                captureInterval = requestAnimationFrame(captureVideoFrames);
+            }
+            return;
+        }
+        
+        // Process current frame (only if enough time has passed since last analysis)
+        const now = Date.now();
+        if (now - lastAnalysisTime >= analysisDelay) {
+            lastAnalysisTime = now;
+            processVideoFrame(feedImage);
+        }
+        
+        // Schedule next frame capture only if analysis is still active
+        if (analysisActive) {
+            captureInterval = requestAnimationFrame(captureVideoFrames);
+        } else {
+            captureInterval = null;
+        }
+    }
+
+    async function processVideoFrame(feedImage) {
+        // Double-check analysis is still active
+        if (!analysisActive) {
+            console.log('Analysis stopped during frame processing');
+            return;
+        }
+        
+        try {
+            // Get current image dimensions
+            const imageWidth = feedImage.clientWidth;
+            const imageHeight = feedImage.clientHeight;
+            
+            if (!imageWidth || !imageHeight) {
+                console.warn('Invalid image dimensions:', imageWidth, imageHeight);
+                return;
+            }
+            
+            // Create a temporary canvas to capture frame
+            let canvas = document.getElementById('temp-canvas');
+            if (!canvas) {
+                canvas = document.createElement('canvas');
+                canvas.id = 'temp-canvas';
+                canvas.style.display = 'none';
+                document.body.appendChild(canvas);
+            }
+            
+            // Set canvas size to match image
+            canvas.width = imageWidth;
+            canvas.height = imageHeight;
+            
+            // Draw the current frame to canvas
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(feedImage, 0, 0, imageWidth, imageHeight);
+            
+            // Get the image data as base64
+            const imageData = canvas.toDataURL('image/jpeg', 0.7);
+            
+            // Send to server for analysis only if still active
+            if (analysisActive) {
+                await detectObjectsInFrame(imageData, imageWidth, imageHeight);
+            }
+        } catch (error) {
+            console.error('Error processing video frame:', error);
+        }
+    }
+
+    async function detectObjectsInFrame(imageData, width, height) {
+        // Early return if analysis has been stopped
+        if (!analysisActive) {
+            console.log('Analysis stopped, skipping frame detection');
+            return;
+        }
+        
+        try {
+            // Get overlay container
+            const overlayContainer = document.getElementById('overlay-container');
+            if (!overlayContainer) {
+                console.error('Overlay container not found!');
+                return;
+            }
+            
+            console.log('Sending frame for analysis...', { width, height, selectedOverlay });
+            
+            // Send the frame to the server for analysis
+            const response = await fetch('/api/analyze_frame', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    image_data: imageData,
+                    width: width,
+                    height: height,
+                    selected_overlay: selectedOverlay
+                })
+            });
+            
+            // Check again if analysis is still active after the async operation
+            if (!analysisActive) {
+                console.log('Analysis stopped during fetch, aborting processing');
+                return;
+            }
+            
+            if (!response.ok) {
+                console.error('Analysis API returned error:', response.status, response.statusText);
+                return;
+            }
+            
+            const result = await response.json();
+            
+            // Final check before processing results
+            if (!analysisActive) {
+                console.log('Analysis stopped after receiving results, aborting processing');
+                return;
+            }
+            
+            console.log('Raw analysis result:', result);
+            
+            // Validate response structure first
+            if (!result.detections || !result.detections.people) {
+                console.error('Unexpected response structure:', result);
+                return;
+            }
+            
+            // Process people data with enhanced tracking
+            const newDetectedObjects = result.detections.people.map((person, index) => {
+                // Use the backend-provided ID (should be consistent now)
+                const personId = person.id;
+                
+                if (!person.bbox || person.bbox.length < 4) {
+                    console.warn('Person missing bbox property:', person);
+                    return null;
+                }
+                
+                // Find existing person data for continuity
+                const existingPerson = detectedObjects.find(obj => obj.id === personId);
+                
+                return {
+                    id: personId,
+                    x: person.bbox[0],
+                    y: person.bbox[1],
+                    width: person.bbox[2],
+                    height: person.bbox[3],
+                    center: person.center || [(person.bbox[0] + person.bbox[2]/2), (person.bbox[1] + person.bbox[3]/2)],
+                    confidence: person.confidence || 0.5,
+                    frames_tracked: person.frames_tracked || 1,
+                    demographics: {
+                        gender: person.demographics?.gender || 'analyzing...',
+                        age_group: person.demographics?.age_group || 'analyzing...',
+                        emotion: person.demographics?.emotion || 'neutral',
+                        confidence: person.demographics?.confidence || 0.1
+                    },
+                    dwell_time: person.dwell_time || 0,
+                    path: person.path || [],
+                    // Preserve movement history for smooth tracking
+                    movement_history: existingPerson ? 
+                        [...(existingPerson.movement_history || []), {
+                            x: person.center?.[0] || (person.bbox[0] + person.bbox[2]/2),
+                            y: person.center?.[1] || (person.bbox[1] + person.bbox[3]/2),
+                            timestamp: Date.now()
+                        }].slice(-20) : // Keep last 20 positions
+                        [{
+                            x: person.center?.[0] || (person.bbox[0] + person.bbox[2]/2),
+                            y: person.center?.[1] || (person.bbox[1] + person.bbox[3]/2),
+                            timestamp: Date.now()
+                        }]
+                };
+            }).filter(person => person !== null);
+            
+            // Update detectedObjects with new data
+            detectedObjects = newDetectedObjects;
+            
+            console.log('Processed detected objects with tracking:', detectedObjects);
+            
+            // Enhanced heatmap processing using both current detections and persistent paths
+            if (result.heatmap && result.heatmap.points) {
+                const newHeatmapPoints = result.heatmap.points.map(p => ({
+                    x: p.x,
+                    y: p.y,
+                    intensity: p.value,
+                    id: p.id || 'unknown',
+                    timestamp: Date.now()
+                }));
+                
+                // Merge with existing movement history, removing old points
+                movementHistory = [...movementHistory, ...newHeatmapPoints];
+                
+                // Remove points older than 30 seconds
+                const cutoffTime = Date.now() - 30000;
+                movementHistory = movementHistory.filter(point => point.timestamp > cutoffTime);
+                
+                // Limit total history size
+                if (movementHistory.length > 1000) {
+                    movementHistory = movementHistory.slice(-1000);
+                }
+            }
+            
+            // Process path data from the backend
+            if (result.paths) {
+                for (const [personId, pathPoints] of Object.entries(result.paths)) {
+                    const person = detectedObjects.find(obj => obj.id == personId);
+                    if (person && pathPoints.length > 0) {
+                        person.path = pathPoints.map(point => ({
+                            x: point.x,
+                            y: point.y,
+                            timestamp: point.timestamp || Date.now(),
+                            confidence: point.confidence || 0.5
+                        }));
+                    }
+                }
+            }
+            
+            // Update detected objects display with anti-flashing system
+            updateDetectedObjects(overlayContainer);
+            
+            // Update analytics with enhanced demographics
+            updateEnhancedAnalytics(result);
+            
+            // Update the selected overlay
+            updateAnalysisView();
+        }
+        catch (error) {
+            console.error('Error analyzing frame:', error);
+            console.error('Error stack:', error.stack);
+        }
+    }
+    
+    function updateEnhancedAnalytics(result) {
+        // Update people count
+        const peopleCountElement = document.getElementById('people-count');
+        if (peopleCountElement) {
+            peopleCountElement.textContent = detectedObjects.length;
+        }
+        
+        // Enhanced gender ratio with proper analysis
+        const genderRatioElement = document.getElementById('gender-ratio');
+        if (genderRatioElement) {
+            let maleCount = 0;
+            let femaleCount = 0;
+            
+            detectedObjects.forEach(obj => {
+                const gender = obj.demographics?.gender;
+                if (gender === 'male') maleCount++;
+                else if (gender === 'female') femaleCount++;
+            });
+            
+            // Also check analytics from backend
+            if (result.analytics) {
+                maleCount = Math.max(maleCount, result.analytics.male_count || 0);
+                femaleCount = Math.max(femaleCount, result.analytics.female_count || 0);
+            }
+            
+            genderRatioElement.textContent = `${maleCount}/${femaleCount}`;
+        }
+        
+        // Enhanced average age with backend data
+        const avgAgeElement = document.getElementById('avg-age');
+        if (avgAgeElement) {
+            let ageDisplay = '--';
+            
+            // Collect age groups from detected objects
+            const ageGroups = detectedObjects
+                .map(obj => obj.demographics?.age_group)
+                .filter(age => age && age !== 'unknown' && age !== 'analyzing...');
+            
+            // Also check backend analytics
+            if (result.analytics?.age_groups && Object.keys(result.analytics.age_groups).length > 0) {
+                const mostCommonAge = Object.entries(result.analytics.age_groups)
+                    .sort(([,a], [,b]) => b - a)[0]?.[0];
+                if (mostCommonAge) ageDisplay = mostCommonAge;
+            } else if (ageGroups.length > 0) {
+                ageDisplay = ageGroups[0]; // Show first available age group
+            }
+            
+            avgAgeElement.textContent = ageDisplay;
+        }
+        
+        // Enhanced traffic level
+        const currentTrafficElement = document.getElementById('current-traffic');
+        if (currentTrafficElement) {
+            let trafficLevel = 'Low';
+            const peopleCount = detectedObjects.length;
+            
+            if (peopleCount > 5) trafficLevel = 'High';
+            else if (peopleCount > 2) trafficLevel = 'Medium';
+            
+            currentTrafficElement.textContent = trafficLevel;
+        }
+        
+        // Enhanced dwell time with backend data
+        const dwellTimeElement = document.getElementById('current-dwell-time');
+        if (dwellTimeElement) {
+            let avgDwell = 0;
+            
+            // Use backend analytics if available
+            if (result.analytics?.average_dwell_time) {
+                avgDwell = result.analytics.average_dwell_time;
+            } else if (detectedObjects.length > 0) {
+                avgDwell = detectedObjects.reduce((sum, obj) => sum + (obj.dwell_time || 0), 0) / detectedObjects.length;
+            }
+            
+            dwellTimeElement.textContent = avgDwell > 0 ? `${Math.round(avgDwell)} sec` : '-- sec';
+        }
+        
+        // Log enhanced analytics for debugging
+        if (result.analytics) {
+            console.log('Backend analytics:', result.analytics);
+            console.log('Active tracks:', result.analytics.active_tracks);
+            console.log('People database size:', result.analytics.people_database_size);
+        }
+    }
+    
+    function updateAnalysisView() {
+        const overlayContainer = document.getElementById('overlay-container');
+        if (!overlayContainer) return;
+        
+        // Remove any existing overlay elements except bounding boxes
+        Array.from(overlayContainer.children).forEach(child => {
+            if (!child.classList.contains('person-element') && 
+                !child.classList.contains('heatmap-canvas')) {
+                child.remove();
+            }
+        });
+        
+        // Apply the selected overlay
+        if (selectedOverlay === 'heatmap') {
+            applyHeatmapOverlay(overlayContainer);
+        } else if (selectedOverlay === 'facial') {
+            createFacialOverlay(overlayContainer);
+        } else if (selectedOverlay === 'path') {
+            createPathOverlay(overlayContainer);
+        } else if (selectedOverlay === 'demographic') {
+            createDemographicOverlay(overlayContainer);
+        } else if (selectedOverlay === 'dwell') {
+            createDwellTimeOverlay(overlayContainer);
+        }
+    }
+    
+    function applyHeatmapOverlay(container) {
+        // Find or create heatmap canvas
+        let heatmapCanvas = container.querySelector('.heatmap-canvas');
+        if (!heatmapCanvas) {
+            heatmapCanvas = document.createElement('canvas');
+            heatmapCanvas.className = 'heatmap-canvas';
+            heatmapCanvas.width = container.offsetWidth;
+            heatmapCanvas.height = container.offsetHeight;
+            container.appendChild(heatmapCanvas);
+        }
+        
+        // Get the context and clear it
+        const ctx = heatmapCanvas.getContext('2d');
+        
+        // Apply opacity from slider
+        const opacity = parseInt(document.getElementById('heatmap-opacity').value) / 100;
+        ctx.globalAlpha = opacity;
+        
+        // Check which heatmap type is selected
+        const isTrafficHeatmap = document.getElementById('traffic-heatmap').checked;
+        
+        if (isTrafficHeatmap) {
+            drawTrafficHeatmap(ctx, container.offsetWidth, container.offsetHeight);
+        } else {
+            drawDwellTimeHeatmap(ctx, container.offsetWidth, container.offsetHeight);
+        }
+        
+        // Reset alpha
+        ctx.globalAlpha = 1.0;
+    }
+    
+    // Helper functions
+    function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+    }
+    
+    // Overlay rendering functions 
+    function drawTrafficHeatmap(ctx, width, height) {
+        // Clear the context first
+        ctx.clearRect(0, 0, width, height);
+        
+        // Draw heat for each detected person using their full bounding box
+        detectedObjects.forEach(obj => {
+            const boxCenterX = obj.x + obj.width / 2;
+            const boxCenterY = obj.y + obj.height / 2;
+            
+            // Use bounding box dimensions to determine heat area
+            const heatWidth = Math.max(50, obj.width * 1.2);  // Slightly larger than bbox
+            const heatHeight = Math.max(50, obj.height * 1.2);
+            const maxRadius = Math.max(heatWidth, heatHeight) / 2;
+            
+            // Create gradient based on bounding box size
+            const gradient = ctx.createRadialGradient(
+                boxCenterX, boxCenterY, 0,
+                boxCenterX, boxCenterY, maxRadius
+            );
+            
+            // Much lower intensity for subtle heat visualization
+            const baseIntensity = 0.15 + (obj.confidence * 0.1); // Max 0.25
+            gradient.addColorStop(0, `rgba(255, 80, 0, ${baseIntensity})`); // Orange center
+            gradient.addColorStop(0.4, `rgba(255, 150, 0, ${baseIntensity * 0.7})`); // Yellow-orange mid
+            gradient.addColorStop(0.8, `rgba(255, 200, 100, ${baseIntensity * 0.3})`); // Light yellow
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); // Transparent edge
+            
+            // Draw elliptical heat area matching person's bounding box proportions
+            ctx.save();
+            ctx.translate(boxCenterX, boxCenterY);
+            ctx.scale(heatWidth / (maxRadius * 2), heatHeight / (maxRadius * 2));
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(0, 0, maxRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        });
+        
+        // Also include movement history points but with even lower intensity
+        movementHistory.forEach(point => {
+            const radius = 25 + (point.intensity || 0.5) * 15; // Smaller radius
+            const gradient = ctx.createRadialGradient(
+                point.x, point.y, 0,
+                point.x, point.y, radius
+            );
+            
+            // Very subtle historical heat
+            const histIntensity = Math.min(0.08, (point.intensity || 0.5) * 0.1);
+            gradient.addColorStop(0, `rgba(255, 100, 50, ${histIntensity})`); // Light orange center
+            gradient.addColorStop(0.6, `rgba(255, 180, 100, ${histIntensity * 0.5})`); // Very light orange mid
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); // Transparent edge
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        
+        // Apply subtle blur for smoother heatmap
+        ctx.filter = 'blur(8px)';
+        ctx.drawImage(ctx.canvas, 0, 0);
+        ctx.filter = 'none';
+    }
+    
+    function drawDwellTimeHeatmap(ctx, width, height) {
+        // Create dwell time zones based on detected objects
+        ctx.clearRect(0, 0, width, height);
+        
+        // Create heatmap for each person based on dwell time using their bounding box
+        detectedObjects.forEach(obj => {
+            // Calculate center of object
+            const centerX = obj.x + obj.width / 2;
+            const centerY = obj.y + obj.height / 2;
+            
+            // Use bounding box dimensions for heat area
+            const dwellTime = obj.dwell_time || 1;
+            const heatWidth = Math.max(40, obj.width * 1.3);  // Larger for dwell areas
+            const heatHeight = Math.max(40, obj.height * 1.3);
+            const maxRadius = Math.max(heatWidth, heatHeight) / 2;
+            
+            // Color intensity based on dwell time (0-60 seconds mapped to 0-0.2 max)
+            const normalizedDwell = Math.min(dwellTime / 60, 1.0); // Normalize to 0-1
+            const baseIntensity = 0.05 + (normalizedDwell * 0.15); // Max 0.2 intensity
+            
+            // Create gradient based on bounding box
+            const gradient = ctx.createRadialGradient(
+                centerX, centerY, 0,
+                centerX, centerY, maxRadius
+            );
+            
+            // Blue-cyan gradient for dwell time visualization
+            gradient.addColorStop(0, `rgba(0, 150, 255, ${baseIntensity})`); // Blue center
+            gradient.addColorStop(0.4, `rgba(50, 200, 255, ${baseIntensity * 0.7})`); // Light blue mid
+            gradient.addColorStop(0.8, `rgba(100, 220, 255, ${baseIntensity * 0.3})`); // Very light blue
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); // Transparent edge
+            
+            // Draw elliptical dwell area matching person's bounding box proportions
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.scale(heatWidth / (maxRadius * 2), heatHeight / (maxRadius * 2));
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(0, 0, maxRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        });
+        
+        // Apply subtle blur for smoother appearance
+        ctx.filter = 'blur(6px)';
+        ctx.drawImage(ctx.canvas, 0, 0);
+        ctx.filter = 'none';
+    }
+    
+    function createFacialOverlay(container) {
+        console.log('Creating facial overlay with detected objects:', detectedObjects);
+        
+        // Check which facial options are enabled
+        const showAge = document.getElementById('show-age')?.checked || false;
+        const showGender = document.getElementById('show-gender')?.checked || false;
+        const showEmotion = document.getElementById('show-emotion')?.checked || false;
+        
+        // Update person boxes to show facial recognition info
+        detectedObjects.forEach(person => {
+            const personElement = container.querySelector(`.person-element[data-id="${person.id}"]`);
+            if (!personElement) return;
+            
+            // Remove any existing facial labels
+            const existingFacialLabel = personElement.querySelector('.facial-label');
+            if (existingFacialLabel) {
+                existingFacialLabel.remove();
+            }
+            
+            // Create facial recognition label
+            const facialLabel = document.createElement('div');
+            facialLabel.className = 'person-label facial-label';
+            facialLabel.style.position = 'absolute';
+            facialLabel.style.top = '-50px';
+            facialLabel.style.left = '0';
+            facialLabel.style.backgroundColor = 'rgba(255, 153, 0, 0.9)';
+            facialLabel.style.color = 'white';
+            facialLabel.style.padding = '3px 6px';
+            facialLabel.style.borderRadius = '3px';
+            facialLabel.style.fontSize = '11px';
+            facialLabel.style.fontWeight = 'bold';
+            facialLabel.style.whiteSpace = 'nowrap';
+            facialLabel.style.zIndex = '30';
+            facialLabel.style.pointerEvents = 'none';
+            
+            // Get demographic info from actual person data
+            const demographics = person.demographics || {};
+            const gender = demographics.gender || 'unknown';
+            const ageGroup = demographics.age_group || 'unknown';
+            const emotion = demographics.emotion || 'neutral';
+            const confidence = demographics.confidence || 0;
+            
+            // Build label text based on user preferences
+            let labelText = '';
+            if (showGender && gender !== 'unknown') {
+                labelText += gender.charAt(0).toUpperCase() + gender.slice(1) + ' ';
+            }
+            if (showAge && ageGroup !== 'unknown') {
+                labelText += ageGroup + ' ';
+            }
+            if (showEmotion && emotion !== 'neutral') {
+                const emotionEmoji = emotion === 'happy' ? '😊' : emotion === 'calm' ? '😌' : emotion === 'focused' ? '🧐' : '😐';
+                labelText += emotionEmoji + emotion.charAt(0).toUpperCase() + emotion.slice(1) + ' ';
+            }
+            
+            // Add confidence indicator for face detection quality
+            if (confidence > 0.1) {
+                labelText += `(${Math.round(confidence * 100)}%)`;
+            }
+            
+            // Set label text or show analysis status
+            if (labelText.trim()) {
+                facialLabel.textContent = labelText.trim();
+            } else if (gender === 'unknown' && ageGroup === 'unknown') {
+                facialLabel.textContent = 'Analyzing face...';
+                facialLabel.style.backgroundColor = 'rgba(128, 128, 128, 0.8)';
+            } else {
+                facialLabel.textContent = 'Face detected';
+            }
+            
+            personElement.appendChild(facialLabel);
+            
+            // Change box color for facial recognition with confidence-based intensity
+            const alpha = Math.max(0.3, confidence);
+            personElement.style.border = `2px solid rgba(255, 153, 0, ${alpha})`;
+            personElement.style.boxShadow = `0 0 8px rgba(255, 153, 0, ${alpha * 0.5})`;
+        });
+        
+        // Add a facial analysis summary panel
+        createFacialAnalysisSummary(container);
+    }
+    
+    function createFacialAnalysisSummary(container) {
+        const summaryPanel = document.createElement('div');
+        summaryPanel.className = 'facial-analysis-summary';
+        summaryPanel.style.position = 'absolute';
+        summaryPanel.style.top = '10px';
+        summaryPanel.style.left = '10px';
+        summaryPanel.style.backgroundColor = 'rgba(255, 153, 0, 0.9)';
+        summaryPanel.style.color = 'white';
+        summaryPanel.style.padding = '10px';
+        summaryPanel.style.borderRadius = '6px';
+        summaryPanel.style.fontSize = '12px';
+        summaryPanel.style.maxWidth = '200px';
+        summaryPanel.style.zIndex = '25';
+        summaryPanel.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        
+        // Count faces detected and analyzed
+        let facesDetected = 0;
+        let facesAnalyzed = 0;
+        let totalConfidence = 0;
+        
+        detectedObjects.forEach(person => {
+            const demographics = person.demographics || {};
+            if (demographics.confidence > 0.1) {
+                facesDetected++;
+                if (demographics.gender !== 'unknown' || demographics.age_group !== 'unknown') {
+                    facesAnalyzed++;
+                    totalConfidence += demographics.confidence;
+                }
+            }
+        });
+        
+        const avgConfidence = facesAnalyzed > 0 ? (totalConfidence / facesAnalyzed) : 0;
+        
+        summaryPanel.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 5px;">🎭 Facial Analysis</div>
+            <div>People detected: ${detectedObjects.length}</div>
+            <div>Faces detected: ${facesDetected}</div>
+            <div>Faces analyzed: ${facesAnalyzed}</div>
+            ${avgConfidence > 0 ? `<div>Avg. confidence: ${Math.round(avgConfidence * 100)}%</div>` : ''}
+            <div style="margin-top: 5px; font-size: 10px; color: #ffeeaa;">
+                Analysis based on OpenCV face detection
+            </div>
+        `;
+        
+        container.appendChild(summaryPanel);
+    }
+    
+    function createPathOverlay(container) {
+        // Create a canvas for drawing paths
+        const pathCanvas = document.createElement('canvas');
+        pathCanvas.className = 'path-canvas';
+        pathCanvas.width = container.offsetWidth;
+        pathCanvas.height = container.offsetHeight;
+        pathCanvas.style.position = 'absolute';
+        pathCanvas.style.top = '0';
+        pathCanvas.style.left = '0';
+        pathCanvas.style.pointerEvents = 'none';
+        
+        const ctx = pathCanvas.getContext('2d');
+        
+        // Draw individual person paths with different colors
+        const colors = ['#00ffff', '#ff00ff', '#ffff00', '#ff6600', '#00ff00', '#ff0099', '#0099ff', '#99ff00'];
+        let colorIndex = 0;
+        
+        // Draw paths for each detected person
+        detectedObjects.forEach(person => {
+            const color = colors[colorIndex % colors.length];
+            colorIndex++;
+            
+            // Use person's movement history or path data
+            let pathPoints = [];
+            
+            // First try to use the backend-provided path
+            if (person.path && person.path.length > 1) {
+                pathPoints = person.path;
+            } 
+            // Fall back to movement history
+            else if (person.movement_history && person.movement_history.length > 1) {
+                pathPoints = person.movement_history;
+            }
+            
+            // Draw the path if we have enough points
+            if (pathPoints.length > 1) {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                
+                // Draw path with smooth curves
+                ctx.beginPath();
+                ctx.moveTo(pathPoints[0].x, pathPoints[0].y);
+                
+                // Use quadratic curves for smoother paths
+                for (let i = 1; i < pathPoints.length - 1; i++) {
+                    const current = pathPoints[i];
+                    const next = pathPoints[i + 1];
+                    const cpx = (current.x + next.x) / 2;
+                    const cpy = (current.y + next.y) / 2;
+                    ctx.quadraticCurveTo(current.x, current.y, cpx, cpy);
+                }
+                
+                // Draw to the last point
+                if (pathPoints.length > 1) {
+                    const lastPoint = pathPoints[pathPoints.length - 1];
+                    ctx.lineTo(lastPoint.x, lastPoint.y);
+                }
+                
+                ctx.stroke();
+                
+                // Draw direction arrows
+                if (pathPoints.length > 1) {
+                    const lastTwo = pathPoints.slice(-2);
+                    if (lastTwo.length === 2) {
+                        drawArrow(ctx, lastTwo[0], lastTwo[1], color);
+                    }
+                }
+                
+                // Draw start point
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(pathPoints[0].x, pathPoints[0].y, 4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw end point (current position)
+                ctx.beginPath();
+                const lastPoint = pathPoints[pathPoints.length - 1];
+                ctx.arc(lastPoint.x, lastPoint.y, 6, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.fill();
+            }
+        });
+        
+        // Add the canvas to the container
+        container.appendChild(pathCanvas);
+        
+        // Update person boxes to match path overlay style with their respective colors
+        const people = container.querySelectorAll('.person-element');
+        people.forEach((person, index) => {
+            const color = colors[index % colors.length];
+            person.style.border = `2px solid ${color}`;
+            person.style.boxShadow = `0 0 8px ${color}40`; // Add glow effect
+        });
+        
+        // Add a legend
+        createPathLegend(container, colors, detectedObjects.length);
+    }
+    
+    function drawArrow(ctx, from, to, color) {
+        const headSize = 8;
+        const angle = Math.atan2(to.y - from.y, to.x - from.x);
+        
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 2;
+        
+        // Draw arrow head
+        ctx.beginPath();
+        ctx.moveTo(to.x, to.y);
+        ctx.lineTo(
+            to.x - headSize * Math.cos(angle - Math.PI/6),
+            to.y - headSize * Math.sin(angle - Math.PI/6)
+        );
+        ctx.moveTo(to.x, to.y);
+        ctx.lineTo(
+            to.x - headSize * Math.cos(angle + Math.PI/6),
+            to.y - headSize * Math.sin(angle + Math.PI/6)
+        );
+        ctx.stroke();
+    }
+    
+    function createPathLegend(container, colors, peopleCount) {
+        const legend = document.createElement('div');
+        legend.className = 'path-legend';
+        legend.style.position = 'absolute';
+        legend.style.top = '10px';
+        legend.style.left = '10px';
+        legend.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        legend.style.color = '#fff';
+        legend.style.padding = '8px';
+        legend.style.borderRadius = '4px';
+        legend.style.fontSize = '12px';
+        legend.style.maxWidth = '150px';
+        
+        let legendHTML = '<div style="font-weight: bold; margin-bottom: 5px;">Customer Paths</div>';
+        
+        for (let i = 0; i < Math.min(peopleCount, colors.length); i++) {
+            const personData = detectedObjects[i];
+            const pathLength = (personData?.path?.length || personData?.movement_history?.length || 0);
+            const dwellTime = Math.round(personData?.dwell_time || 0);
+            
+            legendHTML += `
+                <div style="margin-bottom: 3px;">
+                    <span style="color: ${colors[i]};">●</span> 
+                    Person ${personData?.id || (i + 1)} 
+                    <div style="font-size: 10px; margin-left: 12px; color: #ccc;">
+                        ${pathLength} points • ${dwellTime}s
+                    </div>
+                </div>
+            `;
+        }
+        
+        legend.innerHTML = legendHTML;
+        container.appendChild(legend);
+    }
+    
+    function createDemographicOverlay(container) {
+        // Create a demographic overlay panel
+        const demographicOverlay = document.createElement('div');
+        demographicOverlay.className = 'demographic-overlay';
+        demographicOverlay.style.position = 'absolute';
+        demographicOverlay.style.top = '10px';
+        demographicOverlay.style.right = '10px';
+        demographicOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        demographicOverlay.style.color = '#fff';
+        demographicOverlay.style.padding = '12px';
+        demographicOverlay.style.borderRadius = '6px';
+        demographicOverlay.style.maxWidth = '250px';
+        demographicOverlay.style.fontSize = '12px';
+        demographicOverlay.style.zIndex = '25';
+        demographicOverlay.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        
+        console.log('Creating demographics overlay with data:', detectedObjects);
+        
+        // Use actual detected objects data instead of DOM elements
+        let maleCount = 0;
+        let femaleCount = 0;
+        let unknownGender = 0;
+        const ageGroups = {};
+        const emotions = {};
+        const confidenceSum = { total: 0, count: 0 };
+        
+        // Process each detected person
+        detectedObjects.forEach(person => {
+            const demographics = person.demographics || {};
+            
+            // Count gender
+            const gender = demographics.gender?.toLowerCase();
+            if (gender === 'male') {
+                maleCount++;
+            } else if (gender === 'female') {
+                femaleCount++;
+            } else {
+                unknownGender++;
+            }
+            
+            // Count age groups
+            const ageGroup = demographics.age_group;
+            if (ageGroup && ageGroup !== 'unknown' && ageGroup !== 'analyzing...') {
+                ageGroups[ageGroup] = (ageGroups[ageGroup] || 0) + 1;
+            }
+            
+            // Count emotions
+            const emotion = demographics.emotion;
+            if (emotion && emotion !== 'unknown') {
+                emotions[emotion] = (emotions[emotion] || 0) + 1;
+            }
+            
+            // Track demographic confidence
+            const confidence = demographics.confidence || 0;
+            if (confidence > 0.3) { // Only count reasonably confident detections
+                confidenceSum.total += confidence;
+                confidenceSum.count++;
+            }
+            
+            // Change box color for demographic view
+            const personElement = container.querySelector(`.person-element[data-id="${person.id}"]`);
+            if (personElement) {
+                personElement.style.border = '2px solid #9900ff';
+                personElement.style.boxShadow = '0 0 8px rgba(153, 0, 255, 0.4)';
+            }
+        });
+        
+        const totalPeople = detectedObjects.length;
+        const avgConfidence = confidenceSum.count > 0 ? (confidenceSum.total / confidenceSum.count) : 0;
+        
+        // Create detailed demographic summary
+        let demographicsHTML = `
+            <h5 style="margin:0 0 10px 0;font-size:14px;color:#9900ff;">📊 Demographics Analysis</h5>
+            <div style="margin-bottom:8px;"><strong>Total People:</strong> ${totalPeople}</div>
+        `;
+        
+        // Gender distribution
+        if (maleCount > 0 || femaleCount > 0) {
+            demographicsHTML += `
+                <div style="margin:8px 0 5px 0;"><strong>Gender Distribution:</strong></div>
+                <div style="padding-left:8px;">
+                    <div>👨 Male: ${maleCount} (${totalPeople ? Math.round(maleCount/totalPeople*100) : 0}%)</div>
+                    <div>👩 Female: ${femaleCount} (${totalPeople ? Math.round(femaleCount/totalPeople*100) : 0}%)</div>
+                    ${unknownGender > 0 ? `<div>❓ Unknown: ${unknownGender} (${Math.round(unknownGender/totalPeople*100)}%)</div>` : ''}
+                </div>
+            `;
+        } else {
+            demographicsHTML += `<div style="color:#ccc;font-style:italic;">Gender analysis in progress...</div>`;
+        }
+        
+        // Age distribution
+        if (Object.keys(ageGroups).length > 0) {
+            demographicsHTML += `<div style="margin:8px 0 5px 0;"><strong>Age Groups:</strong></div><div style="padding-left:8px;">`;
+            Object.entries(ageGroups).forEach(([age, count]) => {
+                const percentage = totalPeople ? Math.round((count / totalPeople) * 100) : 0;
+                demographicsHTML += `<div>📅 ${age}: ${count} (${percentage}%)</div>`;
+            });
+            demographicsHTML += '</div>';
+        } else {
+            demographicsHTML += `<div style="color:#ccc;font-style:italic;">Age analysis in progress...</div>`;
+        }
+        
+        // Emotions
+        if (Object.keys(emotions).length > 0) {
+            demographicsHTML += `<div style="margin:8px 0 5px 0;"><strong>Emotions:</strong></div><div style="padding-left:8px;">`;
+            Object.entries(emotions).forEach(([emotion, count]) => {
+                const percentage = totalPeople ? Math.round((count / totalPeople) * 100) : 0;
+                const emoji = emotion === 'happy' ? '😊' : emotion === 'sad' ? '😢' : emotion === 'angry' ? '😠' : '😐';
+                demographicsHTML += `<div>${emoji} ${emotion}: ${count} (${percentage}%)</div>`;
+            });
+            demographicsHTML += '</div>';
+        }
+        
+        // Analysis confidence
+        if (avgConfidence > 0) {
+            demographicsHTML += `
+                <div style="margin-top:8px;padding-top:8px;border-top:1px solid #555;font-size:10px;color:#ccc;">
+                    Analysis Confidence: ${Math.round(avgConfidence * 100)}%
+                </div>
+            `;
+        }
+        
+        demographicOverlay.innerHTML = demographicsHTML;
+        
+        // Add to container
+        container.appendChild(demographicOverlay);
+    }
+    
+    function createDwellTimeOverlay(container) {
+        // Update each person with dwell time visualization
+        const people = container.querySelectorAll('.person-element');
+        
+        people.forEach(person => {
+            // Change box color for dwell time view
+            person.style.border = '2px solid #ff00ff';
+            
+            // Get dwell time from dataset
+            const dwellTime = parseInt(person.dataset.dwellTime || '0');
+            
+            // Create a dwell time label
+            const dwellLabel = document.createElement('div');
+            dwellLabel.className = 'person-label dwell-label';
+            dwellLabel.style.position = 'absolute';
+            dwellLabel.style.top = '-25px';
+            dwellLabel.style.left = '0';
+            dwellLabel.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            dwellLabel.style.color = '#fff';
+            dwellLabel.style.padding = '2px 6px';
+            dwellLabel.style.borderRadius = '4px';
+            dwellLabel.style.fontSize = '12px';
+            dwellLabel.textContent = formatTime(dwellTime);
+            
+            person.appendChild(dwellLabel);
+            
+            // Create a circular timer indicator
+            const timerCircle = document.createElement('div');
+            timerCircle.className = 'timer-circle';
+            timerCircle.style.position = 'absolute';
+            timerCircle.style.top = '-5px';
+            timerCircle.style.right = '-5px';
+            timerCircle.style.width = '15px';
+            timerCircle.style.height = '15px';
+            timerCircle.style.borderRadius = '50%';
+            timerCircle.style.border = '2px solid #ff00ff';
+            
+            // Color based on dwell time
+            let circleColor = '#00ff00'; // Green for short dwell time
+            if (dwellTime > 180) {
+                circleColor = '#ff0000'; // Red for long dwell time
+            } else if (dwellTime > 60) {
+                circleColor = '#ffff00'; // Yellow for medium dwell time
+            }
+            
+            timerCircle.style.backgroundColor = circleColor;
+            person.appendChild(timerCircle);
+        });
+        
+        // Create a dwell time summary
+        const dwellSummary = document.createElement('div');
+        dwellSummary.className = 'dwell-summary';
+        dwellSummary.style.position = 'absolute';
+        dwellSummary.style.bottom = '10px';
+        dwellSummary.style.right = '10px';
+        dwellSummary.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        dwellSummary.style.color = '#fff';
+        dwellSummary.style.padding = '8px';
+        dwellSummary.style.borderRadius = '4px';
+        dwellSummary.style.fontSize = '12px';
+        
+        // Calculate average dwell time
+        const avgDwell = people.length 
+            ? Array.from(people).reduce((sum, p) => sum + parseInt(p.dataset.dwellTime || '0'), 0) / people.length 
+            : 0;
+        
+        dwellSummary.textContent = `Average Dwell Time: ${formatTime(Math.round(avgDwell))}`;
+        
+        container.appendChild(dwellSummary);
+    }
+    
+    function updateDetectedObjects(container) {
+        // Check if we should show bounding boxes and labels
+        const showBoxes = document.getElementById('show-bounding-boxes')?.checked || false;
+        const showLabels = document.getElementById('show-labels')?.checked || false;
+        
+        console.log('Update detected objects:', {
+            detectedObjects: detectedObjects.length,
+            showBoxes,
+            showLabels
+        });
+        
+        // Always show person elements for overlays to work, just control borders/labels
+        
+        // Get existing person elements
+        const existingPeople = container.querySelectorAll('.person-element');
+        
+        // Create a map of existing elements by ID for fast lookup
+        const existingMap = new Map();
+        existingPeople.forEach(element => {
+            const id = element.dataset.id;
+            if (id) {
+                existingMap.set(id, element);
+            }
+        });
+        
+        // Track which objects we've updated
+        const updatedIds = new Set();
+        
+        // Update or create elements for each detected object
+        detectedObjects.forEach(obj => {
+            if (!obj.id) {
+                console.warn('Object missing ID:', obj);
+                return;
+            }
+            
+            updatedIds.add(obj.id.toString());
+            
+            let personElement = existingMap.get(obj.id.toString());
+            
+            if (personElement) {
+                // Update existing element smoothly
+                updatePersonElement(personElement, obj, showBoxes, showLabels);
+            } else {
+                // Create new element for new detection
+                personElement = createPersonElement(obj, showBoxes, showLabels);
+                container.appendChild(personElement);
+                console.log('Created new person element for ID:', obj.id);
+            }
+        });
+        
+        // Remove elements for objects that are no longer detected
+        existingPeople.forEach(element => {
+            const id = element.dataset.id;
+            if (id && !updatedIds.has(id)) {
+                // Fade out and remove element smoothly
+                element.style.transition = 'opacity 0.3s ease-out';
+                element.style.opacity = '0';
+                setTimeout(() => {
+                    if (element.parentNode) {
+                        element.parentNode.removeChild(element);
+                    }
+                }, 300);
+            }
+        });
+    }
+    
+    function updatePersonElement(element, obj, showBoxes, showLabels) {
+        // Smooth position and size updates
+        element.style.transition = 'left 0.1s ease, top 0.1s ease, width 0.1s ease, height 0.1s ease';
+        element.style.left = `${obj.x}px`;
+        element.style.top = `${obj.y}px`;
+        element.style.width = `${obj.width}px`;
+        element.style.height = `${obj.height}px`;
+        element.style.opacity = '1';
+        element.style.display = 'block';
+        element.style.position = 'absolute';
+        element.style.boxSizing = 'border-box';
+        element.style.pointerEvents = 'none';
+        element.style.zIndex = '20';
+        
+        // Update data attributes
+        element.dataset.id = obj.id.toString();
+        element.dataset.confidence = obj.confidence || 0.5;
+        element.dataset.gender = obj.demographics?.gender || 'unknown';
+        element.dataset.ageGroup = obj.demographics?.age_group || 'unknown';
+        element.dataset.dwellTime = Math.round(obj.dwell_time || 0);
+        
+        // Update border visibility
+        if (showBoxes) {
+            element.style.border = '2px solid #00ff00';
+            element.style.background = 'rgba(0, 255, 0, 0.1)';
+        } else {
+            element.style.border = 'none';
+            element.style.background = 'none';
+        }
+        
+        // Update or remove label
+        const existingLabel = element.querySelector('.person-label:not(.facial-label):not(.dwell-label)');
+        if (showLabels) {
+            if (existingLabel) {
+                existingLabel.textContent = `Person ${obj.id} (${Math.round(obj.confidence * 100)}%)`;
+            } else {
+                const label = document.createElement('div');
+                label.className = 'person-label';
+                label.style.position = 'absolute';
+                label.style.top = '-25px';
+                label.style.left = '0';
+                label.style.background = 'rgba(0, 0, 0, 0.8)';
+                label.style.color = 'white';
+                label.style.padding = '2px 6px';
+                label.style.borderRadius = '3px';
+                label.style.fontSize = '11px';
+                label.style.fontWeight = 'bold';
+                label.style.whiteSpace = 'nowrap';
+                label.style.zIndex = '30';
+                label.style.pointerEvents = 'none';
+                label.textContent = `Person ${obj.id} (${Math.round(obj.confidence * 100)}%)`;
+                element.appendChild(label);
+            }
+        } else if (existingLabel) {
+            existingLabel.remove();
+        }
+    }
+    
+    function createPersonElement(obj, showBoxes, showLabels) {
+        const personElement = document.createElement('div');
+        personElement.className = 'person-element';
+        personElement.style.position = 'absolute';
+        personElement.style.left = `${obj.x}px`;
+        personElement.style.top = `${obj.y}px`;
+        personElement.style.width = `${obj.width}px`;
+        personElement.style.height = `${obj.height}px`;
+        personElement.style.boxSizing = 'border-box';
+        personElement.style.pointerEvents = 'none';
+        personElement.style.zIndex = '20';
+        personElement.style.transition = 'opacity 0.3s ease-in, left 0.1s ease, top 0.1s ease, width 0.1s ease, height 0.1s ease';
+        personElement.style.opacity = '0';
+        
+        // Store data in the element for use by overlays
+        personElement.dataset.id = obj.id.toString();
+        personElement.dataset.confidence = obj.confidence || 0.5;
+        personElement.dataset.gender = obj.demographics?.gender || 'unknown';
+        personElement.dataset.ageGroup = obj.demographics?.age_group || 'unknown';
+        personElement.dataset.dwellTime = Math.round(obj.dwell_time || 0);
+        
+        // Set border and background based on showBoxes
+        if (showBoxes) {
+            personElement.style.border = '2px solid #00ff00';
+            personElement.style.background = 'rgba(0, 255, 0, 0.1)';
+        } else {
+            personElement.style.border = 'none';
+            personElement.style.background = 'none';
+        }
+        
+        // Add label if needed
+        if (showLabels) {
+            const label = document.createElement('div');
+            label.className = 'person-label';
+            label.style.position = 'absolute';
+            label.style.top = '-25px';
+            label.style.left = '0';
+            label.style.background = 'rgba(0, 0, 0, 0.8)';
+            label.style.color = 'white';
+            label.style.padding = '2px 6px';
+            label.style.borderRadius = '3px';
+            label.style.fontSize = '11px';
+            label.style.fontWeight = 'bold';
+            label.style.whiteSpace = 'nowrap';
+            label.style.zIndex = '30';
+            label.style.pointerEvents = 'none';
+            label.textContent = `Person ${obj.id} (${Math.round(obj.confidence * 100)}%)`;
+            personElement.appendChild(label);
+        }
+        
+        // Fade in new elements
+        setTimeout(() => {
+            personElement.style.opacity = '1';
+        }, 10);
+        
+        return personElement;
+    }
+</script>
+{% endblock %} 

@@ -1,0 +1,52 @@
+analysis:
+  correlation:
+    enabled: true
+    min_samples: 10
+    time_bins: 24
+  demographics:
+    attributes:
+    - age
+    - gender
+    - race
+    - emotion
+    enabled: true
+    model: deepface
+  dwell_time:
+    enabled: true
+    min_duration: 5
+    zone_radius: 1.0
+  heatmap:
+    decay_factor: 0.1
+    enabled: true
+    grid_size: 0.5
+  path:
+    enabled: true
+    smoothing_window: 5
+    zone_detection_threshold: 0.7
+camera:
+  file_path: testData/asianstoremulti.mp4
+  fps: 30
+  loop: true
+  playback_speed: 1.0
+  resolution:
+  - 1280
+  - 720
+  type: video_file
+database:
+  path: reviision.db
+  type: sqlite
+detection:
+  confidence_threshold: 0.5
+  iou_threshold: 0.45
+  model: yolov8n.pt
+heatmap:
+  decay_factor: 0.1
+  grid_size: 0.5
+tracking:
+  iou_threshold: 0.15
+  max_age: 30
+  min_hits: 3
+web:
+  debug: true
+  host: 0.0.0.0
+  port: 5000

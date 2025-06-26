@@ -1,0 +1,1630 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - ReViision{% endblock %}
+
+{% block header %}System Settings{% endblock %}
+
+{% block styles %}
+<style>
+    .settings-section {
+        margin-bottom: 30px;
+    }
+    .settings-card {
+        margin-bottom: 20px;
+    }
+    .form-group {
+        margin-bottom: 15px;
+    }
+    .btn-action {
+        margin-right: 10px;
+    }
+    .alert-info {
+        margin-top: 20px;
+    }
+    .video-path-entry {
+        display: flex;
+        margin-bottom: 10px;
+    }
+    .video-path-entry .form-control {
+        margin-right: 10px;
+    }
+    .video-path-entry .btn-sm {
+        padding: 0.25rem 0.5rem;
+    }
+    .colormap-preview {
+        height: 30px;
+        width: 100%;
+        margin-top: 5px;
+        background: linear-gradient(to right, blue, cyan, green, yellow, red);
+        border-radius: 3px;
+    }
+    .colormap-type {
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px dashed #eee;
+    }
+    .intensity-value {
+        display: inline-block;
+        width: 40px;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">Setting Categories</div>
+            <div class="list-group list-group-flush">
+                <a href="#camera-settings" class="list-group-item list-group-item-action active" data-bs-toggle="list">Camera Settings</a>
+                <a href="#detection-settings" class="list-group-item list-group-item-action" data-bs-toggle="list">Detection Settings</a>
+                <a href="#tracking-settings" class="list-group-item list-group-item-action" data-bs-toggle="list">Tracking Settings</a>
+                <a href="#analysis-settings" class="list-group-item list-group-item-action" data-bs-toggle="list">Analysis Settings</a>
+                <a href="#heatmap-settings" class="list-group-item list-group-item-action" data-bs-toggle="list">Heatmap Settings</a>
+                <a href="#database-settings" class="list-group-item list-group-item-action" data-bs-toggle="list">Database Settings</a>
+                <a href="#web-settings" class="list-group-item list-group-item-action" data-bs-toggle="list">Web Settings</a>
+                <a href="#backup-restore" class="list-group-item list-group-item-action" data-bs-toggle="list">Backup & Restore</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="tab-content">
+            <!-- Camera Settings -->
+            <div class="tab-pane fade show active" id="camera-settings">
+                <div class="card settings-card">
+                    <div class="card-header">Camera Settings</div>
+                    <div class="card-body">
+                        <h5>Video Configuration</h5>
+                        <form id="video-config-form">
+                            <div class="form-group">
+                                <label for="default-video">Default Video:</label>
+                                <select class="form-select" id="default-video" name="default">
+                                    <!-- Will be populated dynamically -->
+                                </select>
+                            </div>
+                            
+                            <h6>Video Paths:</h6>
+                            <div id="video-paths-container">
+                                <!-- Will be populated dynamically -->
+                            </div>
+                            
+                            <div class="form-group">
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="add-video-btn">
+                                    <i class="fas fa-plus"></i> Add Video
+                                </button>
+                            </div>
+                            
+                            <div class="form-group mt-4">
+                                <button type="submit" class="btn btn-primary">Save Video Configuration</button>
+                                <button type="button" class="btn btn-outline-secondary" id="reset-video-config">Reset</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card settings-card">
+                    <div class="card-header">Camera Feed Options</div>
+                    <div class="card-body">
+                        <form id="camera-options-form">
+                            <div class="form-group">
+                                <label for="camera-loop">Loop Video:</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="camera-loop" checked>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="playback-speed">Playback Speed:</label>
+                                <select class="form-select" id="playback-speed">
+                                    <option value="0.5">0.5x (Slow)</option>
+                                    <option value="1.0" selected>1.0x (Normal)</option>
+                                    <option value="1.5">1.5x (Fast)</option>
+                                    <option value="2.0">2.0x (Very Fast)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group mt-3">
+                                <button type="submit" class="btn btn-primary">Save Camera Options</button>
+                                <button type="button" class="btn btn-warning" id="stop-camera">Stop Current Camera</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Detection Settings Tab -->
+            <div class="tab-pane fade" id="detection-settings">
+                <div class="card settings-card">
+                    <div class="card-header">Detection Model Settings</div>
+                    <div class="card-body">
+                        <form id="detection-form">
+                            <div class="form-group">
+                                <label for="detection-model">Detection Model:</label>
+                                <select class="form-select" id="detection-model">
+                                    <option value="yolov8n.pt">YOLOv8 Nano (Faster)</option>
+                                    <option value="yolov8s.pt">YOLOv8 Small (Balanced)</option>
+                                    <option value="yolov8m.pt">YOLOv8 Medium (More accurate)</option>
+                                    <option value="yolov8l.pt">YOLOv8 Large (High accuracy)</option>
+                                    <option value="yolov8x.pt">YOLOv8 Extra Large (Best accuracy)</option>
+                                </select>
+                                <small class="form-text text-muted">Larger models are more accurate but slower</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="confidence-threshold">Confidence Threshold:</label>
+                                <input type="range" class="form-range" min="0.1" max="0.9" step="0.05" value="0.5" id="confidence-threshold">
+                                <div class="d-flex justify-content-between">
+                                    <small>0.1 (More detections)</small>
+                                    <small>0.9 (More precise)</small>
+                                </div>
+                                <div class="text-center">
+                                    <span id="confidence-value">0.5</span>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="iou-threshold">IoU Threshold:</label>
+                                <input type="range" class="form-range" min="0.1" max="0.8" step="0.05" value="0.45" id="iou-threshold">
+                                <div class="d-flex justify-content-between">
+                                    <small>0.1 (More overlap)</small>
+                                    <small>0.8 (Less overlap)</small>
+                                </div>
+                                <div class="text-center">
+                                    <span id="iou-value">0.45</span>
+                                </div>
+                                <small class="form-text text-muted">Controls overlap between detection boxes</small>
+                            </div>
+                            
+                            <div class="form-group mt-3">
+                                <button type="submit" class="btn btn-primary">Save Detection Settings</button>
+                                <button type="button" class="btn btn-outline-secondary" id="reset-detection">Reset to Defaults</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tracking Settings Tab -->
+            <div class="tab-pane fade" id="tracking-settings">
+                <div class="card settings-card">
+                    <div class="card-header">Person Tracking Settings</div>
+                    <div class="card-body">
+                        <form id="tracking-form">
+                            <div class="form-group">
+                                <label for="max-age">Max Age (frames):</label>
+                                <input type="number" class="form-control" id="max-age" min="1" max="100" value="30">
+                                <small class="form-text text-muted">Number of frames to keep tracking a person without detection</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="min-hits">Min Hits (frames):</label>
+                                <input type="number" class="form-control" id="min-hits" min="1" max="20" value="3">
+                                <small class="form-text text-muted">Minimum consecutive detections before confirming a track</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="tracking-iou-threshold">Tracking IoU Threshold:</label>
+                                <input type="range" class="form-range" min="0.1" max="0.7" step="0.05" value="0.3" id="tracking-iou-threshold">
+                                <div class="d-flex justify-content-between">
+                                    <small>0.1 (Loose matching)</small>
+                                    <small>0.7 (Strict matching)</small>
+                                </div>
+                                <div class="text-center">
+                                    <span id="tracking-iou-value">0.3</span>
+                                </div>
+                                <small class="form-text text-muted">Threshold for matching detections to tracks</small>
+                            </div>
+                            
+                            <div class="form-group mt-3">
+                                <button type="submit" class="btn btn-primary">Save Tracking Settings</button>
+                                <button type="button" class="btn btn-outline-secondary" id="reset-tracking">Reset to Defaults</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Analysis Settings Tab -->
+            <div class="tab-pane fade" id="analysis-settings">
+                <div class="card settings-card">
+                    <div class="card-header">Demographics Analysis</div>
+                    <div class="card-body">
+                        <form id="demographics-form">
+                            <div class="form-group">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="demographics-enabled" checked>
+                                    <label class="form-check-label" for="demographics-enabled">
+                                        Enable Demographics Analysis
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="demographics-model">Demographics Model:</label>
+                                <select class="form-select" id="demographics-model">
+                                    <option value="deepface">DeepFace (Better compatibility)</option>
+                                    <option value="insightface">InsightFace (Better accuracy)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Analysis Attributes:</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="attr-age" value="age" checked>
+                                    <label class="form-check-label" for="attr-age">Age</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="attr-gender" value="gender" checked>
+                                    <label class="form-check-label" for="attr-gender">Gender</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="attr-race" value="race" checked>
+                                    <label class="form-check-label" for="attr-race">Race</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="attr-emotion" value="emotion" checked>
+                                    <label class="form-check-label" for="attr-emotion">Emotion</label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card settings-card">
+                    <div class="card-header">Path Analysis</div>
+                    <div class="card-body">
+                        <form id="path-form">
+                            <div class="form-group">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="path-enabled" checked>
+                                    <label class="form-check-label" for="path-enabled">
+                                        Enable Path Analysis
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="smoothing-window">Smoothing Window:</label>
+                                <input type="number" class="form-control" id="smoothing-window" min="1" max="20" value="5">
+                                <small class="form-text text-muted">Number of points for path smoothing</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="zone-detection-threshold">Zone Detection Threshold:</label>
+                                <input type="range" class="form-range" min="0.1" max="1.0" step="0.05" value="0.7" id="zone-detection-threshold">
+                                <div class="text-center">
+                                    <span id="zone-detection-value">0.7</span>
+                                </div>
+                                <small class="form-text text-muted">Confidence threshold for zone entry/exit detection</small>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card settings-card">
+                    <div class="card-header">Dwell Time Analysis</div>
+                    <div class="card-body">
+                        <form id="dwell-form">
+                            <div class="form-group">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="dwell-enabled" checked>
+                                    <label class="form-check-label" for="dwell-enabled">
+                                        Enable Dwell Time Analysis
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="min-duration">Minimum Duration (seconds):</label>
+                                <input type="number" class="form-control" id="min-duration" min="1" max="60" value="5">
+                                <small class="form-text text-muted">Minimum time to consider as dwelling</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="zone-radius">Zone Radius (meters):</label>
+                                <input type="number" class="form-control" id="zone-radius" min="0.1" max="10" step="0.1" value="1.0">
+                                <small class="form-text text-muted">Radius around points of interest</small>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card settings-card">
+                    <div class="card-header">Correlation Analysis</div>
+                    <div class="card-body">
+                        <form id="correlation-form">
+                            <div class="form-group">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="correlation-enabled" checked>
+                                    <label class="form-check-label" for="correlation-enabled">
+                                        Enable Correlation Analysis
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="time-bins">Time Bins (hours):</label>
+                                <input type="number" class="form-control" id="time-bins" min="1" max="168" value="24">
+                                <small class="form-text text-muted">Number of time periods for analysis</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="min-samples">Minimum Samples:</label>
+                                <input type="number" class="form-control" id="min-samples" min="1" max="100" value="10">
+                                <small class="form-text text-muted">Minimum data points required for correlation</small>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="form-group mt-3">
+                    <button type="button" class="btn btn-primary" id="save-analysis-settings">Save All Analysis Settings</button>
+                    <button type="button" class="btn btn-outline-secondary" id="reset-analysis">Reset to Defaults</button>
+                </div>
+            </div>
+            
+            <!-- Heatmap Settings Tab -->
+            <div class="tab-pane fade" id="heatmap-settings">
+                <div class="card settings-card">
+                    <div class="card-header">Heatmap Colormap Settings</div>
+                    <div class="card-body">
+                        <p class="text-muted">Configure colormap settings for different heatmap visualizations.</p>
+                        
+                        <form id="colormap-settings-form">
+                            <div class="form-group">
+                                <label for="default-colormap">Default Colormap:</label>
+                                <select class="form-select" id="default-colormap">
+                                    <!-- Will be populated dynamically -->
+                                </select>
+                                <div class="colormap-preview" id="default-colormap-preview"></div>
+                            </div>
+                            
+                            <hr>
+                            <h5>Specific Heatmap Types</h5>
+                            
+                            <div class="colormap-type">
+                                <label for="position-colormap">Position Heatmap:</label>
+                                <select class="form-select colormap-select" id="position-colormap" data-type="position">
+                                    <!-- Will be populated dynamically -->
+                                </select>
+                                <div class="colormap-preview" id="position-colormap-preview"></div>
+                                
+                                <div class="form-group mt-2">
+                                    <label for="position-intensity">Intensity: <span class="intensity-value" id="position-intensity-value">0.8</span></label>
+                                    <input type="range" class="form-range intensity-slider" 
+                                           id="position-intensity" data-type="position"
+                                           min="0.1" max="1.0" step="0.05" value="0.8">
+                                </div>
+                            </div>
+                            
+                            <div class="colormap-type">
+                                <label for="dwell-colormap">Dwell Time Heatmap:</label>
+                                <select class="form-select colormap-select" id="dwell-colormap" data-type="dwell">
+                                    <!-- Will be populated dynamically -->
+                                </select>
+                                <div class="colormap-preview" id="dwell-colormap-preview"></div>
+                                
+                                <div class="form-group mt-2">
+                                    <label for="dwell-intensity">Intensity: <span class="intensity-value" id="dwell-intensity-value">0.75</span></label>
+                                    <input type="range" class="form-range intensity-slider" 
+                                           id="dwell-intensity" data-type="dwell"
+                                           min="0.1" max="1.0" step="0.05" value="0.75">
+                                </div>
+                            </div>
+                            
+                            <div class="colormap-type">
+                                <label for="zone-colormap">Zone Activity Heatmap:</label>
+                                <select class="form-select colormap-select" id="zone-colormap" data-type="zone">
+                                    <!-- Will be populated dynamically -->
+                                </select>
+                                <div class="colormap-preview" id="zone-colormap-preview"></div>
+                                
+                                <div class="form-group mt-2">
+                                    <label for="zone-intensity">Intensity: <span class="intensity-value" id="zone-intensity-value">0.7</span></label>
+                                    <input type="range" class="form-range intensity-slider" 
+                                           id="zone-intensity" data-type="zone"
+                                           min="0.1" max="1.0" step="0.05" value="0.7">
+                                </div>
+                            </div>
+                            
+                            <div class="colormap-type">
+                                <label for="comparison-colormap">Comparison Heatmap:</label>
+                                <select class="form-select colormap-select" id="comparison-colormap" data-type="comparison">
+                                    <!-- Will be populated dynamically -->
+                                </select>
+                                <div class="colormap-preview" id="comparison-colormap-preview"></div>
+                                
+                                <div class="form-group mt-2">
+                                    <label for="comparison-intensity">Intensity: <span class="intensity-value" id="comparison-intensity-value">0.85</span></label>
+                                    <input type="range" class="form-range intensity-slider" 
+                                           id="comparison-intensity" data-type="comparison"
+                                           min="0.1" max="1.0" step="0.05" value="0.85">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group mt-4">
+                                <button type="submit" class="btn btn-primary">Save Heatmap Settings</button>
+                                <button type="button" class="btn btn-outline-secondary" id="reset-colormap-config">Reset to Defaults</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Database Settings Tab -->
+            <div class="tab-pane fade" id="database-settings">
+                <div class="card settings-card">
+                    <div class="card-header">Database Configuration</div>
+                    <div class="card-body">
+                        <form id="database-form">
+                            <div class="form-group">
+                                <label for="database-type">Database Type:</label>
+                                <select class="form-select" id="database-type">
+                                    <option value="sqlite">SQLite (Local file database)</option>
+                                    <option value="mongodb">MongoDB (Document database)</option>
+                                </select>
+                                <small class="form-text text-muted">SQLite is recommended for most use cases</small>
+                            </div>
+                            
+                            <div class="form-group" id="sqlite-settings">
+                                <label for="database-path">Database Path:</label>
+                                <input type="text" class="form-control" id="database-path" value="reviision.db">
+                                <small class="form-text text-muted">Path to SQLite database file</small>
+                            </div>
+                            
+                            <div class="form-group" id="mongodb-settings" style="display: none;">
+                                <label for="mongodb-host">MongoDB Host:</label>
+                                <input type="text" class="form-control" id="mongodb-host" value="localhost">
+                                
+                                <label for="mongodb-port" class="mt-2">Port:</label>
+                                <input type="number" class="form-control" id="mongodb-port" value="27017" min="1" max="65535">
+                                
+                                <label for="mongodb-database" class="mt-2">Database Name:</label>
+                                <input type="text" class="form-control" id="mongodb-database" value="reviision">
+                            </div>
+                            
+                            <div class="form-group mt-3">
+                                <button type="submit" class="btn btn-primary">Save Database Settings</button>
+                                <button type="button" class="btn btn-outline-secondary" id="reset-database">Reset to Defaults</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Web Settings Tab -->
+            <div class="tab-pane fade" id="web-settings">
+                <div class="card settings-card">
+                    <div class="card-header">Web Server Configuration</div>
+                    <div class="card-body">
+                        <form id="web-form">
+                            <div class="form-group">
+                                <label for="web-host">Host Address:</label>
+                                <input type="text" class="form-control" id="web-host" value="0.0.0.0">
+                                <small class="form-text text-muted">0.0.0.0 allows access from any IP, 127.0.0.1 for localhost only</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="web-port">Port:</label>
+                                <input type="number" class="form-control" id="web-port" value="5000" min="1" max="65535">
+                                <small class="form-text text-muted">Port number for the web server (requires restart)</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="web-debug" checked>
+                                    <label class="form-check-label" for="web-debug">
+                                        Debug Mode
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">Enable debug mode for development (disable in production)</small>
+                            </div>
+                            
+                            <div class="form-group mt-3">
+                                <button type="submit" class="btn btn-primary">Save Web Settings</button>
+                                <button type="button" class="btn btn-outline-secondary" id="reset-web">Reset to Defaults</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card settings-card">
+                    <div class="card-header">Camera Configuration</div>
+                    <div class="card-body">
+                        <form id="camera-config-form">
+                            <div class="form-group">
+                                <label for="camera-type">Camera Type:</label>
+                                <select class="form-select" id="camera-type">
+                                    <option value="video_file">Video File</option>
+                                    <option value="usb">USB Camera</option>
+                                    <option value="rtsp">RTSP Camera</option>
+                                    <option value="rtmp">RTMP Stream</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" id="video-file-settings">
+                                <label for="camera-file-path">Video File Path:</label>
+                                <input type="text" class="form-control" id="camera-file-path" value="testData/asianstoremulti.mp4">
+                                
+                                <div class="mt-2">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="camera-loop" checked>
+                                        <label class="form-check-label" for="camera-loop">Loop Video</label>
+                                    </div>
+                                </div>
+                                
+                                <label for="camera-playback-speed" class="mt-2">Playback Speed:</label>
+                                <select class="form-select" id="camera-playback-speed">
+                                    <option value="0.5">0.5x (Slow)</option>
+                                    <option value="1.0" selected>1.0x (Normal)</option>
+                                    <option value="1.5">1.5x (Fast)</option>
+                                    <option value="2.0">2.0x (Very Fast)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="camera-fps">FPS:</label>
+                                <input type="number" class="form-control" id="camera-fps" value="30" min="1" max="120">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="camera-resolution">Resolution:</label>
+                                <select class="form-select" id="camera-resolution">
+                                    <option value="640,480">640x480 (VGA)</option>
+                                    <option value="1280,720" selected>1280x720 (HD)</option>
+                                    <option value="1920,1080">1920x1080 (Full HD)</option>
+                                    <option value="3840,2160">3840x2160 (4K)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group mt-3">
+                                <button type="submit" class="btn btn-primary">Save Camera Settings</button>
+                                <button type="button" class="btn btn-outline-secondary" id="reset-camera">Reset to Defaults</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Backup & Restore Tab -->
+            <div class="tab-pane fade" id="backup-restore">
+                <div class="card settings-card">
+                    <div class="card-header">Backup and Restore</div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary" id="backup-btn">Backup Configuration</button>
+                            <button class="btn btn-outline-secondary" id="restore-btn">Restore Configuration</button>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle"></i> Backup will export all settings to a JSON file. 
+                            Restore will allow you to upload a previously saved configuration.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Global configuration storage
+    let videoConfig = null;
+    let mainConfig = null;
+    
+    // Load all configurations on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadVideoConfig();
+        loadMainConfig();
+        initializeEventHandlers();
+        loadColorMapConfig();
+    });
+    
+    // Main configuration management
+    async function loadMainConfig() {
+        try {
+            const response = await fetch('/api/config');
+            if (!response.ok) {
+                throw new Error(`Failed to load main configuration: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            if (result.status === 'success') {
+                mainConfig = result.config;
+                populateConfigurationForms();
+            }
+        } catch (error) {
+            console.error('Error loading main configuration:', error);
+            showAlert('error', 'Failed to load main configuration');
+        }
+    }
+    
+    function populateConfigurationForms() {
+        if (!mainConfig) return;
+        
+        // Detection settings
+        if (mainConfig.detection) {
+            const detection = mainConfig.detection;
+            document.getElementById('detection-model').value = detection.model || 'yolov8n.pt';
+            document.getElementById('confidence-threshold').value = detection.confidence_threshold || 0.5;
+            document.getElementById('confidence-value').textContent = detection.confidence_threshold || 0.5;
+            document.getElementById('iou-threshold').value = detection.iou_threshold || 0.45;
+            document.getElementById('iou-value').textContent = detection.iou_threshold || 0.45;
+        }
+        
+        // Tracking settings
+        if (mainConfig.tracking) {
+            const tracking = mainConfig.tracking;
+            document.getElementById('max-age').value = tracking.max_age || 30;
+            document.getElementById('min-hits').value = tracking.min_hits || 3;
+            document.getElementById('tracking-iou-threshold').value = tracking.iou_threshold || 0.3;
+            document.getElementById('tracking-iou-value').textContent = tracking.iou_threshold || 0.3;
+        }
+        
+        // Analysis settings
+        if (mainConfig.analysis) {
+            const analysis = mainConfig.analysis;
+            
+            // Demographics
+            if (analysis.demographics) {
+                document.getElementById('demographics-enabled').checked = analysis.demographics.enabled !== false;
+                document.getElementById('demographics-model').value = analysis.demographics.model || 'deepface';
+                
+                const attributes = analysis.demographics.attributes || ['age', 'gender', 'race', 'emotion'];
+                document.getElementById('attr-age').checked = attributes.includes('age');
+                document.getElementById('attr-gender').checked = attributes.includes('gender');
+                document.getElementById('attr-race').checked = attributes.includes('race');
+                document.getElementById('attr-emotion').checked = attributes.includes('emotion');
+            }
+            
+            // Path analysis
+            if (analysis.path) {
+                document.getElementById('path-enabled').checked = analysis.path.enabled !== false;
+                document.getElementById('smoothing-window').value = analysis.path.smoothing_window || 5;
+                document.getElementById('zone-detection-threshold').value = analysis.path.zone_detection_threshold || 0.7;
+                document.getElementById('zone-detection-value').textContent = analysis.path.zone_detection_threshold || 0.7;
+            }
+            
+            // Dwell time
+            if (analysis.dwell_time) {
+                document.getElementById('dwell-enabled').checked = analysis.dwell_time.enabled !== false;
+                document.getElementById('min-duration').value = analysis.dwell_time.min_duration || 5;
+                document.getElementById('zone-radius').value = analysis.dwell_time.zone_radius || 1.0;
+            }
+            
+            // Correlation
+            if (analysis.correlation) {
+                document.getElementById('correlation-enabled').checked = analysis.correlation.enabled !== false;
+                document.getElementById('time-bins').value = analysis.correlation.time_bins || 24;
+                document.getElementById('min-samples').value = analysis.correlation.min_samples || 10;
+            }
+        }
+        
+        // Database settings
+        if (mainConfig.database) {
+            const database = mainConfig.database;
+            document.getElementById('database-type').value = database.type || 'sqlite';
+            document.getElementById('database-path').value = database.path || 'retail_analytics.db';
+            
+            if (database.host) document.getElementById('mongodb-host').value = database.host;
+            if (database.port) document.getElementById('mongodb-port').value = database.port;
+            if (database.database) document.getElementById('mongodb-database').value = database.database;
+            
+            toggleDatabaseSettings();
+        }
+        
+        // Web settings
+        if (mainConfig.web) {
+            const web = mainConfig.web;
+            document.getElementById('web-host').value = web.host || '0.0.0.0';
+            document.getElementById('web-port').value = web.port || 5000;
+            document.getElementById('web-debug').checked = web.debug !== false;
+        }
+        
+        // Camera settings
+        if (mainConfig.camera) {
+            const camera = mainConfig.camera;
+            document.getElementById('camera-type').value = camera.type || 'video_file';
+            document.getElementById('camera-file-path').value = camera.file_path || '';
+            document.getElementById('camera-loop').checked = camera.loop !== false;
+            document.getElementById('camera-playback-speed').value = camera.playback_speed || 1.0;
+            document.getElementById('camera-fps').value = camera.fps || 30;
+            
+            if (camera.resolution && Array.isArray(camera.resolution)) {
+                document.getElementById('camera-resolution').value = camera.resolution.join(',');
+            }
+        }
+    }
+    
+    async function loadVideoConfig() {
+        try {
+            const response = await fetch('/get_video_config');
+            if (!response.ok) {
+                throw new Error(`Failed to load video configuration: ${response.status}`);
+            }
+            
+            videoConfig = await response.json();
+            displayVideoConfig();
+        } catch (error) {
+            console.error('Error loading video configuration:', error);
+            showAlert('error', 'Failed to load video configuration');
+        }
+    }
+    
+    function displayVideoConfig() {
+        // Populate default video dropdown
+        const defaultVideoSelect = document.getElementById('default-video');
+        defaultVideoSelect.innerHTML = '';
+        
+        // Populate video paths
+        const videoPathsContainer = document.getElementById('video-paths-container');
+        videoPathsContainer.innerHTML = '';
+        
+        // Add each video path
+        if (videoConfig && videoConfig.videos) {
+            Object.entries(videoConfig.videos).forEach(([id, path]) => {
+                // Add to default dropdown
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = id;
+                if (videoConfig.default === id) {
+                    option.selected = true;
+                }
+                defaultVideoSelect.appendChild(option);
+                
+                // Add to video paths list
+                addVideoPathEntry(id, path);
+            });
+        }
+    }
+    
+    function addVideoPathEntry(id = '', path = '') {
+        const container = document.getElementById('video-paths-container');
+        const entryDiv = document.createElement('div');
+        entryDiv.className = 'video-path-entry';
+        
+        entryDiv.innerHTML = `
+            <input type="text" class="form-control video-id" placeholder="Video ID" value="${id}">
+            <input type="text" class="form-control video-path" placeholder="Path to video file" value="${path}">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-video-btn">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+        
+        // Add remove button handler
+        entryDiv.querySelector('.remove-video-btn').addEventListener('click', function() {
+            entryDiv.remove();
+            updateDefaultVideoOptions();
+        });
+        
+        // Add change handler to update default options when ID changes
+        entryDiv.querySelector('.video-id').addEventListener('change', updateDefaultVideoOptions);
+        
+        container.appendChild(entryDiv);
+    }
+    
+    function updateDefaultVideoOptions() {
+        // Get all video IDs
+        const videoIds = Array.from(document.querySelectorAll('.video-id')).map(input => input.value);
+        
+        // Update default video dropdown
+        const defaultVideoSelect = document.getElementById('default-video');
+        const selectedDefault = defaultVideoSelect.value;
+        
+        defaultVideoSelect.innerHTML = '';
+        
+        videoIds.forEach(id => {
+            if (id.trim()) {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = id;
+                if (id === selectedDefault) {
+                    option.selected = true;
+                }
+                defaultVideoSelect.appendChild(option);
+            }
+        });
+    }
+    
+    // Initialize event handlers
+    function initializeEventHandlers() {
+        // Range input live updates
+        setupRangeUpdates();
+        
+        // Form submissions
+        setupFormSubmissions();
+        
+        // Reset buttons
+        setupResetButtons();
+        
+        // Database type toggle
+        document.getElementById('database-type').addEventListener('change', toggleDatabaseSettings);
+        
+        // Backup and restore
+        setupBackupRestore();
+    }
+    
+    function setupRangeUpdates() {
+        // Update values for range inputs in real-time
+        const rangeInputs = [
+            { input: 'confidence-threshold', output: 'confidence-value' },
+            { input: 'iou-threshold', output: 'iou-value' },
+            { input: 'tracking-iou-threshold', output: 'tracking-iou-value' },
+            { input: 'zone-detection-threshold', output: 'zone-detection-value' }
+        ];
+        
+        rangeInputs.forEach(({input, output}) => {
+            const inputElement = document.getElementById(input);
+            const outputElement = document.getElementById(output);
+            if (inputElement && outputElement) {
+                inputElement.addEventListener('input', function() {
+                    outputElement.textContent = this.value;
+                });
+            }
+        });
+    }
+    
+    function setupFormSubmissions() {
+        // Detection settings
+        document.getElementById('detection-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await saveDetectionSettings();
+        });
+        
+        // Tracking settings
+        document.getElementById('tracking-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await saveTrackingSettings();
+        });
+        
+        // Analysis settings
+        document.getElementById('save-analysis-settings').addEventListener('click', async function() {
+            await saveAnalysisSettings();
+        });
+        
+        // Database settings
+        document.getElementById('database-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await saveDatabaseSettings();
+        });
+        
+        // Web settings
+        document.getElementById('web-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await saveWebSettings();
+        });
+        
+        // Camera settings
+        document.getElementById('camera-config-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await saveCameraSettings();
+        });
+    }
+    
+    function setupResetButtons() {
+        document.getElementById('reset-detection')?.addEventListener('click', resetDetectionSettings);
+        document.getElementById('reset-tracking')?.addEventListener('click', resetTrackingSettings);
+        document.getElementById('reset-analysis')?.addEventListener('click', resetAnalysisSettings);
+        document.getElementById('reset-database')?.addEventListener('click', resetDatabaseSettings);
+        document.getElementById('reset-web')?.addEventListener('click', resetWebSettings);
+        document.getElementById('reset-camera')?.addEventListener('click', resetCameraSettings);
+    }
+    
+    function setupBackupRestore() {
+        document.getElementById('backup-btn').addEventListener('click', backupConfiguration);
+        document.getElementById('restore-btn').addEventListener('click', function() {
+            document.getElementById('restore-file-input').click();
+        });
+        
+        // Create hidden file input for restore
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.id = 'restore-file-input';
+        fileInput.accept = '.json';
+        fileInput.style.display = 'none';
+        fileInput.addEventListener('change', restoreConfiguration);
+        document.body.appendChild(fileInput);
+    }
+    
+    function toggleDatabaseSettings() {
+        const dbType = document.getElementById('database-type').value;
+        const sqliteSettings = document.getElementById('sqlite-settings');
+        const mongoSettings = document.getElementById('mongodb-settings');
+        
+        if (dbType === 'sqlite') {
+            sqliteSettings.style.display = 'block';
+            mongoSettings.style.display = 'none';
+        } else {
+            sqliteSettings.style.display = 'none';
+            mongoSettings.style.display = 'block';
+        }
+    }
+    
+    // Save functions
+    async function saveDetectionSettings() {
+        const data = {
+            detection: {
+                model: document.getElementById('detection-model').value,
+                confidence_threshold: parseFloat(document.getElementById('confidence-threshold').value),
+                iou_threshold: parseFloat(document.getElementById('iou-threshold').value)
+            }
+        };
+        
+        await saveConfiguration(data, 'Detection settings saved successfully');
+    }
+    
+    async function saveTrackingSettings() {
+        const data = {
+            tracking: {
+                max_age: parseInt(document.getElementById('max-age').value),
+                min_hits: parseInt(document.getElementById('min-hits').value),
+                iou_threshold: parseFloat(document.getElementById('tracking-iou-threshold').value)
+            }
+        };
+        
+        await saveConfiguration(data, 'Tracking settings saved successfully');
+    }
+    
+    async function saveAnalysisSettings() {
+        const attributes = [];
+        if (document.getElementById('attr-age').checked) attributes.push('age');
+        if (document.getElementById('attr-gender').checked) attributes.push('gender');
+        if (document.getElementById('attr-race').checked) attributes.push('race');
+        if (document.getElementById('attr-emotion').checked) attributes.push('emotion');
+        
+        const data = {
+            analysis: {
+                demographics: {
+                    enabled: document.getElementById('demographics-enabled').checked,
+                    model: document.getElementById('demographics-model').value,
+                    attributes: attributes
+                },
+                path: {
+                    enabled: document.getElementById('path-enabled').checked,
+                    smoothing_window: parseInt(document.getElementById('smoothing-window').value),
+                    zone_detection_threshold: parseFloat(document.getElementById('zone-detection-threshold').value)
+                },
+                dwell_time: {
+                    enabled: document.getElementById('dwell-enabled').checked,
+                    min_duration: parseInt(document.getElementById('min-duration').value),
+                    zone_radius: parseFloat(document.getElementById('zone-radius').value)
+                },
+                correlation: {
+                    enabled: document.getElementById('correlation-enabled').checked,
+                    time_bins: parseInt(document.getElementById('time-bins').value),
+                    min_samples: parseInt(document.getElementById('min-samples').value)
+                }
+            }
+        };
+        
+        await saveConfiguration(data, 'Analysis settings saved successfully');
+    }
+    
+    async function saveDatabaseSettings() {
+        const dbType = document.getElementById('database-type').value;
+        let data = {
+            database: {
+                type: dbType
+            }
+        };
+        
+        if (dbType === 'sqlite') {
+            data.database.path = document.getElementById('database-path').value;
+        } else {
+            data.database.host = document.getElementById('mongodb-host').value;
+            data.database.port = parseInt(document.getElementById('mongodb-port').value);
+            data.database.database = document.getElementById('mongodb-database').value;
+        }
+        
+        await saveConfiguration(data, 'Database settings saved successfully');
+    }
+    
+    async function saveWebSettings() {
+        const data = {
+            web: {
+                host: document.getElementById('web-host').value,
+                port: parseInt(document.getElementById('web-port').value),
+                debug: document.getElementById('web-debug').checked
+            }
+        };
+        
+        await saveConfiguration(data, 'Web settings saved successfully (restart required for some changes)');
+    }
+    
+    async function saveCameraSettings() {
+        const resolution = document.getElementById('camera-resolution').value.split(',').map(Number);
+        
+        const data = {
+            camera: {
+                type: document.getElementById('camera-type').value,
+                file_path: document.getElementById('camera-file-path').value,
+                loop: document.getElementById('camera-loop').checked,
+                playback_speed: parseFloat(document.getElementById('camera-playback-speed').value),
+                fps: parseInt(document.getElementById('camera-fps').value),
+                resolution: resolution
+            }
+        };
+        
+        await saveConfiguration(data, 'Camera settings saved successfully');
+    }
+    
+    async function saveConfiguration(data, successMessage) {
+        try {
+            const response = await fetch('/api/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            if (result.status === 'success') {
+                showAlert('success', successMessage);
+                // Reload configuration to reflect changes
+                await loadMainConfig();
+            } else {
+                showAlert('error', result.message || 'Failed to save configuration');
+            }
+        } catch (error) {
+            console.error('Error saving configuration:', error);
+            showAlert('error', 'Failed to save configuration');
+        }
+    }
+    
+    // Backup and restore functions
+    async function backupConfiguration() {
+        try {
+            const response = await fetch('/api/config/backup');
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                // Download backup file
+                const blob = new Blob([JSON.stringify(result.backup, null, 2)], {type: 'application/json'});
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = result.filename;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
+                showAlert('success', 'Configuration backup downloaded successfully');
+            } else {
+                showAlert('error', result.message || 'Failed to create backup');
+            }
+        } catch (error) {
+            console.error('Error creating backup:', error);
+            showAlert('error', 'Failed to create backup');
+        }
+    }
+    
+    async function restoreConfiguration(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        try {
+            const text = await file.text();
+            const backup = JSON.parse(text);
+            
+            if (!backup.config) {
+                throw new Error('Invalid backup file format');
+            }
+            
+            const response = await fetch('/api/config/restore', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(backup)
+            });
+            
+            const result = await response.json();
+            if (result.status === 'success') {
+                showAlert('success', 'Configuration restored successfully');
+                // Reload page to reflect changes
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showAlert('error', result.message || 'Failed to restore configuration');
+            }
+        } catch (error) {
+            console.error('Error restoring configuration:', error);
+            showAlert('error', 'Failed to restore configuration: ' + error.message);
+        }
+        
+        // Reset file input
+        event.target.value = '';
+    }
+    
+    // Reset functions (restore default values)
+    function resetDetectionSettings() {
+        document.getElementById('detection-model').value = 'yolov8n.pt';
+        document.getElementById('confidence-threshold').value = 0.5;
+        document.getElementById('confidence-value').textContent = '0.5';
+        document.getElementById('iou-threshold').value = 0.45;
+        document.getElementById('iou-value').textContent = '0.45';
+    }
+    
+    function resetTrackingSettings() {
+        document.getElementById('max-age').value = 30;
+        document.getElementById('min-hits').value = 3;
+        document.getElementById('tracking-iou-threshold').value = 0.3;
+        document.getElementById('tracking-iou-value').textContent = '0.3';
+    }
+    
+    function resetAnalysisSettings() {
+        document.getElementById('demographics-enabled').checked = true;
+        document.getElementById('demographics-model').value = 'deepface';
+        document.getElementById('attr-age').checked = true;
+        document.getElementById('attr-gender').checked = true;
+        document.getElementById('attr-race').checked = true;
+        document.getElementById('attr-emotion').checked = true;
+        document.getElementById('path-enabled').checked = true;
+        document.getElementById('smoothing-window').value = 5;
+        document.getElementById('zone-detection-threshold').value = 0.7;
+        document.getElementById('zone-detection-value').textContent = '0.7';
+        document.getElementById('dwell-enabled').checked = true;
+        document.getElementById('min-duration').value = 5;
+        document.getElementById('zone-radius').value = 1.0;
+        document.getElementById('correlation-enabled').checked = true;
+        document.getElementById('time-bins').value = 24;
+        document.getElementById('min-samples').value = 10;
+    }
+    
+    function resetDatabaseSettings() {
+        document.getElementById('database-type').value = 'sqlite';
+        document.getElementById('database-path').value = 'reviision.db';
+        toggleDatabaseSettings();
+    }
+    
+    function resetWebSettings() {
+        document.getElementById('web-host').value = '0.0.0.0';
+        document.getElementById('web-port').value = 5000;
+        document.getElementById('web-debug').checked = true;
+    }
+    
+    function resetCameraSettings() {
+        document.getElementById('camera-type').value = 'video_file';
+        document.getElementById('camera-file-path').value = 'testData/asianstoremulti.mp4';
+        document.getElementById('camera-loop').checked = true;
+        document.getElementById('camera-playback-speed').value = '1.0';
+        document.getElementById('camera-fps').value = 30;
+        document.getElementById('camera-resolution').value = '1280,720';
+    }
+    
+    function collectVideoConfig() {
+        const newConfig = {
+            default: document.getElementById('default-video').value,
+            videos: {}
+        };
+        
+        // Collect all video paths
+        document.querySelectorAll('.video-path-entry').forEach(entry => {
+            const id = entry.querySelector('.video-id').value.trim();
+            const path = entry.querySelector('.video-path').value.trim();
+            
+            if (id && path) {
+                newConfig.videos[id] = path;
+            }
+        });
+        
+        return newConfig;
+    }
+    
+    async function saveVideoConfig(config) {
+        try {
+            const response = await fetch('/update_video_config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to save configuration: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            showAlert('success', 'Video configuration saved successfully');
+            return result;
+        } catch (error) {
+            console.error('Error saving video configuration:', error);
+            showAlert('error', 'Failed to save video configuration');
+            throw error;
+        }
+    }
+    
+    // Camera options management
+    async function loadCameraOptions() {
+        try {
+            const response = await fetch('/get_camera_options');
+            if (!response.ok) {
+                throw new Error(`Failed to load camera options: ${response.status}`);
+            }
+            
+            const options = await response.json();
+            
+            // Update form values with loaded options
+            document.getElementById('camera-loop').checked = options.loop || false;
+            
+            const speedSelect = document.getElementById('playback-speed');
+            const speed = options.playback_speed || 1.0;
+            for (let i = 0; i < speedSelect.options.length; i++) {
+                if (parseFloat(speedSelect.options[i].value) === speed) {
+                    speedSelect.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            console.log('Camera options loaded:', options);
+        } catch (error) {
+            console.error('Error loading camera options:', error);
+            showAlert('error', 'Failed to load camera options');
+        }
+    }
+    
+    // Camera options
+    async function saveCameraOptions() {
+        const options = {
+            loop: document.getElementById('camera-loop').checked,
+            playback_speed: parseFloat(document.getElementById('playback-speed').value)
+        };
+        
+        try {
+            const response = await fetch('/update_camera_options', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(options)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to save camera options: ${response.status}`);
+            }
+            
+            showAlert('success', 'Camera options saved successfully');
+        } catch (error) {
+            console.error('Error saving camera options:', error);
+            showAlert('error', 'Failed to save camera options');
+        }
+    }
+    
+    // Colormap configuration management
+    let colormapConfig = null;
+    let availableColormaps = [];
+    
+    async function loadColormapConfig() {
+        try {
+            // Load available colormaps
+            const colormapsResponse = await fetch('/api/available_colormaps');
+            if (colormapsResponse.ok) {
+                availableColormaps = await colormapsResponse.json();
+            } else {
+                console.error('Failed to load available colormaps');
+                availableColormaps = [];
+            }
+            
+            // Load current colormap configuration
+            const configResponse = await fetch('/get_colormap_config');
+            if (configResponse.ok) {
+                colormapConfig = await configResponse.json();
+                displayColormapConfig();
+            } else {
+                console.error('Failed to load colormap configuration');
+                showAlert('error', 'Failed to load colormap configuration');
+            }
+        } catch (error) {
+            console.error('Error loading colormap configuration:', error);
+            showAlert('error', 'Failed to load colormap configuration');
+        }
+    }
+    
+    function displayColormapConfig() {
+        if (!colormapConfig) return;
+        
+        // Populate default colormap dropdown
+        const defaultSelect = document.getElementById('default-colormap');
+        defaultSelect.innerHTML = '';
+        
+        // Populate all colormap select elements with available options
+        const colormapSelects = document.querySelectorAll('.colormap-select');
+        
+        availableColormaps.forEach(colormap => {
+            // Add to default dropdown
+            const defaultOption = document.createElement('option');
+            defaultOption.value = colormap.name;
+            defaultOption.textContent = `${colormap.name} (${colormap.category})`;
+            if (colormapConfig.default_colormap === colormap.name) {
+                defaultOption.selected = true;
+            }
+            defaultSelect.appendChild(defaultOption);
+            
+            // Add to type-specific dropdowns
+            colormapSelects.forEach(select => {
+                const option = document.createElement('option');
+                option.value = colormap.name;
+                option.textContent = `${colormap.name} (${colormap.category})`;
+                
+                const type = select.dataset.type;
+                if (colormapConfig.colormaps && 
+                    colormapConfig.colormaps[type] && 
+                    colormapConfig.colormaps[type].name === colormap.name) {
+                    option.selected = true;
+                }
+                
+                select.appendChild(option);
+            });
+        });
+        
+        // Set intensity sliders from config
+        if (colormapConfig.colormaps) {
+            document.querySelectorAll('.intensity-slider').forEach(slider => {
+                const type = slider.dataset.type;
+                if (colormapConfig.colormaps[type] && colormapConfig.colormaps[type].intensity_scale) {
+                    slider.value = colormapConfig.colormaps[type].intensity_scale;
+                    document.getElementById(`${type}-intensity-value`).textContent = slider.value;
+                }
+            });
+        }
+        
+        // Update preview elements
+        updateColormapPreviews();
+    }
+    
+    function updateColormapPreviews() {
+        // Simple colormap previews - just for illustration
+        // In a real app, you would generate actual previews from the matplotlib colormaps
+        const gradients = {
+            'jet': 'linear-gradient(to right, #00007F, #0000FF, #007FFF, #00FFFF, #7FFF7F, #FFFF00, #FF7F00, #FF0000, #7F0000)',
+            'viridis': 'linear-gradient(to right, #440154, #482878, #3E4989, #31688E, #26828E, #1F9E89, #35B779, #6DCD59, #B4DE2C, #FDE725)',
+            'plasma': 'linear-gradient(to right, #0D0887, #42039D, #6A00A8, #900DA3, #B12A90, #CB4678, #E16462, #F1834B, #FCA636, #FCFFA4)',
+            'inferno': 'linear-gradient(to right, #000004, #160B39, #420A68, #6B176E, #932667, #BA3655, #DC5039, #F2751A, #FBB40A, #FCFFA4)',
+            'magma': 'linear-gradient(to right, #000004, #140e36, #3b0f70, #641a80, #8c2981, #b5367a, #de4968, #f66e5c, #fe9f6d, #fecf92)',
+            'cividis': 'linear-gradient(to right, #00224e, #163d4e, #2e5547, #46713d, #63913b, #7fb030, #9fd32a, #bdfc2c)',
+            'hot': 'linear-gradient(to right, #000000, #500000, #ff0000, #ffff00, #ffffff)',
+            'coolwarm': 'linear-gradient(to right, #3a0cf7, #8283ff, #ebebeb, #ff8d82, #e20712)',
+            'RdBu': 'linear-gradient(to right, #053061, #2166ac, #4393c3, #92c5de, #d1e5f0, #f7f7f7, #fddbc7, #f4a582, #d6604d, #b2182b, #67001f)',
+            'YlGnBu': 'linear-gradient(to right, #ffffd9, #edf8b1, #c7e9b4, #7fcdbb, #41b6c4, #1d91c0, #225ea8, #253494, #081d58)',
+            'summer': 'linear-gradient(to right, #2c7bb6, #00a6ca, #00ccbc, #90eb9d, #ffff8c)',
+            'winter': 'linear-gradient(to right, #0000cc, #0068ff, #00d1ff, #00ffda, #00ff8c)'
+        };
+        
+        // Set default preview
+        const defaultColormap = document.getElementById('default-colormap').value;
+        document.getElementById('default-colormap-preview').style.background = 
+            gradients[defaultColormap] || 'linear-gradient(to right, blue, cyan, green, yellow, red)';
+        
+        // Set type-specific previews
+        document.querySelectorAll('.colormap-select').forEach(select => {
+            const type = select.dataset.type;
+            const colormap = select.value;
+            document.getElementById(`${type}-colormap-preview`).style.background = 
+                gradients[colormap] || 'linear-gradient(to right, blue, cyan, green, yellow, red)';
+        });
+    }
+    
+    async function saveColormapConfig() {
+        try {
+            // Build new config
+            const config = {
+                default_colormap: document.getElementById('default-colormap').value,
+                colormaps: {}
+            };
+            
+            // Add type-specific colormaps
+            document.querySelectorAll('.colormap-select').forEach(select => {
+                const type = select.dataset.type;
+                const colormap = select.value;
+                const intensity = parseFloat(document.getElementById(`${type}-intensity`).value);
+                
+                config.colormaps[type] = {
+                    name: colormap,
+                    intensity_scale: intensity
+                };
+            });
+            
+            // Save to server
+            const response = await fetch('/update_colormap_config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to save configuration: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            showAlert('success', 'Heatmap configuration saved successfully');
+            colormapConfig = config;
+        } catch (error) {
+            console.error('Error saving colormap configuration:', error);
+            showAlert('error', 'Failed to save heatmap configuration');
+        }
+    }
+    
+    // Initialize all settings when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load existing configurations
+        loadVideoConfig();
+        loadColormapConfig();
+        loadCameraOptions();
+        
+        // Set up event listeners for the colormap form
+        document.getElementById('colormap-settings-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveColormapConfig();
+        });
+        
+        // Update colormap previews when selections change
+        document.getElementById('default-colormap').addEventListener('change', updateColormapPreviews);
+        document.querySelectorAll('.colormap-select').forEach(select => {
+            select.addEventListener('change', updateColormapPreviews);
+        });
+        
+        // Update intensity value displays
+        document.querySelectorAll('.intensity-slider').forEach(slider => {
+            slider.addEventListener('input', function() {
+                const type = this.dataset.type;
+                document.getElementById(`${type}-intensity-value`).textContent = this.value;
+            });
+        });
+        
+        // Reset colormap config to defaults
+        document.getElementById('reset-colormap-config').addEventListener('click', function() {
+            if (confirm('Reset heatmap configuration to defaults?')) {
+                // Default values
+                document.getElementById('default-colormap').value = 'jet';
+                
+                document.getElementById('position-colormap').value = 'hot';
+                document.getElementById('position-intensity').value = 0.8;
+                document.getElementById('position-intensity-value').textContent = '0.8';
+                
+                document.getElementById('dwell-colormap').value = 'plasma';
+                document.getElementById('dwell-intensity').value = 0.75;
+                document.getElementById('dwell-intensity-value').textContent = '0.75';
+                
+                document.getElementById('zone-colormap').value = 'viridis';
+                document.getElementById('zone-intensity').value = 0.7;
+                document.getElementById('zone-intensity-value').textContent = '0.7';
+                
+                document.getElementById('comparison-colormap').value = 'coolwarm';
+                document.getElementById('comparison-intensity').value = 0.85;
+                document.getElementById('comparison-intensity-value').textContent = '0.85';
+                
+                updateColormapPreviews();
+            }
+        });
+        
+        // Add video button
+        document.getElementById('add-video-btn').addEventListener('click', function() {
+            addVideoPathEntry();
+        });
+        
+        // Reset video config button
+        document.getElementById('reset-video-config').addEventListener('click', function() {
+            loadVideoConfig();
+        });
+        
+        // Form submissions
+        document.getElementById('video-config-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const newConfig = collectVideoConfig();
+            try {
+                await saveVideoConfig(newConfig);
+                videoConfig = newConfig; // Update local copy
+            } catch (error) {
+                // Error already handled in saveVideoConfig
+            }
+        });
+        
+        document.getElementById('camera-options-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveCameraOptions();
+        });
+        
+        // Stop camera button
+        document.getElementById('stop-camera').addEventListener('click', async function() {
+            try {
+                const response = await fetch('/stop_camera', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showAlert('success', 'Camera stopped successfully');
+                } else {
+                    throw new Error('Failed to stop camera');
+                }
+            } catch (error) {
+                console.error('Error stopping camera:', error);
+                showAlert('error', 'Failed to stop camera');
+            }
+        });
+        
+        // Confidence threshold display update
+        const confidenceSlider = document.getElementById('confidence-threshold');
+        const confidenceValue = document.getElementById('confidence-value');
+        if (confidenceSlider && confidenceValue) {
+            confidenceSlider.addEventListener('input', function() {
+                confidenceValue.textContent = this.value;
+            });
+        }
+    });
+    
+    // Helper function to show alerts
+    function showAlert(type, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        const container = document.querySelector('.container');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            alertDiv.classList.remove('show');
+            setTimeout(() => alertDiv.remove(), 300);
+        }, 5000);
+    }
+    
+    // Utility function to show alerts
+    function showAlert(type, message) {
+        // Remove existing alerts
+        const existingAlerts = document.querySelectorAll('.alert-custom');
+        existingAlerts.forEach(alert => alert.remove());
+        
+        // Create new alert
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show alert-custom`;
+        alertDiv.style.position = 'fixed';
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.style.minWidth = '300px';
+        
+        alertDiv.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+    
+    // Load colormap config function (fallback if not already defined)
+    if (typeof loadColorMapConfig === 'undefined') {
+        async function loadColorMapConfig() {
+            try {
+                const response = await fetch('/get_colormap_config');
+                if (response.ok) {
+                    const config = await response.json();
+                    console.log('Colormap config loaded:', config);
+                }
+            } catch (error) {
+                console.error('Error loading colormap config:', error);
+            }
+        }
+    }
+</script>
+{% endblock %} 

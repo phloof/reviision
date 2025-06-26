@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block title %}Store Heatmap Analysis - ReViision{% endblock %}
+
+{% block header %}Store Heatmap{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Store Traffic Heatmap</span>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary" id="daily-view">Daily</button>
+                    <button class="btn btn-sm btn-outline-primary" id="weekly-view">Weekly</button>
+                    <button class="btn btn-sm btn-outline-primary active" id="monthly-view">Monthly</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="heatmap-container" style="height: 500px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <span>Heatmap Controls</span>
+            </div>
+            <div class="card-body">
+                <form id="heatmap-controls">
+                    <div class="mb-3">
+                        <label for="date-range" class="form-label">Date Range</label>
+                        <select class="form-select" id="date-range">
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="last7">Last 7 Days</option>
+                            <option value="last30" selected>Last 30 Days</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 date-custom-range" style="display: none;">
+                        <div class="row">
+                            <div class="col-6">
+                                <label for="start-date" class="form-label">Start Date</label>
+                                <input type="date" class="form-control" id="start-date">
+                            </div>
+                            <div class="col-6">
+                                <label for="end-date" class="form-label">End Date</label>
+                                <input type="date" class="form-control" id="end-date">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="time-of-day" class="form-label">Time of Day</label>
+                        <select class="form-select" id="time-of-day">
+                            <option value="all" selected>All Hours</option>
+                            <option value="morning">Morning (8am-12pm)</option>
+                            <option value="afternoon">Afternoon (12pm-5pm)</option>
+                            <option value="evening">Evening (5pm-9pm)</option>
+                            <option value="custom">Custom Hours</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 time-custom-range" style="display: none;">
+                        <div class="row">
+                            <div class="col-6">
+                                <label for="start-time" class="form-label">Start Time</label>
+                                <input type="time" class="form-control" id="start-time">
+                            </div>
+                            <div class="col-6">
+                                <label for="end-time" class="form-label">End Time</label>
+                                <input type="time" class="form-control" id="end-time">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="display-metric" class="form-label">Display Metric</label>
+                        <select class="form-select" id="display-metric">
+                            <option value="traffic-count" selected>Traffic Count</option>
+                            <option value="dwell-time">Dwell Time</option>
+                            <option value="conversion">Conversion Rate</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="update-heatmap">Update Heatmap</button>
+                </form>
+            </div>
+        </div>
+        <div class="card mt-3">
+            <div class="card-header">
+                <span>Heatmap Stats</span>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <strong>Total Visitors:</strong>
+                    <span id="total-visitors">4,258</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <strong>Peak Hour:</strong>
+                    <span id="peak-hour">2:00 PM - 3:00 PM</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <strong>Avg. Dwell Time:</strong>
+                    <span id="avg-dwell-time">12.5 minutes</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <strong>Hottest Zone:</strong>
+                    <span id="hottest-zone">Zone 3 (Electronics)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Show/hide custom date range inputs
+        document.getElementById('date-range').addEventListener('change', function() {
+            if (this.value === 'custom') {
+                document.querySelector('.date-custom-range').style.display = 'block';
+            } else {
+                document.querySelector('.date-custom-range').style.display = 'none';
+            }
+        });
+
+        // Show/hide custom time range inputs
+        document.getElementById('time-of-day').addEventListener('change', function() {
+            if (this.value === 'custom') {
+                document.querySelector('.time-custom-range').style.display = 'block';
+            } else {
+                document.querySelector('.time-custom-range').style.display = 'none';
+            }
+        });
+
+        // Initialize the heatmap
+        initHeatmap();
+        
+        // View type buttons
+        document.getElementById('daily-view').addEventListener('click', function() {
+            setActiveButton(this);
+            updateHeatmapView('daily');
+        });
+        
+        document.getElementById('weekly-view').addEventListener('click', function() {
+            setActiveButton(this);
+            updateHeatmapView('weekly');
+        });
+        
+        document.getElementById('monthly-view').addEventListener('click', function() {
+            setActiveButton(this);
+            updateHeatmapView('monthly');
+        });
+        
+        // Update button
+        document.getElementById('update-heatmap').addEventListener('click', function() {
+            updateHeatmap();
+        });
+    });
+    
+    function setActiveButton(button) {
+        // Remove active class from all buttons
+        const buttons = document.querySelectorAll('.btn-group .btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        
+        // Add active class to clicked button
+        button.classList.add('active');
+    }
+    
+    function initHeatmap() {
+        // Sample store layout
+        const storeLayout = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0],
+            [0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0],
+            [0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0],
+            [0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0],
+            [0, 1, 1, 1, 1, 3, 3, 1, 1, 1, 1, 0],
+            [0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0],
+            [0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0],
+            [0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0],
+            [0, 0, 0, 0, 0, 4, 4, 0, 0, 0, 0, 0]
+        ];
+        
+        // Sample heatmap data
+        const heatmapData = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 15, 25, 30, 10, 0, 0, 20, 35, 40, 15, 0],
+            [0, 25, 50, 60, 20, 0, 0, 30, 65, 75, 25, 0],
+            [0, 30, 70, 80, 25, 0, 0, 35, 85, 90, 30, 0],
+            [0, 20, 40, 35, 15, 0, 0, 25, 45, 50, 20, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 90, 95, 0, 0, 0, 0, 0],
+            [0, 20, 40, 35, 15, 75, 80, 25, 45, 50, 20, 0],
+            [0, 25, 55, 65, 20, 0, 0, 30, 70, 80, 25, 0],
+            [0, 30, 65, 75, 25, 0, 0, 35, 80, 85, 30, 0],
+            [0, 15, 35, 30, 10, 0, 0, 20, 40, 45, 15, 0],
+            [0, 0, 0, 0, 0, 60, 55, 0, 0, 0, 0, 0]
+        ];
+        
+        // Draw the heatmap
+        const data = [{
+            z: heatmapData,
+            type: 'heatmap',
+            colorscale: 'Hot',
+            showscale: true
+        }];
+        
+        const layout = {
+            title: 'Store Traffic Heatmap',
+            annotations: [],
+            xaxis: {
+                showticklabels: false,
+                ticks: ''
+            },
+            yaxis: {
+                showticklabels: false,
+                ticks: '',
+                autorange: 'reversed'
+            },
+            margin: { t: 50, l: 30, r: 30, b: 30 }
+        };
+        
+        // Add layout elements annotations
+        for (let i = 0; i < storeLayout.length; i++) {
+            for (let j = 0; j < storeLayout[0].length; j++) {
+                if (storeLayout[i][j] === 3) {
+                    layout.annotations.push({
+                        x: j,
+                        y: i,
+                        text: 'Entrance',
+                        showarrow: false,
+                        font: {
+                            color: 'white',
+                            size: 10
+                        }
+                    });
+                } else if (storeLayout[i][j] === 4) {
+                    layout.annotations.push({
+                        x: j,
+                        y: i,
+                        text: 'Checkout',
+                        showarrow: false,
+                        font: {
+                            color: 'white',
+                            size: 10
+                        }
+                    });
+                }
+            }
+        }
+        
+        Plotly.newPlot('heatmap-container', data, layout);
+    }
+    
+    function updateHeatmapView(viewType) {
+        // In a real app, this would fetch data from the backend
+        console.log(`Updating heatmap view to: ${viewType}`);
+        
+        // Simulate different data for different views
+        let multiplier = 1;
+        if (viewType === 'weekly') multiplier = 1.5;
+        if (viewType === 'daily') multiplier = 0.7;
+        
+        // Sample data update (simulated)
+        const updatedData = [];
+        for (let i = 0; i < 12; i++) {
+            const row = [];
+            for (let j = 0; j < 12; j++) {
+                // Generate some random variation
+                const baseValue = Math.floor(Math.random() * 40) + 10;
+                row.push(Math.floor(baseValue * multiplier));
+            }
+            updatedData.push(row);
+        }
+        
+        // Update the heatmap
+        Plotly.update('heatmap-container', {z: [updatedData]});
+    }
+    
+    function updateHeatmap() {
+        // Collect form values
+        const dateRange = document.getElementById('date-range').value;
+        const timeOfDay = document.getElementById('time-of-day').value;
+        const displayMetric = document.getElementById('display-metric').value;
+        
+        // In a real app, this would fetch data from the backend with these parameters
+        console.log(`Updating heatmap with: ${dateRange}, ${timeOfDay}, ${displayMetric}`);
+        
+        // For demo, just update with some random data
+        const updatedData = [];
+        for (let i = 0; i < 12; i++) {
+            const row = [];
+            for (let j = 0; j < 12; j++) {
+                row.push(Math.floor(Math.random() * 100));
+            }
+            updatedData.push(row);
+        }
+        
+        // Update the heatmap
+        Plotly.update('heatmap-container', {z: [updatedData]});
+        
+        // Update stats
+        document.getElementById('total-visitors').textContent = Math.floor(Math.random() * 5000 + 3000).toLocaleString();
+        
+        const hours = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'];
+        const randomHourIndex = Math.floor(Math.random() * (hours.length - 1));
+        document.getElementById('peak-hour').textContent = `${hours[randomHourIndex]} - ${hours[randomHourIndex + 1]}`;
+        
+        document.getElementById('avg-dwell-time').textContent = `${(Math.random() * 20 + 5).toFixed(1)} minutes`;
+        
+        const zones = ['Zone 1 (Entrance)', 'Zone 2 (Electronics)', 'Zone 3 (Clothing)', 'Zone 4 (Groceries)', 'Zone 5 (Home Goods)'];
+        document.getElementById('hottest-zone').textContent = zones[Math.floor(Math.random() * zones.length)];
+    }
+</script>
+{% endblock %} 

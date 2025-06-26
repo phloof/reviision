@@ -1,0 +1,87 @@
+{
+  "default_colormap": "jet",
+  "colormaps": {
+    "position": {
+      "name": "hot",
+      "description": "Red-yellow scale good for showing traffic density",
+      "intensity_scale": 0.8
+    },
+    "dwell": {
+      "name": "plasma",
+      "description": "Purple-orange scale ideal for dwell time visualization",
+      "intensity_scale": 0.75
+    },
+    "zone": {
+      "name": "viridis",
+      "description": "Blue-green-yellow scale for zone activity analysis",
+      "intensity_scale": 0.7
+    },
+    "comparison": {
+      "name": "coolwarm",
+      "description": "Blue-red diverging scale for comparing multiple metrics",
+      "intensity_scale": 0.85
+    }
+  },
+  "available_colormaps": [
+    {
+      "name": "jet",
+      "category": "sequential",
+      "description": "Classic blue-green-yellow-red colormap"
+    },
+    {
+      "name": "viridis",
+      "category": "perceptual",
+      "description": "Perceptually uniform blue-green-yellow colormap"
+    },
+    {
+      "name": "plasma", 
+      "category": "perceptual",
+      "description": "Perceptually uniform purple-orange colormap"
+    },
+    {
+      "name": "inferno",
+      "category": "perceptual",
+      "description": "Perceptually uniform black-red-yellow colormap"
+    },
+    {
+      "name": "magma",
+      "category": "perceptual",
+      "description": "Perceptually uniform black-purple-pink colormap"
+    },
+    {
+      "name": "cividis",
+      "category": "perceptual",
+      "description": "Color vision deficiency friendly blue-yellow colormap"
+    },
+    {
+      "name": "hot",
+      "category": "sequential",
+      "description": "Black-red-yellow-white heat colormap"
+    },
+    {
+      "name": "coolwarm",
+      "category": "diverging",
+      "description": "Blue-white-red diverging colormap"
+    },
+    {
+      "name": "RdBu",
+      "category": "diverging",
+      "description": "Red-white-blue diverging colormap"
+    },
+    {
+      "name": "YlGnBu",
+      "category": "sequential",
+      "description": "Yellow-green-blue colormap"
+    },
+    {
+      "name": "summer",
+      "category": "sequential",
+      "description": "Green-yellow colormap"
+    },
+    {
+      "name": "winter",
+      "category": "sequential",
+      "description": "Blue-green colormap"
+    }
+  ]
+} 

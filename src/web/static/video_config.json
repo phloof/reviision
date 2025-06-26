@@ -1,0 +1,8 @@
+{
+  "default": "asian-store",
+  "videos": {
+    "asian-store": "testData/asianstoremulti.mp4",
+    "trolley-multi": "testData/manpushtrolleymulti.mp4",
+    "trolley-single": "testData/manpushtrolley.mp4"
+  }
+}
