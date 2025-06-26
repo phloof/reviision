@@ -160,7 +160,6 @@ temp_frame.jpg
 
 # Data files
 data/
-reviision.db
 *.csv
 *.json.bak
 

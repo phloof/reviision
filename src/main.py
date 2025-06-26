@@ -63,6 +63,7 @@ def setup_credentials(config_manager):
     Returns:
         bool: True if credentials were set up successfully
     """
+    logger = logging.getLogger(__name__)
     try:
         import getpass
         logger.info("=== RTSP Camera Credential Setup ===")
@@ -123,6 +124,7 @@ def setup_credentials(config_manager):
 
 def download_model_if_needed(model_path):
     """Download YOLOv8 model if it doesn't exist"""
+    logger = logging.getLogger(__name__)
     if not os.path.exists(model_path):
         logger.info("YOLOv8 model not found, downloading...")
         os.makedirs(os.path.dirname(model_path), exist_ok=True)
@@ -192,7 +194,9 @@ def main():
         download_model_if_needed(str(model_path))
         
         # Initialize detection and tracking
-        detector = PersonDetector(config['detection'])
+        detection_config = config['detection'].copy()
+        detection_config['model_path'] = str(model_path)  # Set absolute path for model
+        detector = PersonDetector(detection_config)
         tracker = PersonTracker(config['tracking'])
         
         # Initialize analysis modules
