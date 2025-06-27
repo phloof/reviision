@@ -5,6 +5,7 @@ SQLite Database implementation for Retail Analytics System
 import os
 import sqlite3
 import logging
+import threading
 from pathlib import Path
 from datetime import datetime
 
@@ -29,14 +30,37 @@ class SQLiteDatabase:
         self.db_path = config.get('path', ':memory:')
         self.conn = None
         self.cursor = None
+        self._local = threading.local()
+        self._lock = threading.Lock()
         
         # Initialize database
         self._init_db()
         
+    def _get_connection(self):
+        """Get a thread-safe database connection"""
+        if not hasattr(self._local, 'conn') or self._local.conn is None:
+            self._local.conn = sqlite3.connect(
+                self.db_path,
+                check_same_thread=False,
+                timeout=20.0
+            )
+            self._local.conn.row_factory = sqlite3.Row
+            # Enable WAL mode for better concurrency
+            self._local.conn.execute('PRAGMA journal_mode=WAL')
+            self._local.conn.execute('PRAGMA synchronous=NORMAL')
+            self._local.conn.execute('PRAGMA cache_size=10000')
+            self._local.conn.execute('PRAGMA temp_store=memory')
+        return self._local.conn
+    
     def _init_db(self):
         """Initialize database tables"""
         try:
-            self.conn = sqlite3.connect(self.db_path)
+            # Use the main connection for initialization
+            self.conn = sqlite3.connect(
+                self.db_path,
+                check_same_thread=False,
+                timeout=20.0
+            )
             self.cursor = self.conn.cursor()
             
             # Create tables
@@ -433,8 +457,10 @@ class SQLiteDatabase:
     def get_user_by_username(self, username):
         """Get user by username"""
         try:
-            self.cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
-            return self.cursor.fetchone()
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+            return cursor.fetchone()
         except Exception as e:
             logger.error(f"Error getting user by username: {e}")
             return None
@@ -460,7 +486,9 @@ class SQLiteDatabase:
     def update_user_login(self, user_id, session_token=None, session_expires_at=None):
         """Update user's last login time and session info"""
         try:
-            self.cursor.execute('''
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
                 UPDATE users 
                 SET last_login = CURRENT_TIMESTAMP, 
                     failed_login_attempts = 0,
@@ -469,7 +497,7 @@ class SQLiteDatabase:
                     session_expires_at = ?
                 WHERE id = ?
             ''', (session_token, session_expires_at, user_id))
-            self.conn.commit()
+            conn.commit()
             return True
         except Exception as e:
             logger.error(f"Error updating user login: {e}")
@@ -478,13 +506,15 @@ class SQLiteDatabase:
     def update_failed_login_attempts(self, username, lock_until=None):
         """Increment failed login attempts and optionally lock account"""
         try:
-            self.cursor.execute('''
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
                 UPDATE users 
                 SET failed_login_attempts = failed_login_attempts + 1,
                     locked_until = ?
                 WHERE username = ?
             ''', (lock_until, username))
-            self.conn.commit()
+            conn.commit()
             return True
         except Exception as e:
             logger.error(f"Error updating failed login attempts: {e}")
@@ -493,11 +523,13 @@ class SQLiteDatabase:
     def log_login_attempt(self, username, ip_address, user_agent, success, failure_reason=None):
         """Log a login attempt"""
         try:
-            self.cursor.execute('''
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
                 INSERT INTO login_attempts (username, ip_address, user_agent, success, failure_reason)
                 VALUES (?, ?, ?, ?, ?)
             ''', (username, ip_address, user_agent, success, failure_reason))
-            self.conn.commit()
+            conn.commit()
             return True
         except Exception as e:
             logger.error(f"Error logging login attempt: {e}")
@@ -506,11 +538,13 @@ class SQLiteDatabase:
     def create_user_session(self, user_id, session_token, ip_address, user_agent, expires_at):
         """Create a new user session"""
         try:
-            self.cursor.execute('''
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
                 INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent, expires_at)
                 VALUES (?, ?, ?, ?, ?)
             ''', (user_id, session_token, ip_address, user_agent, expires_at))
-            self.conn.commit()
+            conn.commit()
             return True
         except Exception as e:
             logger.error(f"Error creating user session: {e}")
@@ -519,13 +553,15 @@ class SQLiteDatabase:
     def get_session(self, session_token):
         """Get session by token"""
         try:
-            self.cursor.execute('''
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
                 SELECT s.*, u.username, u.role, u.is_active 
                 FROM user_sessions s 
                 JOIN users u ON s.user_id = u.id 
                 WHERE s.session_token = ? AND s.is_active = 1 AND s.expires_at > CURRENT_TIMESTAMP
             ''', (session_token,))
-            return self.cursor.fetchone()
+            return cursor.fetchone()
         except Exception as e:
             logger.error(f"Error getting session: {e}")
             return None

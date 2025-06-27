@@ -3,148 +3,354 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}ReViision{% endblock %}</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="description" content="ReViision - Advanced Retail Vision Analytics and Customer Insights">
+    <meta name="keywords" content="retail analytics, computer vision, customer tracking, demographics, heatmap">
+    <meta name="author" content="ReViision">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" as="style">
+    <link rel="preload" href="{{ url_for('static', filename='css/styles.css') }}" as="style">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style">
+    
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="//code.jquery.com">
+    <link rel="dns-prefetch" href="//cdn.plot.ly">
+    
+    <title>{% block title %}ReViision - Retail Vision Analytics{% endblock %}</title>
+    
+    <!-- Critical CSS (Bootstrap) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUa1B1GeCkxGj8g3iU7ZvYJFAOqr9nZzE+qVEf/qVVd5Bh8FiZglgPRGxOKX" crossorigin="anonymous">
+    
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    
     <!-- Custom CSS -->
-    <style>
-        :root {
-            --sidebar-width: 250px;
-            --primary-color: #0d6efd;
-            --secondary-color: #f8f9fa;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f7fb;
-        }
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: var(--sidebar-width);
-            height: 100vh;
-            background-color: #fff;
-            border-right: 1px solid #e0e0e0;
-            padding-top: 1rem;
-            z-index: 1000;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .sidebar-header {
-            padding: 1rem;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        .sidebar-menu {
-            list-style: none;
-            padding: 0;
-            margin: 1rem 0;
-        }
-        .sidebar-menu li {
-            padding: 0.5rem 1rem;
-        }
-        .sidebar-menu li.active {
-            background-color: var(--secondary-color);
-            border-left: 4px solid var(--primary-color);
-        }
-        .sidebar-menu li a {
-            color: #333;
-            text-decoration: none;
-            display: block;
-        }
-        .sidebar-menu li a i {
-            margin-right: 0.5rem;
-            width: 20px;
-            text-align: center;
-        }
-        .main-content {
-            margin-left: var(--sidebar-width);
-            padding: 1rem;
-        }
-        .header {
-            margin-bottom: 2rem;
-        }
-        .card {
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
-            border: none;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-        }
-        .card-header {
-            background-color: #fff;
-            border-bottom: 1px solid #e0e0e0;
-            padding: 1rem;
-            font-weight: 600;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    
+    <!-- Block for additional page-specific styles -->
     {% block styles %}{% endblock %}
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    
+    <!-- Theme color for mobile browsers -->
+    <meta name="theme-color" content="#2c3e50">
+    
+    <!-- Open Graph meta tags for social sharing -->
+    <meta property="og:title" content="{% block og_title %}ReViision - Retail Vision Analytics{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Advanced retail analytics platform using computer vision for customer insights{% endblock %}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.url }}">
+    
+    <!-- Performance optimization -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
 </head>
-<body>
-    <!-- Sidebar -->
-    <div class="sidebar">
+<body class="main-layout">
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="visually-hidden-focusable">Skip to main content</a>
+    
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
         <div class="sidebar-header">
-            <h4 class="m-0">ReViision</h4>
+            <div class="logo">
+                <h1><i class="fas fa-eye me-2" aria-hidden="true"></i>ReViision</h1>
+            </div>
         </div>
-        <ul class="sidebar-menu">
-            <li {% if request.path == '/' %}class="active"{% endif %}>
-                <a href="{{ url_for('web.index') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        
+        <!-- Navigation Menu -->
+        <ul class="nav-links" role="menubar">
+            <li role="none">
+                <a href="{{ url_for('web.index') }}" 
+                   class="nav-link {% if request.endpoint == 'web.index' %}active{% endif %}" 
+                   role="menuitem"
+                   aria-current="{% if request.endpoint == 'web.index' %}page{% endif %}">
+                    <i class="fas fa-tachometer-alt" aria-hidden="true"></i>
+                    <span>Dashboard</span>
+                </a>
             </li>
-            <li {% if request.path == '/heatmap' %}class="active"{% endif %}>
-                <a href="{{ url_for('web.heatmap') }}"><i class="fas fa-fire"></i> Heatmap</a>
+            <li role="none">
+                <a href="{{ url_for('web.heatmap') }}" 
+                   class="nav-link {% if request.endpoint == 'web.heatmap' %}active{% endif %}"
+                   role="menuitem"
+                   aria-current="{% if request.endpoint == 'web.heatmap' %}page{% endif %}">
+                    <i class="fas fa-fire" aria-hidden="true"></i>
+                    <span>Heatmap</span>
+                </a>
             </li>
-            <li {% if request.path == '/analysis' %}class="active"{% endif %}>
-                <a href="{{ url_for('web.analysis') }}"><i class="fas fa-video"></i> Camera Analysis</a>
+            <li role="none">
+                <a href="{{ url_for('web.analysis') }}" 
+                   class="nav-link {% if request.endpoint == 'web.analysis' %}active{% endif %}"
+                   role="menuitem"
+                   aria-current="{% if request.endpoint == 'web.analysis' %}page{% endif %}">
+                    <i class="fas fa-video" aria-hidden="true"></i>
+                    <span>Camera Analysis</span>
+                </a>
             </li>
-            <li class="nav-item {% if request.path == '/demographics' %}active{% endif %}">
-                <a class="nav-link" href="{{ url_for('web.demographics') }}">
-                    <i class="fas fa-users"></i>
+            <li role="none">
+                <a href="{{ url_for('web.demographics') }}" 
+                   class="nav-link {% if request.endpoint == 'web.demographics' %}active{% endif %}"
+                   role="menuitem"
+                   aria-current="{% if request.endpoint == 'web.demographics' %}page{% endif %}">
+                    <i class="fas fa-users" aria-hidden="true"></i>
                     <span>Demographics</span>
                 </a>
             </li>
-            <li class="nav-item {% if request.path == '/historical' %}active{% endif %}">
-                <a class="nav-link" href="{{ url_for('web.historical') }}">
-                    <i class="fas fa-chart-line"></i>
+            <li role="none">
+                <a href="{{ url_for('web.historical') }}" 
+                   class="nav-link {% if request.endpoint == 'web.historical' %}active{% endif %}"
+                   role="menuitem"
+                   aria-current="{% if request.endpoint == 'web.historical' %}page{% endif %}">
+                    <i class="fas fa-chart-line" aria-hidden="true"></i>
                     <span>Historical Data</span>
                 </a>
             </li>
-            <li class="nav-item {% if request.path == '/settings' %}active{% endif %}">
-                <a class="nav-link" href="{{ url_for('web.settings') }}">
-                    <i class="fas fa-cog"></i>
+            <li role="none">
+                <a href="{{ url_for('web.settings') }}" 
+                   class="nav-link {% if request.endpoint == 'web.settings' %}active{% endif %}"
+                   role="menuitem"
+                   aria-current="{% if request.endpoint == 'web.settings' %}page{% endif %}">
+                    <i class="fas fa-cog" aria-hidden="true"></i>
                     <span>Settings</span>
                 </a>
             </li>
-            <li class="nav-item {% if request.path == '/user-settings' %}active{% endif %}">
-                <a class="nav-link" href="{{ url_for('web.user_settings') }}">
-                    <i class="fas fa-user-cog"></i>
+            <li role="none">
+                <a href="{{ url_for('web.user_settings') }}" 
+                   class="nav-link {% if request.endpoint == 'web.user_settings' %}active{% endif %}"
+                   role="menuitem"
+                   aria-current="{% if request.endpoint == 'web.user_settings' %}page{% endif %}">
+                    <i class="fas fa-user-cog" aria-hidden="true"></i>
                     <span>User Settings</span>
                 </a>
             </li>
         </ul>
-    </div>
-
-    <!-- Main Content -->
-    <div class="main-content">
-        <!-- Header -->
-        <div class="header">
-            <h2>{% block header %}Dashboard{% endblock %}</h2>
+        
+        <!-- System Status -->
+        <div class="system-status" role="status" aria-live="polite">
+            <div class="status-indicator">
+                <i class="fas fa-circle status-running" aria-hidden="true"></i>
+                <span>System Online</span>
+            </div>
         </div>
+    </nav>
 
-        <!-- Content -->
-        <div class="content">
+    <!-- Main Content Area -->
+    <main class="content" id="main-content" role="main">
+        <!-- Page Header -->
+        <header class="page-header">
+            <div class="header-content">
+                <div class="page-title">
+                    <h1>{% block header %}Dashboard{% endblock %}</h1>
+                    {% block breadcrumb %}{% endblock %}
+                </div>
+                
+                <!-- Mobile menu toggle -->
+                <button class="btn btn-outline-secondary d-lg-none" 
+                        type="button" 
+                        data-bs-toggle="offcanvas" 
+                        data-bs-target="#sidebar" 
+                        aria-controls="sidebar"
+                        aria-label="Toggle navigation menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <!-- User menu or other header actions -->
+                <div class="header-actions">
+                    {% block header_actions %}
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle" 
+                                type="button" 
+                                data-bs-toggle="dropdown" 
+                                aria-expanded="false"
+                                aria-label="User menu">
+                            <i class="fas fa-user"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('web.user_settings') }}">
+                                <i class="fas fa-user-cog me-2"></i>Settings
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('web.logout') }}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </a></li>
+                        </ul>
+                    </div>
+                    {% endblock %}
+                </div>
+            </div>
+        </header>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="container-fluid mt-3">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            <i class="fas fa-{% if category == 'error' %}exclamation-triangle{% elif category == 'success' %}check-circle{% elif category == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Page Content -->
+        <div class="container-fluid p-4">
             {% block content %}
+            <!-- Default content -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h2>Welcome to ReViision</h2>
+                            <p class="text-muted">Advanced Retail Vision Analytics Platform</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
             {% endblock %}
         </div>
+    </main>
+
+    <!-- Loading indicator for page transitions -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner-large">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
     </div>
 
-    <!-- Bootstrap JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
-    <!-- Plotly.js -->
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <!-- Scripts loaded at end for performance -->
+    <!-- Preload critical scripts -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" as="script">
+    <link rel="preload" href="https://code.jquery.com/jquery-3.6.0.min.js" as="script">
     
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" 
+            integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" 
+            crossorigin="anonymous" defer></script>
+    
+    <!-- jQuery (loaded conditionally) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" 
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" 
+            crossorigin="anonymous" defer></script>
+    
+    <!-- Chart.js (loaded only when needed) -->
+    {% block chart_js %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js" defer></script>
+    {% endblock %}
+    
+    <!-- Plotly.js (loaded only when needed) -->
+    {% block plotly_js %}
+    <script src="https://cdn.plot.ly/plotly-latest.min.js" defer></script>
+    {% endblock %}
+    
+    <!-- Common JavaScript functionality -->
+    <script defer>
+        // Performance monitoring
+        window.addEventListener('load', function() {
+            // Log performance metrics
+            const perfData = performance.getEntriesByType('navigation')[0];
+            console.log('Page load time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
+        });
+        
+        // Enhanced accessibility features
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add focus management for modals
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                modal.addEventListener('shown.bs.modal', function() {
+                    const firstInput = modal.querySelector('input, button, select, textarea');
+                    if (firstInput) firstInput.focus();
+                });
+            });
+            
+            // Keyboard navigation enhancements
+            document.addEventListener('keydown', function(e) {
+                // ESC key closes modals and dropdowns
+                if (e.key === 'Escape') {
+                    const openModal = document.querySelector('.modal.show');
+                    if (openModal) {
+                        bootstrap.Modal.getInstance(openModal).hide();
+                    }
+                }
+            });
+            
+            // Auto-hide alerts after 5 seconds
+            const alerts = document.querySelectorAll('.alert:not(.alert-important)');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        bootstrap.Alert.getInstance(alert)?.close();
+                    }
+                }, 5000);
+            });
+        });
+        
+        // Sidebar toggle functionality for mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('show');
+        }
+        
+        // Loading state management
+        function showLoading() {
+            document.getElementById('loading-overlay').style.display = 'flex';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+        
+        // AJAX form submission helper
+        function submitForm(form, successCallback, errorCallback) {
+            const formData = new FormData(form);
+            showLoading();
+            
+            fetch(form.action, {
+                method: form.method,
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    successCallback(data);
+                } else {
+                    errorCallback(data);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                errorCallback({message: 'Network error occurred'});
+            });
+        }
+    </script>
+    
+    <!-- Page-specific scripts -->
     {% block scripts %}{% endblock %}
+    
+    <!-- Service Worker for caching (optional) -->
+    {% if config.get('ENABLE_SERVICE_WORKER', False) %}
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('SW registered: ', registration);
+                    }, function(registrationError) {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+    {% endif %}
 </body>
 </html> 

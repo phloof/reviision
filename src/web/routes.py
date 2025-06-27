@@ -8,7 +8,7 @@ Provides web interface and API endpoints for retail analytics including:
 - Settings and configuration management
 """
 
-from flask import Blueprint, render_template, request, jsonify, current_app, Response
+from flask import Blueprint, render_template, request, jsonify, current_app, Response, redirect, url_for
 import logging
 from datetime import datetime
 import json
@@ -183,6 +183,27 @@ def api_password_requirements():
 def access_denied():
     """Render access denied page"""
     return render_template('access_denied.html'), 403
+
+@web_bp.route('/logout')
+def logout():
+    """Handle user logout and redirect to login page"""
+    try:
+        session_token = request.cookies.get('session_token')
+        if session_token:
+            auth_service = current_app.auth_service
+            auth_service.logout_user(session_token)
+        
+        # Create response and clear the session cookie
+        response = redirect(url_for('web.login_page'))
+        response.set_cookie('session_token', '', expires=0)
+        return response
+        
+    except Exception as e:
+        logger.error(f"Logout error: {e}")
+        # Even if there's an error, redirect to login and clear cookie
+        response = redirect(url_for('web.login_page'))
+        response.set_cookie('session_token', '', expires=0)
+        return response
 
 @web_bp.route('/api/auth/change-password', methods=['POST'])
 @require_auth()

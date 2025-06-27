@@ -3,121 +3,221 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ReViision - Access Denied</title>
+    <meta name="description" content="Access denied - You don't have permission to access this resource">
+    <meta name="robots" content="noindex, nofollow">
+    
+    <title>Access Denied - ReViision</title>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" as="style">
+    <link rel="preload" href="{{ url_for('static', filename='css/styles.css') }}" as="style">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style">
+    
+    <!-- DNS prefetch -->
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    
+    <!-- Critical CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUa1B1GeCkxGj8g3iU7ZvYJFAOqr9nZzE+qVEf/qVVd5Bh8FiZglgPRGxOKX" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    <style>
-        .error-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 2rem 1rem;
-        }
-        
-        .error-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 3rem;
-            width: 100%;
-            max-width: 500px;
-            text-align: center;
-            animation: slideIn 0.5s ease-out;
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .error-icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            color: #dc3545;
-        }
-        
-        .error-title {
-            color: #333;
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            font-weight: 600;
-        }
-        
-        .error-message {
-            color: #666;
-            font-size: 1.1rem;
-            margin-bottom: 2rem;
-            line-height: 1.6;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            padding: 1rem 2rem;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            margin: 0.5rem;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-            text-decoration: none;
-            color: white;
-        }
-        
-        .btn-secondary {
-            background: transparent;
-            color: #667eea;
-            border: 2px solid #667eea;
-            border-radius: 10px;
-            padding: 1rem 2rem;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            margin: 0.5rem;
-        }
-        
-        .btn-secondary:hover {
-            background: #667eea;
-            color: white;
-            text-decoration: none;
-        }
-    </style>
+    
+    <!-- Theme and favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <meta name="theme-color" content="#dc3545">
 </head>
 <body>
-    <div class="error-container">
-        <div class="error-card">
-            <div class="error-icon">🚫</div>
-            <h1 class="error-title">Access Denied</h1>
-            <p class="error-message">
-                You don't have sufficient permissions to access this resource. 
-                Please contact your administrator if you believe this is an error.
-            </p>
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="visually-hidden-focusable">Skip to main content</a>
+    
+    <main class="error-wrapper" id="main-content" role="main">
+        <div class="error-container">
+            <header class="error-header">
+                <div class="error-icon" aria-hidden="true">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h1>Access Denied</h1>
+                <p>You don't have permission to access this resource</p>
+            </header>
             
-            <div>
-                <a href="/" class="btn-primary">Go to Dashboard</a>
-                <button onclick="history.back()" class="btn-secondary">Go Back</button>
+            <div class="error-body">
+                <div class="error-description">
+                    <p><strong>Sorry, but you don't have the necessary permissions to view this page.</strong></p>
+                    <p>This could be because:</p>
+                    <ul class="text-start mt-3">
+                        <li>You're not logged in to your account</li>
+                        <li>Your account doesn't have the required privileges</li>
+                        <li>Your session may have expired</li>
+                        <li>The resource you're trying to access is restricted</li>
+                    </ul>
+                </div>
+                
+                <div class="d-flex flex-wrap justify-content-center gap-2">
+                    <a href="{{ url_for('web.login_page') }}" 
+                       class="btn btn-primary"
+                       aria-label="Sign in to your account">
+                        <i class="fas fa-sign-in-alt me-2" aria-hidden="true"></i>Sign In
+                    </a>
+                    <button onclick="goBack()" 
+                            class="btn btn-outline-secondary"
+                            aria-label="Go back to previous page">
+                        <i class="fas fa-arrow-left me-2" aria-hidden="true"></i>Go Back
+                    </button>
+                </div>
             </div>
+            
+            <footer class="error-footer">
+                <p class="mb-0">
+                    Need help? <a href="mailto:support@reviision.com" aria-label="Contact support via email">Contact Support</a> or 
+                    <a href="{{ url_for('web.index') }}" aria-label="Return to main dashboard">Return to Dashboard</a>
+                </p>
+            </footer>
         </div>
-    </div>
+    </main>
+
+    <!-- Scripts -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" as="script">
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" 
+            integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" 
+            crossorigin="anonymous" defer></script>
+    
+    <script defer>
+        // Performance monitoring
+        window.addEventListener('load', function() {
+            const perfData = performance.getEntriesByType('navigation')[0];
+            console.log('Access denied page load time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
+        });
+        
+        // Enhanced back button functionality
+        function goBack() {
+            try {
+                // Check if there's history to go back to
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    // Fallback to home page if no history
+                    window.location.href = '{{ url_for("web.index") }}';
+                }
+            } catch (error) {
+                // Fallback in case of any issues
+                window.location.href = '{{ url_for("web.index") }}';
+            }
+        }
+        
+        // Page functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Focus on the primary action button for accessibility
+            const primaryBtn = document.querySelector('.btn-primary');
+            if (primaryBtn) {
+                primaryBtn.focus();
+            }
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                switch(e.key) {
+                    case 'Escape':
+                        // ESC key goes back
+                        goBack();
+                        break;
+                    case 'Enter':
+                        // Enter on focused button
+                        if (document.activeElement && document.activeElement.tagName === 'BUTTON') {
+                            document.activeElement.click();
+                        }
+                        break;
+                    case 'h':
+                        // H key goes to home
+                        if (e.ctrlKey || e.metaKey) {
+                            e.preventDefault();
+                            window.location.href = '{{ url_for("web.index") }}';
+                        }
+                        break;
+                    case 'l':
+                        // L key goes to login
+                        if (e.ctrlKey || e.metaKey) {
+                            e.preventDefault();
+                            window.location.href = '{{ url_for("web.login_page") }}';
+                        }
+                        break;
+                }
+            });
+            
+            // Auto-redirect option (disabled by default)
+            const enableAutoRedirect = false;
+            if (enableAutoRedirect) {
+                let countdown = 10;
+                const redirectMsg = document.createElement('div');
+                redirectMsg.className = 'alert alert-info mt-3';
+                redirectMsg.innerHTML = `
+                    <i class="fas fa-info-circle me-2" aria-hidden="true"></i>
+                    Redirecting to login page in <span id="countdown">${countdown}</span> seconds...
+                    <button type="button" class="btn btn-sm btn-outline-info ms-2" onclick="cancelRedirect()">Cancel</button>
+                `;
+                
+                document.querySelector('.error-body').appendChild(redirectMsg);
+                
+                window.redirectTimer = setInterval(function() {
+                    countdown--;
+                    document.getElementById('countdown').textContent = countdown;
+                    
+                    if (countdown <= 0) {
+                        clearInterval(window.redirectTimer);
+                        window.location.href = '{{ url_for("web.login_page") }}';
+                    }
+                }, 1000);
+            }
+        });
+        
+        // Cancel auto-redirect function
+        function cancelRedirect() {
+            if (window.redirectTimer) {
+                clearInterval(window.redirectTimer);
+                const redirectMsg = document.querySelector('.alert-info');
+                if (redirectMsg) {
+                    redirectMsg.remove();
+                }
+            }
+        }
+        
+        // Accessibility enhancements
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList') {
+                    // Ensure new content is accessible
+                    const newElements = mutation.addedNodes;
+                    newElements.forEach(function(node) {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            // Add appropriate ARIA labels if missing
+                            const buttons = node.querySelectorAll('button:not([aria-label])');
+                            buttons.forEach(button => {
+                                if (button.textContent) {
+                                    button.setAttribute('aria-label', button.textContent.trim());
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        
+        // Error reporting (optional)
+        window.addEventListener('error', function(e) {
+            console.error('JavaScript error on access denied page:', e.error);
+        });
+        
+        // Page visibility handling
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                // Page became visible again - could refresh status
+                console.log('Access denied page became visible');
+            }
+        });
+    </script>
 </body>
 </html> 
