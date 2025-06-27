@@ -187,18 +187,18 @@ class AuthService:
             
             if not user:
                 failure_reason = "User not found"
-            elif not user[6]:  # is_active column
+            elif not user["is_active"]:
                 failure_reason = "Account disabled"
-            elif user[11] and datetime.fromisoformat(user[11]) > datetime.now():  # locked_until
+            elif user["locked_until"] and datetime.fromisoformat(user["locked_until"]) > datetime.now():
                 failure_reason = "Account locked"
-            elif (user[10] or 0) >= self.max_login_attempts:  # failed_login_attempts
+            elif (user["failed_login_attempts"] or 0) >= self.max_login_attempts:
                 # Lock account
                 lock_until = datetime.now() + self.lockout_duration
                 self.db.update_failed_login_attempts(username, lock_until)
                 failure_reason = "Too many failed attempts - account locked"
             else:
                 # Verify password
-                password_result = self.verify_password(password, user[3])  # password_hash column
+                password_result = self.verify_password(password, user["password_hash"])
                 
                 if password_result == True or password_result == "rehash":
                     success = True
@@ -221,10 +221,10 @@ class AuthService:
                 session_expires = datetime.now() + self.session_timeout
                 
                 # Update user login info
-                self.db.update_user_login(user[0], session_token, session_expires)
+                self.db.update_user_login(user["id"], session_token, session_expires)
                 
                 # Create session record
-                self.db.create_user_session(user[0], session_token, ip_address, user_agent, session_expires)
+                self.db.create_user_session(user["id"], session_token, ip_address, user_agent, session_expires)
                 
                 logger.info(f"Successful login: {username} from {ip_address}")
                 
@@ -233,11 +233,11 @@ class AuthService:
                     "message": "Login successful",
                     "session_token": session_token,
                     "user": {
-                        "id": user[0],
-                        "username": user[1],
-                        "email": user[2],
-                        "full_name": user[4],
-                        "role": user[5]
+                        "id": user["id"],
+                        "username": user["username"],
+                        "email": user["email"],
+                        "full_name": user["full_name"],
+                        "role": user["role"]
                     }
                 }
             else:
@@ -266,10 +266,10 @@ class AuthService:
             session = self.db.get_session(session_token)
             if session:
                 return {
-                    "user_id": session[1],
-                    "username": session[10],
-                    "role": session[11],
-                    "is_active": session[12]
+                    "user_id": session["user_id"],
+                    "username": session["username"],
+                    "role": session["role"],
+                    "is_active": session["is_active"]
                 }
             return None
         except Exception as e:
@@ -337,7 +337,7 @@ class AuthService:
                 return {"success": False, "message": "User not found"}
             
             # Verify current password
-            if not self.verify_password(current_password, user[3]):
+            if not self.verify_password(current_password, user["password_hash"]):
                 return {"success": False, "message": "Current password is incorrect"}
             
             # Validate new password
@@ -377,7 +377,7 @@ class AuthService:
                 if user:
                     # Check if still using default password "admin"
                     try:
-                        self.ph.verify(user[3], "admin")  # user[3] is password_hash
+                        self.ph.verify(user["password_hash"], "admin")
                         return True
                     except:
                         return False
