@@ -1260,7 +1260,7 @@
                 }
             }
             
-            console.log('Camera options loaded:', options);
+                            if (window.DEBUG_MODE) console.log('Camera options loaded:', options);
         } catch (error) {
             console.error('Error loading camera options:', error);
             showAlert('error', 'Failed to load camera options');
@@ -1619,7 +1619,7 @@
                 const response = await fetch('/get_colormap_config');
                 if (response.ok) {
                     const config = await response.json();
-                    console.log('Colormap config loaded:', config);
+                    if (window.DEBUG_MODE) console.log('Colormap config loaded:', config);
                 }
             } catch (error) {
                 console.error('Error loading colormap config:', error);

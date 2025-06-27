@@ -36,7 +36,6 @@ class SQLiteDatabase:
     def _init_db(self):
         """Initialize database tables"""
         try:
-            # Connect to database
             self.conn = sqlite3.connect(self.db_path)
             self.cursor = self.conn.cursor()
             
@@ -89,12 +88,94 @@ class SQLiteDatabase:
                 )
             ''')
             
+            self.cursor.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    full_name TEXT,
+                    role TEXT DEFAULT 'viewer',
+                    is_active BOOLEAN DEFAULT 1,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    last_login DATETIME,
+                    failed_login_attempts INTEGER DEFAULT 0,
+                    locked_until DATETIME,
+                    password_changed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    session_token TEXT,
+                    session_expires_at DATETIME
+                )
+            ''')
+            
+            self.cursor.execute('''
+                CREATE TABLE IF NOT EXISTS login_attempts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT,
+                    ip_address TEXT,
+                    user_agent TEXT,
+                    success BOOLEAN,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    failure_reason TEXT
+                )
+            ''')
+            
+            self.cursor.execute('''
+                CREATE TABLE IF NOT EXISTS user_sessions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    session_token TEXT UNIQUE NOT NULL,
+                    ip_address TEXT,
+                    user_agent TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    expires_at DATETIME NOT NULL,
+                    is_active BOOLEAN DEFAULT 1,
+                    FOREIGN KEY (user_id) REFERENCES users (id)
+                )
+            ''')
+            
+            # Create performance indexes
+            indexes = [
+                'CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)',
+                'CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)',
+                'CREATE INDEX IF NOT EXISTS idx_users_session_token ON users(session_token)',
+                'CREATE INDEX IF NOT EXISTS idx_login_attempts_username ON login_attempts(username)',
+                'CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip_address)',
+                'CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token)',
+                'CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)'
+            ]
+            for index_sql in indexes:
+                self.cursor.execute(index_sql)
+            
             self.conn.commit()
             logger.info(f"SQLite database initialized at {self.db_path}")
             
         except Exception as e:
             logger.error(f"Error initializing SQLite database: {e}")
             raise
+    
+    def update_user_password(self, user_id, new_password_hash):
+        """
+        Update user's password hash and timestamp
+        
+        Args:
+            user_id (int): User ID to update
+            new_password_hash (str): New hashed password
+            
+        Returns:
+            bool: True if update successful, False otherwise
+        """
+        try:
+            self.cursor.execute('''
+                UPDATE users 
+                SET password_hash = ?, password_changed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            ''', (new_password_hash, user_id))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Error updating user password: {e}")
+            return False
     
     def store_detection(self, person_id, bbox, confidence, timestamp=None):
         """
@@ -313,8 +394,162 @@ class SQLiteDatabase:
     
     def close(self):
         """Close database connection"""
-        if self.conn:
-            self.conn.close()
-            self.conn = None
-            self.cursor = None
-            logger.info("Database connection closed") 
+        try:
+            if self.conn:
+                self.conn.close()
+                logger.info("SQLite database connection closed")
+        except Exception as e:
+            logger.error(f"Error closing SQLite database: {e}")
+    
+    # User authentication methods
+    def create_user(self, username, email, password_hash, full_name=None, role='viewer'):
+        """
+        Create a new user
+        
+        Args:
+            username (str): Unique username
+            email (str): User email
+            password_hash (str): Argon2 hashed password
+            full_name (str): User's full name
+            role (str): User role (admin, manager, viewer)
+            
+        Returns:
+            int: User ID if successful, None otherwise
+        """
+        try:
+            self.cursor.execute('''
+                INSERT INTO users (username, email, password_hash, full_name, role)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (username, email, password_hash, full_name, role))
+            self.conn.commit()
+            return self.cursor.lastrowid
+        except sqlite3.IntegrityError as e:
+            logger.error(f"User creation failed - duplicate username/email: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Error creating user: {e}")
+            return None
+    
+    def get_user_by_username(self, username):
+        """Get user by username"""
+        try:
+            self.cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+            return self.cursor.fetchone()
+        except Exception as e:
+            logger.error(f"Error getting user by username: {e}")
+            return None
+    
+    def get_user_by_email(self, email):
+        """Get user by email"""
+        try:
+            self.cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
+            return self.cursor.fetchone()
+        except Exception as e:
+            logger.error(f"Error getting user by email: {e}")
+            return None
+    
+    def get_user_by_id(self, user_id):
+        """Get user by ID"""
+        try:
+            self.cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))
+            return self.cursor.fetchone()
+        except Exception as e:
+            logger.error(f"Error getting user by ID: {e}")
+            return None
+    
+    def update_user_login(self, user_id, session_token=None, session_expires_at=None):
+        """Update user's last login time and session info"""
+        try:
+            self.cursor.execute('''
+                UPDATE users 
+                SET last_login = CURRENT_TIMESTAMP, 
+                    failed_login_attempts = 0,
+                    locked_until = NULL,
+                    session_token = ?,
+                    session_expires_at = ?
+                WHERE id = ?
+            ''', (session_token, session_expires_at, user_id))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Error updating user login: {e}")
+            return False
+    
+    def update_failed_login_attempts(self, username, lock_until=None):
+        """Increment failed login attempts and optionally lock account"""
+        try:
+            self.cursor.execute('''
+                UPDATE users 
+                SET failed_login_attempts = failed_login_attempts + 1,
+                    locked_until = ?
+                WHERE username = ?
+            ''', (lock_until, username))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Error updating failed login attempts: {e}")
+            return False
+    
+    def log_login_attempt(self, username, ip_address, user_agent, success, failure_reason=None):
+        """Log a login attempt"""
+        try:
+            self.cursor.execute('''
+                INSERT INTO login_attempts (username, ip_address, user_agent, success, failure_reason)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (username, ip_address, user_agent, success, failure_reason))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Error logging login attempt: {e}")
+            return False
+    
+    def create_user_session(self, user_id, session_token, ip_address, user_agent, expires_at):
+        """Create a new user session"""
+        try:
+            self.cursor.execute('''
+                INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent, expires_at)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (user_id, session_token, ip_address, user_agent, expires_at))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Error creating user session: {e}")
+            return False
+    
+    def get_session(self, session_token):
+        """Get session by token"""
+        try:
+            self.cursor.execute('''
+                SELECT s.*, u.username, u.role, u.is_active 
+                FROM user_sessions s 
+                JOIN users u ON s.user_id = u.id 
+                WHERE s.session_token = ? AND s.is_active = 1 AND s.expires_at > CURRENT_TIMESTAMP
+            ''', (session_token,))
+            return self.cursor.fetchone()
+        except Exception as e:
+            logger.error(f"Error getting session: {e}")
+            return None
+    
+    def invalidate_session(self, session_token):
+        """Invalidate a session"""
+        try:
+            self.cursor.execute('''
+                UPDATE user_sessions SET is_active = 0 WHERE session_token = ?
+            ''', (session_token,))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Error invalidating session: {e}")
+            return False
+    
+    def cleanup_expired_sessions(self):
+        """Clean up expired sessions"""
+        try:
+            self.cursor.execute('''
+                UPDATE user_sessions SET is_active = 0 WHERE expires_at <= CURRENT_TIMESTAMP
+            ''')
+            self.conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Error cleaning up expired sessions: {e}")
+            return False 

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReViision - Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 3rem;
+            width: 100%;
+            max-width: 400px;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .login-header h1 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .login-header p {
+            color: #666;
+            font-size: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-group input:invalid {
+            border-color: #dc3545;
+        }
+        
+        .btn-login {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-login:active {
+            transform: translateY(0);
+        }
+        
+        .btn-login:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+        
+        .alert-danger {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.2);
+        }
+        
+        .alert-success {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+            border: 1px solid rgba(40, 167, 69, 0.2);
+        }
+        
+        .register-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e1e5e9;
+        }
+        
+        .register-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .password-requirements {
+            display: none;
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .requirement {
+            margin: 0.25rem 0;
+            color: #856404;
+        }
+        
+        .requirement.met {
+            color: #155724;
+        }
+        
+        .requirement.met::before {
+            content: "✓ ";
+            color: #28a745;
+        }
+        
+        .requirement::before {
+            content: "✗ ";
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>ReViision</h1>
+                <p>Retail Vision Analytics</p>
+            </div>
+            
+            <form id="loginForm">
+                <div id="alertContainer"></div>
+                
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required autocomplete="current-password">
+                </div>
+                
+                <button type="submit" class="btn-login" id="loginBtn">
+                    <span class="loading-spinner" id="loadingSpinner"></span>
+                    <span id="btnText">Sign In</span>
+                </button>
+            </form>
+            
+            <div class="register-link">
+                <p>Don't have an account? <a href="{{ url_for('web.register_page') }}">Register here</a></p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        class LoginManager {
+            constructor() {
+                this.form = document.getElementById('loginForm');
+                this.alertContainer = document.getElementById('alertContainer');
+                this.loginBtn = document.getElementById('loginBtn');
+                this.loadingSpinner = document.getElementById('loadingSpinner');
+                this.btnText = document.getElementById('btnText');
+                
+                this.initEventListeners();
+            }
+            
+            initEventListeners() {
+                this.form.addEventListener('submit', (e) => this.handleLogin(e));
+            }
+            
+            async handleLogin(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this.form);
+                const loginData = {
+                    username: formData.get('username').trim(),
+                    password: formData.get('password')
+                };
+                
+                // Validate input
+                if (!loginData.username || !loginData.password) {
+                    this.showAlert('Please enter both username and password', 'danger');
+                    return;
+                }
+                
+                this.setLoading(true);
+                this.clearAlerts();
+                
+                try {
+                    const response = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(loginData)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.showAlert('Login successful! Redirecting...', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1000);
+                    } else {
+                        this.showAlert(result.message || 'Login failed', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    this.showAlert('Network error. Please try again.', 'danger');
+                } finally {
+                    this.setLoading(false);
+                }
+            }
+            
+            setLoading(loading) {
+                if (loading) {
+                    this.loginBtn.disabled = true;
+                    this.loadingSpinner.style.display = 'inline-block';
+                    this.btnText.textContent = 'Signing In...';
+                } else {
+                    this.loginBtn.disabled = false;
+                    this.loadingSpinner.style.display = 'none';
+                    this.btnText.textContent = 'Sign In';
+                }
+            }
+            
+            showAlert(message, type) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${type}`;
+                alertDiv.textContent = message;
+                
+                this.alertContainer.innerHTML = '';
+                this.alertContainer.appendChild(alertDiv);
+            }
+            
+            clearAlerts() {
+                this.alertContainer.innerHTML = '';
+            }
+        }
+        
+        // Initialize login manager when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new LoginManager();
+        });
+        
+        // Security: Clear form on page unload
+        window.addEventListener('beforeunload', () => {
+            document.getElementById('password').value = '';
+        });
+    </script>
+</body>
+</html> 

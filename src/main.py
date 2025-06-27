@@ -130,7 +130,7 @@ def download_model_if_needed(model_path):
         os.makedirs(os.path.dirname(model_path), exist_ok=True)
         model = YOLO('yolov8n.pt')
         model.save(model_path)
-        logger.info(f"Model downloaded and saved to: {model_path}")
+        logger.info(f"Model saved to: {model_path}")
 
 def load_config(config_path=None):
     """Load configuration from YAML file"""

@@ -1,14 +1,17 @@
 """
-Flask routes for ReViision
-Provides web interface and API endpoints for retail vision and reiterative improvement
+Flask Routes for ReViision
+
+Provides web interface and API endpoints for retail analytics including:
+- Authentication endpoints (login, logout, registration)
+- Main dashboard and analytics views
+- Camera configuration and video streaming
+- Settings and configuration management
 """
 
 from flask import Blueprint, render_template, request, jsonify, current_app, Response
 import logging
 from datetime import datetime
-import random
 import json
-import base64
 import os
 from pathlib import Path
 import time
@@ -43,42 +46,216 @@ except ImportError:
                 {"name": "hot", "category": "sequential"}
             ]
 
+# Import authentication
+from .auth import require_auth, require_admin, require_manager
+
 # Create a Blueprint for web routes
 web_bp = Blueprint('web', __name__, template_folder='templates')
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# Authentication Routes
+# ============================================================================
+
+@web_bp.route('/login')
+def login_page():
+    """Render the login page"""
+    return render_template('login.html')
+
+@web_bp.route('/register')
+def register_page():
+    """Render the registration page"""
+    return render_template('register.html')
+
+@web_bp.route('/api/auth/login', methods=['POST'])
+def api_login():
+    """Handle user login"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "message": "No data provided"}), 400
+        
+        username = data.get('username', '').strip()
+        password = data.get('password', '')
+        
+        if not username or not password:
+            return jsonify({"success": False, "message": "Username and password required"}), 400
+        
+        ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+        user_agent = request.headers.get('User-Agent', '')
+        auth_service = current_app.auth_service
+        result = auth_service.authenticate_user(username, password, ip_address, user_agent)
+        
+        if result["success"]:
+            response = jsonify(result)
+            response.set_cookie(
+                'session_token', 
+                result['session_token'],
+                max_age=7200,
+                secure=request.is_secure,
+                httponly=True,
+                samesite='Strict'
+            )
+            return response
+        else:
+            return jsonify(result), 401
+            
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        return jsonify({"success": False, "message": "Login service error"}), 500
+
+@web_bp.route('/api/auth/register', methods=['POST'])
+def api_register():
+    """Handle user registration"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "message": "No data provided"}), 400
+        
+        username = data.get('username', '').strip()
+        email = data.get('email', '').strip()
+        password = data.get('password', '')
+        full_name = data.get('full_name', '').strip()
+        
+        auth_service = current_app.auth_service
+        result = auth_service.create_user(username, email, password, full_name)
+        
+        if result["success"]:
+            return jsonify(result), 201
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        logger.error(f"Registration error: {e}")
+        return jsonify({"success": False, "message": "Registration service error"}), 500
+
+@web_bp.route('/api/auth/logout', methods=['POST'])
+@require_auth()
+def api_logout():
+    """Handle user logout"""
+    try:
+        session_token = request.cookies.get('session_token')
+        if session_token:
+            auth_service = current_app.auth_service
+            auth_service.logout_user(session_token)
+        
+        response = jsonify({"success": True, "message": "Logged out successfully"})
+        response.set_cookie('session_token', '', expires=0)
+        return response
+        
+    except Exception as e:
+        logger.error(f"Logout error: {e}")
+        return jsonify({"success": False, "message": "Logout service error"}), 500
+
+@web_bp.route('/api/auth/me', methods=['GET'])
+@require_auth()
+def api_get_user():
+    """Get current user information"""
+    try:
+        user_info = request.current_user
+        auth_service = current_app.auth_service
+        is_default_password = auth_service.is_using_default_password(user_info['username'])
+        
+        return jsonify({
+            "success": True,
+            "user": {
+                "username": user_info['username'],
+                "role": user_info['role'],
+                "is_default_password": is_default_password
+            }
+        })
+    except Exception as e:
+        logger.error(f"Get user error: {e}")
+        return jsonify({"success": False, "message": "User service error"}), 500
+
+@web_bp.route('/api/auth/password-requirements', methods=['GET'])
+def api_password_requirements():
+    """Get password requirements for client-side validation"""
+    try:
+        auth_service = current_app.auth_service
+        requirements = auth_service.get_password_requirements()
+        return jsonify({"success": True, "requirements": requirements})
+    except Exception as e:
+        logger.error(f"Password requirements error: {e}")
+        return jsonify({"success": False, "message": "Service error"}), 500
+
+@web_bp.route('/access-denied')
+def access_denied():
+    """Render access denied page"""
+    return render_template('access_denied.html'), 403
+
+@web_bp.route('/api/auth/change-password', methods=['POST'])
+@require_auth()
+def api_change_password():
+    """Change user password"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "message": "No data provided"}), 400
+        
+        current_password = data.get('current_password', '')
+        new_password = data.get('new_password', '')
+        
+        if not current_password or not new_password:
+            return jsonify({"success": False, "message": "Both current and new passwords required"}), 400
+        
+        user_info = request.current_user
+        auth_service = current_app.auth_service
+        result = auth_service.change_password(user_info['user_id'], current_password, new_password)
+        
+        if result["success"]:
+            return jsonify(result)
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        logger.error(f"Change password error: {e}")
+        return jsonify({"success": False, "message": "Password change service error"}), 500
+
+@web_bp.route('/user-settings')
+@require_auth()
+def user_settings():
+    """Render the user settings page"""
+    return render_template('user_settings.html')
 
 # ============================================================================
 # Main Page Routes
 # ============================================================================
 
 @web_bp.route('/')
+@require_auth()
 def index():
     """Render the dashboard homepage"""
     return render_template('index.html')
 
 @web_bp.route('/heatmap')
+@require_auth()
 def heatmap():
     """Render the store heatmap visualization page"""
     return render_template('heatmap.html')
 
 @web_bp.route('/analysis')
+@require_auth()
 def analysis():
     """Render the real-time analysis page with toggleable overlays"""
     return render_template('analysis.html')
 
 @web_bp.route('/demographics')
+@require_auth()
 def demographics():
     """Render the demographics page"""
     return render_template('demographics.html')
 
 @web_bp.route('/historical')
+@require_auth()
 def historical():
     """Render the historical data page"""
     return render_template('historical.html')
 
 @web_bp.route('/settings')
+@require_auth('manager')
 def settings():
-    """Render the settings page"""
+    """Render the settings page - requires manager role"""
     return render_template('settings.html')
 
 # ============================================================================

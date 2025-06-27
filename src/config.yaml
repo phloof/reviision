@@ -50,3 +50,12 @@ web:
   debug: true
   host: 0.0.0.0
   port: 5000
+  # Secret key used for session encryption, CSRF protection, and other security features
+  # Change this to a random string in practice for security
+  secret_key: "abcdefghijklmnopqrstuvwxyz1234"
+  
+  # Authentication settings
+  create_default_admin: true  # Creates default admin user (admin/admin) if no users exist
+  session_timeout_hours: 2
+  max_login_attempts: 5
+  lockout_duration_minutes: 15

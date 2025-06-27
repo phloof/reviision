@@ -177,11 +177,9 @@ class CorrelationAnalyzer:
             if duration < 1.0:  # Skip very short paths
                 continue
             
-            # Calculate total distance
-            total_distance = sum(
-                np.sqrt((path[i][0] - path[i-1][0])**2 + (path[i][1] - path[i-1][1])**2)
-                for i in range(1, len(path))
-            )
+            # Calculate total distance efficiently
+            coordinates = np.array([(p[0], p[1]) for p in path])
+            total_distance = np.sum(np.linalg.norm(np.diff(coordinates, axis=0), axis=1))
             
             data_point = {
                 'person_id': person_id,

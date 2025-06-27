@@ -7,6 +7,8 @@ from flask import Flask, jsonify, request, render_template, redirect, url_for
 from datetime import datetime, timedelta
 import os
 from .routes import web_bp  # Import the Blueprint from routes.py
+from .auth import AuthService  # Import the authentication service
+from utils.auth_setup import AuthSetup  # Import authentication setup utilities
 
 def create_app(config, db):
     """
@@ -29,8 +31,21 @@ def create_app(config, db):
         'playback_speed': config.get('camera', {}).get('playback_speed', 1.0)
     }
     
+    # Configure session security
+    app.config['SECRET_KEY'] = config.get('web', {}).get('secret_key', 'dev-key-change-in-production')
+    app.config['SESSION_COOKIE_SECURE'] = True  # HTTPS only
+    app.config['SESSION_COOKIE_HTTPONLY'] = True  # No JS access
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'  # CSRF protection
+    
     # Store database reference for route handlers
     app.db = db
+    
+    # Initialize authentication service
+    app.auth_service = AuthService(db)
+    
+    # Initialize authentication setup (creates default admin if configured)
+    auth_setup = AuthSetup(db, config)
+    auth_setup.initialize_authentication()
     
     @app.route('/api/status', methods=['GET'])
     def get_status():

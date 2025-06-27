@@ -734,7 +734,7 @@
             
             // Validate response structure first
             if (!result.detections || !result.detections.people) {
-                console.error('Unexpected response structure:', result);
+                if (window.DEBUG_MODE) console.error('Unexpected response structure:', result);
                 return;
             }
             
@@ -918,11 +918,9 @@
             dwellTimeElement.textContent = avgDwell > 0 ? `${Math.round(avgDwell)} sec` : '-- sec';
         }
         
-        // Log enhanced analytics for debugging
-        if (result.analytics) {
+        // Log analytics if debug mode enabled
+        if (result.analytics && window.DEBUG_MODE) {
             console.log('Backend analytics:', result.analytics);
-            console.log('Active tracks:', result.analytics.active_tracks);
-            console.log('People database size:', result.analytics.people_database_size);
         }
     }
     

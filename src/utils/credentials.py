@@ -91,7 +91,7 @@ class CredentialManager:
                 return key
             
             # If still no key, generate random one for this session
-            # Note: This is NOT secure for production, as key will change between runs
+            # WARNING: This is NOT secure for production - key changes between runs
             logger.warning("Generating temporary encryption key. For persistent encryption, set REVIISION_KEY or REVIISION_PASSPHRASE environment variable.")
             return Fernet.generate_key()
             

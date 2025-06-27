@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReViision - Register</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        .register-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 2rem 1rem;
+        }
+        
+        .register-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 3rem;
+            width: 100%;
+            max-width: 500px;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .register-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .register-header h1 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .register-header p {
+            color: #666;
+            font-size: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+            box-sizing: border-box;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-group input.valid {
+            border-color: #28a745;
+        }
+        
+        .form-group input.invalid {
+            border-color: #dc3545;
+        }
+        
+        .btn-register {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+        
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-register:active {
+            transform: translateY(0);
+        }
+        
+        .btn-register:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+        
+        .alert-danger {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.2);
+        }
+        
+        .alert-success {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+            border: 1px solid rgba(40, 167, 69, 0.2);
+        }
+        
+        .login-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e1e5e9;
+        }
+        
+        .login-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .password-requirements {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .requirement {
+            margin: 0.25rem 0;
+            color: #856404;
+            display: flex;
+            align-items: center;
+        }
+        
+        .requirement.met {
+            color: #155724;
+        }
+        
+        .requirement-icon {
+            margin-right: 0.5rem;
+            font-weight: bold;
+        }
+        
+        .requirement.met .requirement-icon {
+            color: #28a745;
+        }
+        
+        .requirement:not(.met) .requirement-icon {
+            color: #dc3545;
+        }
+        
+        .password-strength {
+            margin-top: 0.5rem;
+            height: 4px;
+            background: #e1e5e9;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .password-strength-bar {
+            height: 100%;
+            width: 0%;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+        }
+        
+        .strength-weak { background: #dc3545; }
+        .strength-fair { background: #ffc107; }
+        .strength-good { background: #17a2b8; }
+        .strength-strong { background: #28a745; }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-card">
+            <div class="register-header">
+                <h1>Join ReViision</h1>
+                <p>Create your account to access retail analytics</p>
+            </div>
+            
+            <form id="registerForm">
+                <div id="alertContainer"></div>
+                
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required autocomplete="username" minlength="3">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" required autocomplete="email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="full_name">Full Name (Optional)</label>
+                    <input type="text" id="full_name" name="full_name" autocomplete="name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required autocomplete="new-password">
+                    <div class="password-requirements" id="passwordRequirements">
+                        <div class="requirement" id="req-length">
+                            <span class="requirement-icon">✗</span>
+                            <span>At least 8 characters</span>
+                        </div>
+                        <div class="requirement" id="req-uppercase">
+                            <span class="requirement-icon">✗</span>
+                            <span>One uppercase letter</span>
+                        </div>
+                        <div class="requirement" id="req-lowercase">
+                            <span class="requirement-icon">✗</span>
+                            <span>One lowercase letter</span>
+                        </div>
+                        <div class="requirement" id="req-digit">
+                            <span class="requirement-icon">✗</span>
+                            <span>One number</span>
+                        </div>
+                        <div class="requirement" id="req-special">
+                            <span class="requirement-icon">✗</span>
+                            <span>One special character</span>
+                        </div>
+                        <div class="password-strength">
+                            <div class="password-strength-bar" id="strengthBar"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm_password">Confirm Password</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password">
+                </div>
+                
+                <button type="submit" class="btn-register" id="registerBtn" disabled>
+                    <span class="loading-spinner" id="loadingSpinner"></span>
+                    <span id="btnText">Create Account</span>
+                </button>
+            </form>
+            
+            <div class="login-link">
+                <p>Already have an account? <a href="{{ url_for('web.login_page') }}">Sign in here</a></p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        class RegistrationManager {
+            constructor() {
+                this.form = document.getElementById('registerForm');
+                this.alertContainer = document.getElementById('alertContainer');
+                this.registerBtn = document.getElementById('registerBtn');
+                this.loadingSpinner = document.getElementById('loadingSpinner');
+                this.btnText = document.getElementById('btnText');
+                this.passwordInput = document.getElementById('password');
+                this.confirmPasswordInput = document.getElementById('confirm_password');
+                this.usernameInput = document.getElementById('username');
+                this.emailInput = document.getElementById('email');
+                
+                this.passwordRequirements = null;
+                this.isFormValid = false;
+                
+                this.initEventListeners();
+                this.loadPasswordRequirements();
+            }
+            
+            async loadPasswordRequirements() {
+                try {
+                    const response = await fetch('/api/auth/password-requirements');
+                    const result = await response.json();
+                    if (result.success) {
+                        this.passwordRequirements = result.requirements;
+                    }
+                } catch (error) {
+                    console.error('Failed to load password requirements:', error);
+                }
+            }
+            
+            initEventListeners() {
+                this.form.addEventListener('submit', (e) => this.handleRegistration(e));
+                this.passwordInput.addEventListener('input', () => this.validatePassword());
+                this.passwordInput.addEventListener('focus', () => this.showPasswordRequirements());
+                this.confirmPasswordInput.addEventListener('input', () => this.validatePasswordMatch());
+                this.usernameInput.addEventListener('input', () => this.validateUsername());
+                this.emailInput.addEventListener('input', () => this.validateEmail());
+                
+                // Validate form on any input change
+                this.form.addEventListener('input', () => this.validateForm());
+            }
+            
+            showPasswordRequirements() {
+                document.getElementById('passwordRequirements').style.display = 'block';
+            }
+            
+            validatePassword() {
+                const password = this.passwordInput.value;
+                const requirements = {
+                    length: password.length >= 8,
+                    uppercase: /[A-Z]/.test(password),
+                    lowercase: /[a-z]/.test(password),
+                    digit: /\d/.test(password),
+                    special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+                };
+                
+                // Update requirement indicators
+                Object.keys(requirements).forEach(req => {
+                    const element = document.getElementById(`req-${req}`);
+                    const icon = element.querySelector('.requirement-icon');
+                    
+                    if (requirements[req]) {
+                        element.classList.add('met');
+                        icon.textContent = '✓';
+                    } else {
+                        element.classList.remove('met');
+                        icon.textContent = '✗';
+                    }
+                });
+                
+                // Update password strength
+                const strength = this.calculatePasswordStrength(requirements);
+                this.updatePasswordStrength(strength);
+                
+                // Update input styling
+                const allMet = Object.values(requirements).every(Boolean);
+                this.passwordInput.className = allMet ? 'valid' : (password.length > 0 ? 'invalid' : '');
+                
+                return allMet;
+            }
+            
+            calculatePasswordStrength(requirements) {
+                const metCount = Object.values(requirements).filter(Boolean).length;
+                if (metCount === 5) return 'strong';
+                if (metCount >= 4) return 'good';
+                if (metCount >= 2) return 'fair';
+                return 'weak';
+            }
+            
+            updatePasswordStrength(strength) {
+                const strengthBar = document.getElementById('strengthBar');
+                const widths = { weak: '25%', fair: '50%', good: '75%', strong: '100%' };
+                
+                strengthBar.style.width = widths[strength];
+                strengthBar.className = `password-strength-bar strength-${strength}`;
+            }
+            
+            validatePasswordMatch() {
+                const password = this.passwordInput.value;
+                const confirmPassword = this.confirmPasswordInput.value;
+                
+                if (confirmPassword.length === 0) {
+                    this.confirmPasswordInput.className = '';
+                    return true;
+                }
+                
+                const match = password === confirmPassword;
+                this.confirmPasswordInput.className = match ? 'valid' : 'invalid';
+                return match;
+            }
+            
+            validateUsername() {
+                const username = this.usernameInput.value.trim();
+                const isValid = username.length >= 3 && /^[a-zA-Z0-9_]+$/.test(username);
+                
+                if (username.length === 0) {
+                    this.usernameInput.className = '';
+                } else {
+                    this.usernameInput.className = isValid ? 'valid' : 'invalid';
+                }
+                
+                return isValid;
+            }
+            
+            validateEmail() {
+                const email = this.emailInput.value.trim();
+                const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+                
+                if (email.length === 0) {
+                    this.emailInput.className = '';
+                } else {
+                    this.emailInput.className = isValid ? 'valid' : 'invalid';
+                }
+                
+                return isValid;
+            }
+            
+            validateForm() {
+                const isPasswordValid = this.validatePassword();
+                const isPasswordMatch = this.validatePasswordMatch();
+                const isUsernameValid = this.validateUsername();
+                const isEmailValid = this.validateEmail();
+                
+                this.isFormValid = isPasswordValid && isPasswordMatch && isUsernameValid && isEmailValid;
+                this.registerBtn.disabled = !this.isFormValid;
+            }
+            
+            async handleRegistration(e) {
+                e.preventDefault();
+                
+                if (!this.isFormValid) {
+                    this.showAlert('Please fix the errors in the form', 'danger');
+                    return;
+                }
+                
+                const formData = new FormData(this.form);
+                const registrationData = {
+                    username: formData.get('username').trim(),
+                    email: formData.get('email').trim(),
+                    password: formData.get('password'),
+                    full_name: formData.get('full_name').trim() || null
+                };
+                
+                // Final validation
+                if (registrationData.password !== this.confirmPasswordInput.value) {
+                    this.showAlert('Passwords do not match', 'danger');
+                    return;
+                }
+                
+                this.setLoading(true);
+                this.clearAlerts();
+                
+                try {
+                    const response = await fetch('/api/auth/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(registrationData)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.showAlert('Account created successfully! You can now log in.', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/login';
+                        }, 2000);
+                    } else {
+                        this.showAlert(result.message || 'Registration failed', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Registration error:', error);
+                    this.showAlert('Network error. Please try again.', 'danger');
+                } finally {
+                    this.setLoading(false);
+                }
+            }
+            
+            setLoading(loading) {
+                if (loading) {
+                    this.registerBtn.disabled = true;
+                    this.loadingSpinner.style.display = 'inline-block';
+                    this.btnText.textContent = 'Creating Account...';
+                } else {
+                    this.registerBtn.disabled = !this.isFormValid;
+                    this.loadingSpinner.style.display = 'none';
+                    this.btnText.textContent = 'Create Account';
+                }
+            }
+            
+            showAlert(message, type) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${type}`;
+                alertDiv.textContent = message;
+                
+                this.alertContainer.innerHTML = '';
+                this.alertContainer.appendChild(alertDiv);
+            }
+            
+            clearAlerts() {
+                this.alertContainer.innerHTML = '';
+            }
+        }
+        
+        // Initialize registration manager when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new RegistrationManager();
+        });
+        
+        // Security: Clear passwords on page unload
+        window.addEventListener('beforeunload', () => {
+            document.getElementById('password').value = '';
+            document.getElementById('confirm_password').value = '';
+        });
+    </script>
+</body>
+</html> 

@@ -141,13 +141,10 @@ class PathAnalyzer:
             timestamps = [p[2] for p in path]
             duration = timestamps[-1] - timestamps[0]
             
-            # Calculate total distance
-            distance = 0
-            for i in range(1, len(path)):
-                x1, y1 = path[i-1][0], path[i-1][1]
-                x2, y2 = path[i][0], path[i][1]
-                segment_distance = np.sqrt((x2-x1)**2 + (y2-y1)**2)
-                distance += segment_distance
+            # Calculate total distance using vectorized operations
+            coordinates = np.array([(p[0], p[1]) for p in path])
+            distances = np.linalg.norm(np.diff(coordinates, axis=0), axis=1)
+            distance = np.sum(distances)
             
             # Get unique zones visited
             zones_visited = set(p[3] for p in path if p[3] is not None)
@@ -194,12 +191,10 @@ class PathAnalyzer:
         half_window = self.smoothing_window // 2
         
         for i in range(len(path)):
-            # Get window bounds
             start_idx = max(0, i - half_window)
             end_idx = min(len(path), i + half_window + 1)
             window = path[start_idx:end_idx]
             
-            # Average x and y positions
             avg_x = sum(p[0] for p in window) / len(window)
             avg_y = sum(p[1] for p in window) / len(window)
             
