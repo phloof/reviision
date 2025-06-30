@@ -86,7 +86,10 @@
         // Performance monitoring
         window.addEventListener('load', function() {
             const perfData = performance.getEntriesByType('navigation')[0];
+            // Performance monitoring can be enabled in debug mode
+        if (window.DEBUG_MODE) {
             console.log('Access denied page load time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
+        }
         });
         
         // Enhanced back button functionality
@@ -215,7 +218,10 @@
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
                 // Page became visible again - could refresh status
-                console.log('Access denied page became visible');
+                // Page visibility tracking for analytics
+        if (window.DEBUG_MODE) {
+            console.log('Access denied page became visible');
+        }
             }
         });
     </script>

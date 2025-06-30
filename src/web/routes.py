@@ -18,40 +18,45 @@ import time
 import cv2
 import numpy as np
 
+# Create logger early so it can be used in import exception handlers
+logger = logging.getLogger(__name__)
+
 # Import camera module
 from camera import get_camera, stop_camera
 from .services import analysis_service
 from utils.config import ConfigManager
 
-# Import the heatmap generator if available
+# Import the path analyzer if available
 try:
-    from src.analysis.heatmap import HeatmapGenerator
+    from src.analysis.path import PathAnalyzer
 except ImportError:
-    # Simple interface placeholder
-    class HeatmapGenerator:
-        """Basic heatmap generator interface"""
-        def __init__(self, config=None):
-            self.config = config or {}
+    logger.warning("PathAnalyzer not available, using mock interface")
+    class PathAnalyzer:
+        """Mock path analyzer for testing"""
+        def __init__(self, config):
+            pass
         
-        def generate(self, data):
-            """Generate a heatmap from real data"""
-            return None
-            
-        def get_available_colormaps(self):
-            """Get list of supported colormaps"""
-            return [
-                {"name": "jet", "category": "sequential"},
-                {"name": "viridis", "category": "perceptual"},
-                {"name": "plasma", "category": "perceptual"},
-                {"name": "hot", "category": "sequential"}
-            ]
+        def generate_mock_data(self):
+            return {"message": "Path analyzer not available"}
+
+# Import the dwell time analyzer if available
+try:
+    from src.analysis.dwell import DwellTimeAnalyzer
+except ImportError:
+    logger.warning("DwellTimeAnalyzer not available, using mock interface")
+    class DwellTimeAnalyzer:
+        """Mock dwell time analyzer for testing"""
+        def __init__(self, config):
+            pass
+        
+        def generate_mock_data(self):
+            return {"message": "Dwell time analyzer not available"}
 
 # Import authentication
 from .auth import require_auth, require_admin, require_manager
 
 # Create a Blueprint for web routes
 web_bp = Blueprint('web', __name__, template_folder='templates')
-logger = logging.getLogger(__name__)
 
 # ============================================================================
 # Authentication Routes
@@ -249,11 +254,7 @@ def index():
     """Render the dashboard homepage"""
     return render_template('index.html')
 
-@web_bp.route('/heatmap')
-@require_auth()
-def heatmap():
-    """Render the store heatmap visualization page"""
-    return render_template('heatmap.html')
+
 
 @web_bp.route('/analysis')
 @require_auth()
@@ -305,46 +306,7 @@ def analyze_frame():
         logger.error(f"Error analyzing frame: {e}")
         return jsonify({"error": str(e)}), 500
 
-@web_bp.route('/api/heatmap', methods=['GET'])
-def api_heatmap():
-    """Generate heatmap data for the specified time range"""
-    try:
-        start_time_str = request.args.get('start_time', '')
-        end_time_str = request.args.get('end_time', '')
-        
-        # Parse time if provided, otherwise use defaults
-        try:
-            start_time = datetime.fromisoformat(start_time_str.replace('Z', '+00:00'))
-        except (ValueError, AttributeError):
-            start_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        
-        try:
-            end_time = datetime.fromisoformat(end_time_str.replace('Z', '+00:00'))
-        except (ValueError, AttributeError):
-            end_time = datetime.now()
-        
-        # Generate mock heatmap data for now
-        grid_size = 20
-        heatmap_data = []
-        for i in range(grid_size):
-            row = []
-            for j in range(grid_size):
-                # Generate some realistic-looking heatmap values
-                value = max(0, random.gauss(50, 30))
-                row.append(min(100, value))
-            heatmap_data.append(row)
-        
-        return jsonify({
-            'status': 'success',
-            'data': heatmap_data,
-            'start_time': start_time.isoformat(),
-            'end_time': end_time.isoformat(),
-            'grid_size': grid_size
-        })
-    
-    except Exception as e:
-        logger.error(f"Error generating heatmap: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 
 @web_bp.route('/api/camera_feed', methods=['GET'])
 def camera_feed():
@@ -624,37 +586,7 @@ def available_colormaps():
             ]
         })
 
-@web_bp.route('/api/set_heatmap_colormap', methods=['POST'])
-def set_heatmap_colormap():
-    """Set the heatmap colormap"""
-    try:
-        data = request.get_json()
-        colormap_name = data.get('colormap', 'jet')
-        
-        # Update colormap config
-        config_path = Path(__file__).parent / 'static' / 'colormap_config.json'
-        
-        try:
-            with open(config_path, 'r') as f:
-                config = json.load(f)
-        except FileNotFoundError:
-            config = {}
-        
-        config['current_colormap'] = colormap_name
-        
-        with open(config_path, 'w') as f:
-            json.dump(config, f, indent=2)
-        
-        return jsonify({
-            "success": True,
-            "message": f"Heatmap colormap set to {colormap_name}"
-        })
-    except Exception as e:
-        logger.error(f"Error setting heatmap colormap: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+
 
 # ============================================================================
 # Main Configuration Management Routes
@@ -815,4 +747,261 @@ def restore_config():
         
     except Exception as e:
         logger.error(f"Error restoring config: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500 
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# ============================================================================
+# ONVIF PTZ Control Routes
+# ============================================================================
+
+@web_bp.route('/api/config/camera', methods=['POST'])
+@require_auth('manager')
+def update_camera_config():
+    """Update camera configuration"""
+    try:
+        data = request.get_json()
+        if not data or 'camera' not in data:
+            return jsonify({"success": False, "message": "No camera configuration provided"}), 400
+        
+        # Update config using existing method
+        config_data = {'camera': data['camera']}
+        response = update_main_config()
+        return response
+        
+    except Exception as e:
+        logger.error(f"Camera config update error: {e}")
+        return jsonify({"success": False, "message": f"Failed to update camera configuration: {str(e)}"}), 500
+
+@web_bp.route('/api/ptz/status', methods=['GET'])
+@require_auth()
+def get_ptz_status():
+    """Get PTZ camera status and capabilities"""
+    try:
+        from camera import _camera_manager
+        
+        current_camera = _camera_manager._current_camera
+        if not current_camera:
+            return jsonify({"success": False, "message": "No camera active"}), 404
+        
+        # Check if it's an ONVIF camera with PTZ capabilities
+        if hasattr(current_camera, 'get_ptz_status'):
+            ptz_status = current_camera.get_ptz_status()
+            camera_info = current_camera.get_camera_info()
+            
+            return jsonify({
+                "success": True,
+                "capabilities": ptz_status.get('capabilities', {}),
+                "position": ptz_status.get('position', {}),
+                "limits": ptz_status.get('limits', {}),
+                "presets": ptz_status.get('presets', []),
+                "camera_info": camera_info
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "message": "Current camera does not support PTZ",
+                "capabilities": {"pan": False, "tilt": False, "zoom": False}
+            })
+    
+    except Exception as e:
+        logger.error(f"PTZ status error: {e}")
+        return jsonify({"success": False, "message": f"Failed to get PTZ status: {str(e)}"}), 500
+
+@web_bp.route('/api/ptz/absolute', methods=['POST'])
+@require_auth()
+def ptz_move_absolute():
+    """Move PTZ camera to absolute position"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "message": "No position data provided"}), 400
+        
+        pan = float(data.get('pan', 0))
+        tilt = float(data.get('tilt', 0))
+        zoom = float(data.get('zoom', 0))
+        
+        from camera import _camera_manager
+        
+        current_camera = _camera_manager._current_camera
+        if not current_camera or not hasattr(current_camera, 'move_absolute'):
+            return jsonify({"success": False, "message": "PTZ not available"}), 404
+        
+        success = current_camera.move_absolute(pan, tilt, zoom)
+        
+        if success:
+            return jsonify({"success": True, "message": "Camera moved successfully"})
+        else:
+            return jsonify({"success": False, "message": "Failed to move camera"}), 500
+    
+    except Exception as e:
+        logger.error(f"PTZ absolute move error: {e}")
+        return jsonify({"success": False, "message": f"Failed to move camera: {str(e)}"}), 500
+
+@web_bp.route('/api/ptz/relative', methods=['POST'])
+@require_auth()
+def ptz_move_relative():
+    """Move PTZ camera by relative amounts"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "message": "No movement data provided"}), 400
+        
+        pan_delta = float(data.get('pan_delta', 0))
+        tilt_delta = float(data.get('tilt_delta', 0))
+        zoom_delta = float(data.get('zoom_delta', 0))
+        
+        from camera import _camera_manager
+        
+        current_camera = _camera_manager._current_camera
+        if not current_camera or not hasattr(current_camera, 'move_relative'):
+            return jsonify({"success": False, "message": "PTZ not available"}), 404
+        
+        success = current_camera.move_relative(pan_delta, tilt_delta, zoom_delta)
+        
+        if success:
+            return jsonify({"success": True, "message": "Camera moved successfully"})
+        else:
+            return jsonify({"success": False, "message": "Failed to move camera"}), 500
+    
+    except Exception as e:
+        logger.error(f"PTZ relative move error: {e}")
+        return jsonify({"success": False, "message": f"Failed to move camera: {str(e)}"}), 500
+
+@web_bp.route('/api/ptz/continuous', methods=['POST'])
+@require_auth()
+def ptz_move_continuous():
+    """Start continuous PTZ movement"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "message": "No movement data provided"}), 400
+        
+        pan_speed = float(data.get('pan_speed', 0))
+        tilt_speed = float(data.get('tilt_speed', 0))
+        zoom_speed = float(data.get('zoom_speed', 0))
+        
+        from camera import _camera_manager
+        
+        current_camera = _camera_manager._current_camera
+        if not current_camera or not hasattr(current_camera, 'start_continuous_move'):
+            return jsonify({"success": False, "message": "PTZ not available"}), 404
+        
+        success = current_camera.start_continuous_move(pan_speed, tilt_speed, zoom_speed)
+        
+        if success:
+            return jsonify({"success": True, "message": "Continuous movement started"})
+        else:
+            return jsonify({"success": False, "message": "Failed to start movement"}), 500
+    
+    except Exception as e:
+        logger.error(f"PTZ continuous move error: {e}")
+        return jsonify({"success": False, "message": f"Failed to start continuous movement: {str(e)}"}), 500
+
+@web_bp.route('/api/ptz/stop', methods=['POST'])
+@require_auth()
+def ptz_stop():
+    """Stop PTZ movement"""
+    try:
+        from camera import _camera_manager
+        
+        current_camera = _camera_manager._current_camera
+        if not current_camera or not hasattr(current_camera, 'stop_ptz'):
+            return jsonify({"success": False, "message": "PTZ not available"}), 404
+        
+        success = current_camera.stop_ptz()
+        
+        if success:
+            return jsonify({"success": True, "message": "PTZ movement stopped"})
+        else:
+            return jsonify({"success": False, "message": "Failed to stop PTZ"}), 500
+    
+    except Exception as e:
+        logger.error(f"PTZ stop error: {e}")
+        return jsonify({"success": False, "message": f"Failed to stop PTZ: {str(e)}"}), 500
+
+@web_bp.route('/api/ptz/preset/goto', methods=['POST'])
+@require_auth()
+def ptz_goto_preset():
+    """Move to a preset position"""
+    try:
+        data = request.get_json()
+        if not data or 'preset_token' not in data:
+            return jsonify({"success": False, "message": "No preset token provided"}), 400
+        
+        preset_token = data['preset_token']
+        
+        from camera import _camera_manager
+        
+        current_camera = _camera_manager._current_camera
+        if not current_camera or not hasattr(current_camera, 'goto_preset'):
+            return jsonify({"success": False, "message": "PTZ presets not available"}), 404
+        
+        success = current_camera.goto_preset(preset_token)
+        
+        if success:
+            return jsonify({"success": True, "message": "Moved to preset successfully"})
+        else:
+            return jsonify({"success": False, "message": "Failed to move to preset"}), 500
+    
+    except Exception as e:
+        logger.error(f"PTZ goto preset error: {e}")
+        return jsonify({"success": False, "message": f"Failed to move to preset: {str(e)}"}), 500
+
+@web_bp.route('/api/ptz/preset/save', methods=['POST'])
+@require_auth()
+def ptz_save_preset():
+    """Save current position as a preset"""
+    try:
+        data = request.get_json()
+        if not data or 'name' not in data:
+            return jsonify({"success": False, "message": "No preset name provided"}), 400
+        
+        preset_name = data['name']
+        
+        from camera import _camera_manager
+        
+        current_camera = _camera_manager._current_camera
+        if not current_camera or not hasattr(current_camera, 'set_preset'):
+            return jsonify({"success": False, "message": "PTZ presets not available"}), 404
+        
+        preset_token = current_camera.set_preset(preset_name)
+        
+        if preset_token:
+            return jsonify({
+                "success": True,
+                "message": "Preset saved successfully",
+                "preset_token": preset_token
+            })
+        else:
+            return jsonify({"success": False, "message": "Failed to save preset"}), 500
+    
+    except Exception as e:
+        logger.error(f"PTZ save preset error: {e}")
+        return jsonify({"success": False, "message": f"Failed to save preset: {str(e)}"}), 500
+
+@web_bp.route('/api/ptz/preset/delete', methods=['POST'])
+@require_auth()
+def ptz_delete_preset():
+    """Delete a preset"""
+    try:
+        data = request.get_json()
+        if not data or 'preset_token' not in data:
+            return jsonify({"success": False, "message": "No preset token provided"}), 400
+        
+        preset_token = data['preset_token']
+        
+        from camera import _camera_manager
+        
+        current_camera = _camera_manager._current_camera
+        if not current_camera or not hasattr(current_camera, 'remove_preset'):
+            return jsonify({"success": False, "message": "PTZ presets not available"}), 404
+        
+        success = current_camera.remove_preset(preset_token)
+        
+        if success:
+            return jsonify({"success": True, "message": "Preset deleted successfully"})
+        else:
+            return jsonify({"success": False, "message": "Failed to delete preset"}), 500
+    
+    except Exception as e:
+        logger.error(f"PTZ delete preset error: {e}")
+        return jsonify({"success": False, "message": f"Failed to delete preset: {str(e)}"}), 500 

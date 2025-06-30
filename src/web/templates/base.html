@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.8, maximum-scale=2.0">
     <meta name="description" content="ReViision - Advanced Retail Vision Analytics and Customer Insights">
     <meta name="keywords" content="retail analytics, computer vision, customer tracking, demographics, heatmap">
     <meta name="author" content="ReViision">
@@ -56,8 +56,11 @@
     <nav class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
         <div class="sidebar-header">
             <div class="logo">
-                <h1><i class="fas fa-eye me-2" aria-hidden="true"></i>ReViision</h1>
+                <h1><i class="fas fa-eye me-2" aria-hidden="true"></i><span class="logo-text">ReViision</span></h1>
             </div>
+            <button class="sidebar-toggle d-none d-lg-block" id="sidebar-toggle" type="button" aria-label="Toggle sidebar">
+                <i class="fas fa-chevron-left"></i>
+            </button>
         </div>
         
         <!-- Navigation Menu -->
@@ -66,63 +69,60 @@
                 <a href="{{ url_for('web.index') }}" 
                    class="nav-link {% if request.endpoint == 'web.index' %}active{% endif %}" 
                    role="menuitem"
-                   aria-current="{% if request.endpoint == 'web.index' %}page{% endif %}">
+                   aria-current="{% if request.endpoint == 'web.index' %}page{% endif %}"
+                   title="Dashboard">
                     <i class="fas fa-tachometer-alt" aria-hidden="true"></i>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-            <li role="none">
-                <a href="{{ url_for('web.heatmap') }}" 
-                   class="nav-link {% if request.endpoint == 'web.heatmap' %}active{% endif %}"
-                   role="menuitem"
-                   aria-current="{% if request.endpoint == 'web.heatmap' %}page{% endif %}">
-                    <i class="fas fa-fire" aria-hidden="true"></i>
-                    <span>Heatmap</span>
+                    <span class="nav-text">Dashboard</span>
                 </a>
             </li>
             <li role="none">
                 <a href="{{ url_for('web.analysis') }}" 
                    class="nav-link {% if request.endpoint == 'web.analysis' %}active{% endif %}"
                    role="menuitem"
-                   aria-current="{% if request.endpoint == 'web.analysis' %}page{% endif %}">
+                   aria-current="{% if request.endpoint == 'web.analysis' %}page{% endif %}"
+                   title="Camera Analysis">
                     <i class="fas fa-video" aria-hidden="true"></i>
-                    <span>Camera Analysis</span>
+                    <span class="nav-text">Camera Analysis</span>
                 </a>
             </li>
             <li role="none">
                 <a href="{{ url_for('web.demographics') }}" 
                    class="nav-link {% if request.endpoint == 'web.demographics' %}active{% endif %}"
                    role="menuitem"
-                   aria-current="{% if request.endpoint == 'web.demographics' %}page{% endif %}">
+                   aria-current="{% if request.endpoint == 'web.demographics' %}page{% endif %}"
+                   title="Demographics">
                     <i class="fas fa-users" aria-hidden="true"></i>
-                    <span>Demographics</span>
+                    <span class="nav-text">Demographics</span>
                 </a>
             </li>
             <li role="none">
                 <a href="{{ url_for('web.historical') }}" 
                    class="nav-link {% if request.endpoint == 'web.historical' %}active{% endif %}"
                    role="menuitem"
-                   aria-current="{% if request.endpoint == 'web.historical' %}page{% endif %}">
+                   aria-current="{% if request.endpoint == 'web.historical' %}page{% endif %}"
+                   title="Historical Data">
                     <i class="fas fa-chart-line" aria-hidden="true"></i>
-                    <span>Historical Data</span>
+                    <span class="nav-text">Historical Data</span>
                 </a>
             </li>
             <li role="none">
                 <a href="{{ url_for('web.settings') }}" 
                    class="nav-link {% if request.endpoint == 'web.settings' %}active{% endif %}"
                    role="menuitem"
-                   aria-current="{% if request.endpoint == 'web.settings' %}page{% endif %}">
+                   aria-current="{% if request.endpoint == 'web.settings' %}page{% endif %}"
+                   title="Settings">
                     <i class="fas fa-cog" aria-hidden="true"></i>
-                    <span>Settings</span>
+                    <span class="nav-text">Settings</span>
                 </a>
             </li>
             <li role="none">
                 <a href="{{ url_for('web.user_settings') }}" 
                    class="nav-link {% if request.endpoint == 'web.user_settings' %}active{% endif %}"
                    role="menuitem"
-                   aria-current="{% if request.endpoint == 'web.user_settings' %}page{% endif %}">
+                   aria-current="{% if request.endpoint == 'web.user_settings' %}page{% endif %}"
+                   title="User Settings">
                     <i class="fas fa-user-cog" aria-hidden="true"></i>
-                    <span>User Settings</span>
+                    <span class="nav-text">User Settings</span>
                 </a>
             </li>
         </ul>
@@ -131,30 +131,33 @@
         <div class="system-status" role="status" aria-live="polite">
             <div class="status-indicator">
                 <i class="fas fa-circle status-running" aria-hidden="true"></i>
-                <span>System Online</span>
+                <span class="status-text">System Online</span>
             </div>
         </div>
     </nav>
+
+    <!-- Mobile Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
     <!-- Main Content Area -->
     <main class="content" id="main-content" role="main">
         <!-- Page Header -->
         <header class="page-header">
             <div class="header-content">
-                <div class="page-title">
-                    <h1>{% block header %}Dashboard{% endblock %}</h1>
-                    {% block breadcrumb %}{% endblock %}
+                <div class="header-left">
+                    <!-- Mobile menu toggle -->
+                    <button class="btn btn-outline-secondary d-lg-none me-3 mobile-menu-toggle" 
+                            type="button" 
+                            id="mobile-menu-toggle"
+                            aria-label="Toggle navigation menu">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    
+                    <div class="page-title">
+                        <h1>{% block header %}Dashboard{% endblock %}</h1>
+                        {% block breadcrumb %}{% endblock %}
+                    </div>
                 </div>
-                
-                <!-- Mobile menu toggle -->
-                <button class="btn btn-outline-secondary d-lg-none" 
-                        type="button" 
-                        data-bs-toggle="offcanvas" 
-                        data-bs-target="#sidebar" 
-                        aria-controls="sidebar"
-                        aria-label="Toggle navigation menu">
-                    <i class="fas fa-bars"></i>
-                </button>
                 
                 <!-- User menu or other header actions -->
                 <div class="header-actions">
@@ -165,7 +168,8 @@
                                 data-bs-toggle="dropdown" 
                                 aria-expanded="false"
                                 aria-label="User menu">
-                            <i class="fas fa-user"></i>
+                            <i class="fas fa-user me-2"></i>
+                            <span class="d-none d-sm-inline">Profile</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{{ url_for('web.user_settings') }}">
@@ -255,11 +259,20 @@
         window.addEventListener('load', function() {
             // Log performance metrics
             const perfData = performance.getEntriesByType('navigation')[0];
-            console.log('Page load time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
+            // Performance monitoring for development
+            if (window.DEBUG_MODE) {
+                console.log('Page load time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
+            }
         });
         
         // Enhanced accessibility features
         document.addEventListener('DOMContentLoaded', function() {
+            // Sidebar functionality
+            initializeSidebar();
+            
+            // Initialize dropdown functionality
+            initializeDropdowns();
+            
             // Add focus management for modals
             const modals = document.querySelectorAll('.modal');
             modals.forEach(modal => {
@@ -277,6 +290,26 @@
                     if (openModal) {
                         bootstrap.Modal.getInstance(openModal).hide();
                     }
+                    
+                    // Close any open dropdowns
+                    const openDropdowns = document.querySelectorAll('.dropdown-menu.show');
+                    openDropdowns.forEach(dropdown => {
+                        dropdown.classList.remove('show');
+                        dropdown.removeAttribute('style');
+                    });
+                    
+                    // Close mobile sidebar on ESC
+                    const sidebar = document.getElementById('sidebar');
+                    const overlay = document.getElementById('sidebar-overlay');
+                    if (sidebar.classList.contains('show')) {
+                        closeMobileSidebar();
+                    }
+                }
+                
+                // Toggle sidebar with Ctrl+B
+                if (e.ctrlKey && e.key === 'b') {
+                    e.preventDefault();
+                    toggleDesktopSidebar();
                 }
             });
             
@@ -289,12 +322,146 @@
                     }
                 }, 5000);
             });
+            
+            // Handle window resize
+            window.addEventListener('resize', handleWindowResize);
         });
+        
+        // Sidebar functionality
+        function initializeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            // Desktop sidebar toggle
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', toggleDesktopSidebar);
+            }
+            
+            // Mobile menu toggle
+            if (mobileMenuToggle) {
+                mobileMenuToggle.addEventListener('click', toggleMobileSidebar);
+            }
+            
+            // Overlay click to close mobile sidebar
+            if (overlay) {
+                overlay.addEventListener('click', closeMobileSidebar);
+            }
+            
+            // Close mobile sidebar when clicking nav links
+            const navLinks = document.querySelectorAll('.nav-links a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth < 992) {
+                        closeMobileSidebar();
+                    }
+                });
+            });
+            
+            // Load saved sidebar state for desktop
+            if (window.innerWidth >= 992) {
+                const savedState = localStorage.getItem('sidebarCollapsed');
+                if (savedState === 'true') {
+                    sidebar.classList.add('collapsed');
+                }
+            }
+        }
+        
+        function toggleDesktopSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const isCollapsed = sidebar.classList.toggle('collapsed');
+            
+            // Save state
+            localStorage.setItem('sidebarCollapsed', isCollapsed);
+            
+            // Announce to screen readers
+            const announcement = isCollapsed ? 'Sidebar collapsed' : 'Sidebar expanded';
+            announceToScreenReader(announcement);
+        }
+        
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const isOpen = sidebar.classList.contains('show');
+            
+            if (isOpen) {
+                closeMobileSidebar();
+            } else {
+                openMobileSidebar();
+            }
+        }
+        
+        function openMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const mobileToggle = document.getElementById('mobile-menu-toggle');
+            
+            sidebar.classList.add('show');
+            overlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            
+            // Update button aria state
+            if (mobileToggle) {
+                mobileToggle.setAttribute('aria-expanded', 'true');
+            }
+            
+            // Focus first nav item for accessibility
+            const firstNavLink = sidebar.querySelector('.nav-links a');
+            if (firstNavLink) {
+                setTimeout(() => firstNavLink.focus(), 100);
+            }
+            
+            announceToScreenReader('Navigation menu opened');
+        }
+        
+        function closeMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const mobileToggle = document.getElementById('mobile-menu-toggle');
+            
+            sidebar.classList.remove('show');
+            overlay.classList.remove('show');
+            document.body.style.overflow = '';
+            
+            // Update button aria state
+            if (mobileToggle) {
+                mobileToggle.setAttribute('aria-expanded', 'false');
+                mobileToggle.focus(); // Return focus to button
+            }
+            
+            announceToScreenReader('Navigation menu closed');
+        }
+        
+        function handleWindowResize() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            // Close mobile sidebar if window becomes large
+            if (window.innerWidth >= 992) {
+                sidebar.classList.remove('show');
+                overlay.classList.remove('show');
+                document.body.style.overflow = '';
+            } else {
+                // Remove collapsed state on mobile
+                sidebar.classList.remove('collapsed');
+            }
+        }
+        
+        function announceToScreenReader(message) {
+            const announcement = document.createElement('div');
+            announcement.setAttribute('aria-live', 'polite');
+            announcement.setAttribute('aria-atomic', 'true');
+            announcement.className = 'sr-only';
+            announcement.textContent = message;
+            
+            document.body.appendChild(announcement);
+            setTimeout(() => document.body.removeChild(announcement), 1000);
+        }
         
         // Sidebar toggle functionality for mobile
         function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('show');
+            toggleMobileSidebar();
         }
         
         // Loading state management
@@ -332,6 +499,95 @@
                 errorCallback({message: 'Network error occurred'});
             });
         }
+        
+        // Touch gesture support for mobile sidebar
+        if ('ontouchstart' in window) {
+            let touchStartX = 0;
+            let touchEndX = 0;
+            
+            document.addEventListener('touchstart', function(e) {
+                touchStartX = e.changedTouches[0].screenX;
+            });
+            
+            document.addEventListener('touchend', function(e) {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipeGesture();
+            });
+            
+            function handleSwipeGesture() {
+                const swipeThreshold = 100;
+                const sidebar = document.getElementById('sidebar');
+                
+                if (window.innerWidth < 992) {
+                    // Swipe right to open sidebar (from left edge)
+                    if (touchStartX < 50 && touchEndX - touchStartX > swipeThreshold) {
+                        openMobileSidebar();
+                    }
+                    // Swipe left to close sidebar
+                    else if (sidebar.classList.contains('show') && touchStartX - touchEndX > swipeThreshold) {
+                        closeMobileSidebar();
+                    }
+                }
+            }
+        }
+        
+        // Initialize dropdown functionality
+        function initializeDropdowns() {
+            // Ensure all dropdowns are properly hidden on page load
+            const allDropdowns = document.querySelectorAll('.dropdown-menu');
+            allDropdowns.forEach(dropdown => {
+                dropdown.classList.remove('show');
+                dropdown.removeAttribute('style');
+                dropdown.removeAttribute('data-popper-placement');
+            });
+            
+            // Add click event listeners to dropdown toggles
+            const dropdownToggles = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+            dropdownToggles.forEach(toggle => {
+                toggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const dropdown = this.nextElementSibling;
+                    const isCurrentlyOpen = dropdown.classList.contains('show');
+                    
+                    // Close all other dropdowns first
+                    closeAllDropdowns();
+                    
+                    // Toggle current dropdown
+                    if (!isCurrentlyOpen) {
+                        dropdown.classList.add('show');
+                        this.setAttribute('aria-expanded', 'true');
+                    } else {
+                        dropdown.classList.remove('show');
+                        dropdown.removeAttribute('style');
+                        this.setAttribute('aria-expanded', 'false');
+                    }
+                });
+            });
+            
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.dropdown')) {
+                    closeAllDropdowns();
+                }
+            });
+        }
+        
+        function closeAllDropdowns() {
+            const openDropdowns = document.querySelectorAll('.dropdown-menu.show');
+            const toggles = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+            
+            openDropdowns.forEach(dropdown => {
+                dropdown.classList.remove('show');
+                dropdown.removeAttribute('style');
+                dropdown.removeAttribute('data-popper-placement');
+            });
+            
+            toggles.forEach(toggle => {
+                toggle.setAttribute('aria-expanded', 'false');
+            });
+        }
     </script>
     
     <!-- Page-specific scripts -->
@@ -344,9 +600,13 @@
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('/sw.js')
                     .then(function(registration) {
-                        console.log('SW registered: ', registration);
+                        if (window.DEBUG_MODE) {
+                    console.log('SW registered: ', registration);
+                }
                     }, function(registrationError) {
-                        console.log('SW registration failed: ', registrationError);
+                        if (window.DEBUG_MODE) {
+                    console.log('SW registration failed: ', registrationError);
+                }
                     });
             });
         }

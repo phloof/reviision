@@ -5,107 +5,144 @@
 {% block header %}Dashboard Overview{% endblock %}
 
 {% block content %}
-<div class="dashboard-grid">
-    <div class="card stat-card">
-        <i class="fas fa-users fa-2x" style="color: #3498db;"></i>
-        <div class="stat-value" id="total-visitors">--</div>
-        <div class="stat-label">Total Visitors</div>
-    </div>
-    
-    <div class="card stat-card">
-        <i class="fas fa-clock fa-2x" style="color: #e74c3c;"></i>
-        <div class="stat-value" id="avg-dwell-time">--</div>
-        <div class="stat-label">Avg. Dwell Time (min)</div>
-    </div>
-    
-    <div class="card stat-card">
-        <i class="fas fa-percentage fa-2x" style="color: #2ecc71;"></i>
-        <div class="stat-value" id="conversion-rate">--</div>
-        <div class="stat-label">Conversion Rate</div>
-    </div>
-    
-    <div class="card stat-card">
-        <i class="fas fa-venus-mars fa-2x" style="color: #9b59b6;"></i>
-        <div class="stat-value" id="gender-ratio">--</div>
-        <div class="stat-label">M/F Ratio</div>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">
-        <h3>Store Traffic Over Time</h3>
-        <div class="tooltip">
-            <i class="fas fa-info-circle"></i>
-            <span class="tooltip-text">Shows visitor count over time period</span>
-        </div>
-    </div>
-    <div class="chart-container">
-        <canvas id="trafficChart"></canvas>
-    </div>
-</div>
-
-<div class="row">
-    <div class="card" style="width: 100%;">
-        <div class="card-header">
-            <h3>Demographic Breakdown</h3>
-            <div class="tooltip">
-                <i class="fas fa-info-circle"></i>
-                <span class="tooltip-text">Customer demographics analysis</span>
+<!-- Statistics Cards Row -->
+<div class="row mb-4 stats-grid">
+    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x mb-3" style="color: #3498db;"></i>
+                <div class="stat-value" id="total-visitors">--</div>
+                <div class="stat-label">Total Visitors</div>
             </div>
         </div>
-        <div class="chart-container">
-            <div style="display: flex; justify-content: space-between;">
-                <div style="width: 45%;">
-                    <canvas id="ageChart"></canvas>
-                </div>
-                <div style="width: 45%;">
-                    <canvas id="genderChart"></canvas>
-                </div>
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-clock fa-2x mb-3" style="color: #e74c3c;"></i>
+                <div class="stat-value" id="avg-dwell-time">--</div>
+                <div class="stat-label">Avg. Dwell Time (min)</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-percentage fa-2x mb-3" style="color: #2ecc71;"></i>
+                <div class="stat-value" id="conversion-rate">--</div>
+                <div class="stat-label">Conversion Rate</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-venus-mars fa-2x mb-3" style="color: #9b59b6;"></i>
+                <div class="stat-value" id="gender-ratio">--</div>
+                <div class="stat-label">M/F Ratio</div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row mt-3">
-    <div class="col-md-6">
+<!-- Traffic Chart Row -->
+<div class="row mb-4">
+    <div class="col-12">
         <div class="card">
-            <div class="card-header">
-                <h3>Top Traffic Areas</h3>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">Store Traffic Over Time</h3>
                 <div class="tooltip">
                     <i class="fas fa-info-circle"></i>
-                    <span class="tooltip-text">Store areas with highest traffic</span>
+                    <span class="tooltip-text">Shows visitor count over time period</span>
                 </div>
             </div>
-            <div id="heatmapPreview" class="chart-container" style="height: 300px;">
-                <div style="text-align: center; padding-top: 100px; color: #999;">
-                    Loading heatmap preview...
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="trafficChart"></canvas>
                 </div>
-            </div>
-            <div class="card-footer text-center">
-                <a href="/heatmap" class="btn btn-sm btn-primary">View Full Heatmap</a>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-6">
+</div>
+
+<!-- Demographics Chart Row -->
+<div class="row mb-4">
+    <div class="col-12">
         <div class="card">
-            <div class="card-header">
-                <h3>Live Camera Analysis</h3>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">Demographic Breakdown</h3>
+                <div class="tooltip">
+                    <i class="fas fa-info-circle"></i>
+                    <span class="tooltip-text">Customer demographics analysis</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <canvas id="ageChart"></canvas>
+                        </div>
+                        <div class="col-md-6">
+                            <canvas id="genderChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Camera Analysis Row -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">Live Camera Analysis</h3>
                 <div class="tooltip">
                     <i class="fas fa-info-circle"></i>
                     <span class="tooltip-text">Real-time camera feed with analytics overlays</span>
                 </div>
             </div>
-            <div id="cameraPreview" class="chart-container" style="height: 300px; background-color: #000; position: relative;">
-                <div style="position: absolute; top: 10px; left: 10px; background-color: rgba(0,0,0,0.6); color: white; padding: 5px 10px; border-radius: 4px;">
-                    Main Entrance
+            <div class="card-body">
+                <div id="cameraPreview" class="video-container">
+                    <!-- Main analysed feed -->
+                    <div id="analysedFeed" class="main-video">
+                        <div class="video-overlay">
+                            <div class="overlay-info">
+                                <span class="camera-label">Main Entrance - Analysed Feed</span>
+                                <span class="status-indicator" id="feed-status">
+                                    <i class="fas fa-circle" id="status-icon"></i> <span id="status-text">Stopped</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="placeholder-content">
+                            <i class="fas fa-eye fa-3x mb-3"></i>
+                            <h5 id="feed-title">Camera Analysis Paused</h5>
+                            <p class="text-muted" id="feed-description">Click Start to begin analysing the camera feed</p>
+                            <div class="detection-stats mt-3">
+                                <span class="badge bg-primary me-2">People: <span id="people-count">0</span></span>
+                                <span class="badge bg-success me-2">Active Tracks: <span id="active-tracks">0</span></span>
+                                <span class="badge bg-info">FPS: <span id="fps-counter">0</span></span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div style="text-align: center; padding-top: 100px; color: #999;">
-                    Camera preview will appear here
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    <div class="feed-controls">
+                        <button class="btn btn-success me-2" id="startFeedBtn" onclick="startAnalysisFeed()">
+                            <i class="fas fa-play"></i> Start Analysis
+                        </button>
+                        <button class="btn btn-warning me-2" id="stopFeedBtn" onclick="stopAnalysisFeed()" disabled>
+                            <i class="fas fa-pause"></i> Stop Analysis
+                        </button>
+                    </div>
+                    <a href="/analysis" class="btn btn-primary">
+                        <i class="fas fa-chart-line me-2"></i>View Detailed Analysis
+                    </a>
                 </div>
-            </div>
-            <div class="card-footer text-center">
-                <a href="/analysis?autostart=true" class="btn btn-sm btn-primary">Open Live Analysis</a>
             </div>
         </div>
     </div>
@@ -114,23 +151,23 @@
 
 {% block scripts %}
 <script>
-    // Fetch dashboard data when page loads
+    // ====================================
+    // Dashboard Page JavaScript
+    // ====================================
+
+    /**
+     * Initialize dashboard when DOM is loaded
+     */
     document.addEventListener('DOMContentLoaded', function() {
         fetchDashboardData();
+        initializeFeedControls();
     });
-    
-    // Update data when time range changes
-    document.getElementById('time-range').addEventListener('change', function() {
-        fetchDashboardData();
-    });
-    
+
+    /**
+     * Fetch and display dashboard data
+     */
     function fetchDashboardData() {
-        const timeRange = document.getElementById('time-range').value;
-        
-        // Get time range dates
-        const dates = getTimeRangeDates(timeRange);
-        
-        // Simulate data fetch for now
+        // Simulate data fetch for dashboard
         setTimeout(() => {
             updateDashboardStats({
                 totalVisitors: 2456,
@@ -138,64 +175,45 @@
                 conversionRate: 34.5,
                 genderRatio: "55/45"
             });
-            createTrafficChart(dates.start, dates.end);
+            createTrafficChart();
             createDemographicCharts();
-            createHeatmapPreview();
-            simulateCameraPreview();
         }, 300);
     }
-    
-    function getTimeRangeDates(range) {
-        const end = new Date();
-        let start = new Date();
-        
-        switch(range) {
-            case '1h':
-                start.setHours(end.getHours() - 1);
-                break;
-            case '6h':
-                start.setHours(end.getHours() - 6);
-                break;
-            case '24h':
-                start.setDate(end.getDate() - 1);
-                break;
-            case '7d':
-                start.setDate(end.getDate() - 7);
-                break;
-            case '30d':
-                start.setDate(end.getDate() - 30);
-                break;
-            default:
-                start.setDate(end.getDate() - 1);
-        }
-        
-        return { start, end };
-    }
-    
+
+    /**
+     * Update dashboard statistics cards
+     */
     function updateDashboardStats(data) {
-        document.getElementById('total-visitors').textContent = data.totalVisitors;
+        document.getElementById('total-visitors').textContent = data.totalVisitors.toLocaleString();
         document.getElementById('avg-dwell-time').textContent = data.avgDwellTime;
         document.getElementById('conversion-rate').textContent = data.conversionRate + '%';
         document.getElementById('gender-ratio').textContent = data.genderRatio;
     }
-    
-    function createTrafficChart(start, end) {
+
+    /**
+     * Create the main traffic chart
+     */
+    function createTrafficChart() {
         const ctx = document.getElementById('trafficChart').getContext('2d');
         
-        // Generate sample data
+        // Generate sample data for the last 24 hours
         const labels = [];
         const data = [];
         
-        // Create hours between start and end
-        const diff = (end - start) / (1000 * 60 * 60);
-        const step = Math.max(1, Math.ceil(diff / 24)); // Max 24 data points
-        
-        for (let i = 0; i <= diff; i += step) {
-            const date = new Date(start.getTime() + i * 1000 * 60 * 60);
-            labels.push(date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+        const now = new Date();
+        for (let i = 23; i >= 0; i--) {
+            const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+            labels.push(time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
             
-            // Random traffic data
-            data.push(Math.floor(Math.random() * 50) + 10);
+            // Generate realistic traffic data with business hour patterns
+            const hour = time.getHours();
+            let baseTraffic = 5;
+            if (hour >= 9 && hour <= 17) {
+                baseTraffic = 25;
+            } else if (hour >= 18 && hour <= 21) {
+                baseTraffic = 15;
+            }
+            data.push(Math.floor(Math.random() * 20) + baseTraffic);
         }
         
         new Chart(ctx, {
@@ -236,9 +254,12 @@
             }
         });
     }
-    
+
+    /**
+     * Create demographic distribution charts
+     */
     function createDemographicCharts() {
-        // Age Distribution Chart
+        // Age Distribution Pie Chart
         const ageCtx = document.getElementById('ageChart').getContext('2d');
         new Chart(ageCtx, {
             type: 'pie',
@@ -272,7 +293,7 @@
             }
         });
         
-        // Gender Distribution Chart
+        // Gender Distribution Doughnut Chart
         const genderCtx = document.getElementById('genderChart').getContext('2d');
         new Chart(genderCtx, {
             type: 'doughnut',
@@ -303,98 +324,101 @@
             }
         });
     }
-    
-    function createHeatmapPreview() {
-        const heatmapContainer = document.getElementById('heatmapPreview');
-        heatmapContainer.innerHTML = '';
-        
-        // Create a simple heatmap using Plotly.js
-        const data = [{
-            z: [
-                [0, 0, 1, 2, 3, 2, 1, 0],
-                [0, 1, 2, 3, 4, 3, 2, 1],
-                [1, 2, 4, 6, 7, 5, 3, 1],
-                [2, 3, 5, 8, 9, 7, 4, 2],
-                [1, 2, 4, 7, 8, 6, 3, 1],
-                [0, 1, 3, 5, 6, 4, 2, 0],
-                [0, 0, 1, 2, 3, 2, 1, 0]
-            ],
-            type: 'heatmap',
-            colorscale: 'Reds',
-            showscale: false
-        }];
-        
-        const layout = {
-            title: 'Store Traffic Heatmap Preview',
-            annotations: [{
-                text: 'Click for full view',
-                showarrow: false,
-                x: 0.5,
-                y: -0.15,
-                xref: 'paper',
-                yref: 'paper',
-                font: {
-                    size: 12,
-                    color: '#3498db'
-                }
-            }],
-            margin: {
-                l: 40,
-                r: 40,
-                b: 60,
-                t: 60
-            }
-        };
-        
-        Plotly.newPlot(heatmapContainer, data, layout, {responsive: true});
-        
-        // Add click handler to navigate to full heatmap
-        heatmapContainer.onclick = function() {
-            window.location.href = '/heatmap';
-        };
+
+    // ====================================
+    // Analysis Feed Control Functions
+    // ====================================
+
+    let isAnalysisFeedRunning = false;
+    let analysisInterval = null;
+
+    /**
+     * Initialize feed control state
+     */
+    function initializeFeedControls() {
+        updateFeedStatus(false);
     }
-    
-    function simulateCameraPreview() {
-        const previewContainer = document.getElementById('cameraPreview');
+
+    /**
+     * Start the analysis feed simulation
+     */
+    function startAnalysisFeed() {
+        if (isAnalysisFeedRunning) return;
         
-        // Clear any previous content except for the label
-        const label = previewContainer.querySelector('div:first-child');
-        previewContainer.innerHTML = '';
-        previewContainer.appendChild(label);
+        isAnalysisFeedRunning = true;
+        updateFeedStatus(true);
         
-        // Create a simulated camera preview
-        const simPreview = document.createElement('div');
-        simPreview.style.position = 'absolute';
-        simPreview.style.top = '0';
-        simPreview.style.left = '0';
-        simPreview.style.width = '100%';
-        simPreview.style.height = '100%';
-        simPreview.style.background = 'linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7))';
+        // Start simulated analysis with updates every 2 seconds
+        simulateAnalysis();
+        analysisInterval = setInterval(simulateAnalysis, 2000);
         
-        // Add some simulated people
-        const peopleCount = Math.floor(Math.random() * 4) + 1;
-        for (let i = 0; i < peopleCount; i++) {
-            const person = document.createElement('div');
-            person.style.position = 'absolute';
-            person.style.width = '30px';
-            person.style.height = '30px';
-            person.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
-            person.style.borderRadius = '50%';
-            person.style.border = '2px solid rgba(0, 255, 0, 0.8)';
-            
-            // Random position
-            person.style.left = Math.floor(Math.random() * 80) + 10 + '%';
-            person.style.top = Math.floor(Math.random() * 80) + 10 + '%';
-            
-            simPreview.appendChild(person);
+        // Update button states
+        document.getElementById('startFeedBtn').disabled = true;
+        document.getElementById('stopFeedBtn').disabled = false;
+    }
+
+    /**
+     * Stop the analysis feed simulation
+     */
+    function stopAnalysisFeed() {
+        if (!isAnalysisFeedRunning) return;
+        
+        isAnalysisFeedRunning = false;
+        updateFeedStatus(false);
+        
+        // Stop analysis simulation
+        if (analysisInterval) {
+            clearInterval(analysisInterval);
+            analysisInterval = null;
         }
         
-        previewContainer.appendChild(simPreview);
+        // Reset statistics display
+        document.getElementById('people-count').textContent = '0';
+        document.getElementById('active-tracks').textContent = '0';
+        document.getElementById('fps-counter').textContent = '0';
         
-        // Add click handler to navigate to analysis page with autostart parameter
-        previewContainer.onclick = function() {
-            window.location.href = '/analysis?autostart=true';
-        };
+        // Update button states
+        document.getElementById('startFeedBtn').disabled = false;
+        document.getElementById('stopFeedBtn').disabled = true;
+    }
+
+    /**
+     * Update feed status indicators
+     */
+    function updateFeedStatus(isRunning) {
+        const statusIcon = document.getElementById('status-icon');
+        const statusText = document.getElementById('status-text');
+        const feedTitle = document.getElementById('feed-title');
+        const feedDescription = document.getElementById('feed-description');
+        
+        if (isRunning) {
+            statusIcon.className = 'fas fa-circle text-success';
+            statusText.textContent = 'Running';
+            feedTitle.textContent = 'Camera Analysis Active';
+            feedDescription.textContent = 'Analysing live camera feed and detecting people';
+        } else {
+            statusIcon.className = 'fas fa-circle text-danger';
+            statusText.textContent = 'Stopped';
+            feedTitle.textContent = 'Camera Analysis Paused';
+            feedDescription.textContent = 'Click Start to begin analysing the camera feed';
+        }
+    }
+
+    /**
+     * Simulate real-time analysis data
+     */
+    function simulateAnalysis() {
+        if (!isAnalysisFeedRunning) return;
+        
+        // Generate realistic simulation data
+        const peopleCount = Math.floor(Math.random() * 8) + 1;
+        const activeTracks = Math.floor(Math.random() * peopleCount) + 1;
+        const fps = Math.floor(Math.random() * 5) + 28; // 28-32 FPS range
+        
+        // Update statistics display
+        document.getElementById('people-count').textContent = peopleCount;
+        document.getElementById('active-tracks').textContent = activeTracks;
+        document.getElementById('fps-counter').textContent = fps;
     }
 </script>
 {% endblock %} 

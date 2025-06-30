@@ -1,6 +1,6 @@
 """
 Camera module for Retail Analytics System
-Provides interfaces for different camera types (USB, RTSP, RTSPS, Video Files)
+Provides interfaces for different camera types (USB, RTSP, RTSPS, ONVIF, Video Files)
 """
 
 import logging
@@ -8,6 +8,7 @@ from .usb_camera import USBCamera
 from .rtsp_camera import RTSPCamera
 from .rtsps_camera import RTSPSCamera
 from .mp4_camera import VideoFileCamera
+from .onvif_camera import ONVIFCameraController
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ class CameraManager:
     def _config_matches(self, config1, config2):
         """Check if two camera configurations are equivalent"""
         # Compare essential fields
-        essential_fields = ['type', 'file_path', 'url', 'device']
+        essential_fields = ['type', 'file_path', 'url', 'device', 'host', 'username', 'password']
         for field in essential_fields:
             if config1.get(field) != config2.get(field):
                 return False
@@ -83,6 +84,9 @@ class CameraManager:
         elif camera_type == 'rtsps':
             logger.info(f"Initializing RTSPS (secure) camera: {config.get('url')}")
             return RTSPSCamera(config)
+        elif camera_type == 'onvif':
+            logger.info(f"Initializing ONVIF camera: {config.get('host')}:{config.get('port', 80)}")
+            return ONVIFCameraController(config)
         elif camera_type in ['video_file', 'mp4', 'mpg', 'mpeg']:
             logger.info(f"Initializing Video File camera: {config.get('file_path')}")
             return VideoFileCamera(config)

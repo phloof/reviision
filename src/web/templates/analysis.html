@@ -9,17 +9,19 @@
         overflow: hidden;
     }
     
-    .video-feed {
-        width: 100%;
-        height: 400px;
-        background: #000;
-        border: 2px solid #ddd;
-        border-radius: 8px;
+    .feed-container {
         position: relative;
+        background: #000;
+        border-radius: 8px;
         overflow: hidden;
+        min-height: 500px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--border-color);
     }
     
-    .video-placeholder {
+    .feed-placeholder {
         width: 100%;
         height: 100%;
         display: flex;
@@ -28,6 +30,54 @@
         background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
         color: #666;
         font-size: 18px;
+        position: relative;
+    }
+    
+    .feed-label {
+        position: absolute;
+        top: 8px;
+        left: 10px;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 4px;
+        z-index: 21;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Original feed as picture-in-picture */
+    .original-pip {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 240px;
+        height: 160px;
+        background: #1f2937;
+        border: 3px solid rgba(255, 255, 255, 0.9);
+        border-radius: 8px;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.95;
+        transition: var(--transition);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(5px);
+    }
+    
+    .original-pip:hover {
+        opacity: 1;
+        border-color: var(--accent-color);
+        transform: scale(1.05);
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
+    }
+    
+    .original-pip .feed-label {
+        top: 5px;
+        left: 8px;
+        font-size: 0.75rem;
     }
     
     .video-frame {
@@ -153,6 +203,49 @@
         color: #495057;
         margin-bottom: 10px;
     }
+    
+    /* Responsive adjustments */
+    @media (max-width: 991.98px) {
+        .original-pip {
+            width: 200px;
+            height: 130px;
+        }
+        
+        .feed-container {
+            min-height: 450px;
+        }
+    }
+    
+    @media (max-width: 767.98px) {
+        .original-pip {
+            width: 160px;
+            height: 100px;
+            top: 15px;
+            right: 15px;
+        }
+        
+        .original-pip .feed-label {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+        }
+        
+        .feed-container {
+            min-height: 350px;
+        }
+    }
+    
+    @media (max-width: 575.98px) {
+        .original-pip {
+            width: 120px;
+            height: 75px;
+            top: 10px;
+            right: 10px;
+        }
+        
+        .feed-container {
+            min-height: 300px;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -182,32 +275,37 @@
     </div>
 </div>
 
+<!-- Single Video Container with Picture-in-Picture -->
 <div class="row">
-    <!-- Original Camera Feed -->
-    <div class="col-md-6">
+    <div class="col-12">
         <div class="card">
-            <div class="card-header">Original Feed</div>
-            <div class="card-body p-0">
-                <div class="feed-container">
-                    <div class="feed-label">Original</div>
-                    <div id="original-feed" class="feed-placeholder">
-                        <span>Camera feed will appear here</span>
-                    </div>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">Live Analysis Feed</h3>
+                <div class="tooltip">
+                    <i class="fas fa-info-circle"></i>
+                    <span class="tooltip-text">Main analysis view with original feed in picture-in-picture</span>
                 </div>
             </div>
-        </div>
-    </div>
-    
-    <!-- Analysis Feed with Overlays -->
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">Analysis View</div>
             <div class="card-body p-0">
                 <div class="feed-container">
-                    <div class="feed-label" id="active-overlay-label">No Active Overlay</div>
+                    <!-- Original feed (small picture-in-picture) -->
+                    <div id="original-feed" class="original-pip">
+                        <div class="feed-label">Original</div>
+                        <div class="placeholder-content">
+                            <i class="fas fa-video"></i>
+                            <span>Original Feed</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Main analysis feed -->
                     <div id="analysis-feed" class="feed-placeholder" style="position: relative;">
-                        <span>Analysis feed will appear here</span>
-                        <div id="overlay-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
+                        <div class="feed-label" id="active-overlay-label">Analysis View</div>
+                        <div class="placeholder-content">
+                            <i class="fas fa-eye fa-3x mb-3"></i>
+                            <h5>Start Analysis to Begin</h5>
+                            <p>Analysis feed with overlays will appear here</p>
+                        </div>
+                        <div id="overlay-container" class="overlay-container"></div>
                     </div>
                 </div>
             </div>
@@ -479,7 +577,9 @@
     }
     
     function stopAnalysis() {
-        console.log('Stopping analysis...');
+                    if (window.DEBUG_MODE) {
+                console.log('Stopping analysis...');
+            }
         
         // Set flag to false first to stop new operations
         analysisActive = false;
@@ -510,7 +610,9 @@
         // Reset feeds
         resetFeedPlaceholders();
         
-        console.log('Analysis stopped successfully');
+                    if (window.DEBUG_MODE) {
+                console.log('Analysis stopped successfully');
+            }
     }
     
     function initializeVideoFeeds() {
@@ -534,11 +636,15 @@
         
         // Set source to backend video stream
         const streamUrl = `/video_stream/${selectedVideo}`;
-        console.log('Loading video stream:', streamUrl);
+        if (window.DEBUG_MODE) {
+            console.log('Loading video stream:', streamUrl);
+        }
         
         // Add load handler
         feedImage.onload = function() {
-            console.log('Video stream loaded successfully');
+            if (window.DEBUG_MODE) {
+                console.log('Video stream loaded successfully');
+            }
             originalFeed.innerHTML = '';
             originalFeed.appendChild(feedImage);
             
@@ -605,7 +711,9 @@
     function captureVideoFrames() {
         // Check if analysis is still active before proceeding
         if (!analysisActive) {
-            console.log('Analysis stopped, ending frame capture');
+            if (window.DEBUG_MODE) {
+                console.log('Analysis stopped, ending frame capture');
+            }
             captureInterval = null;
             return;
         }
@@ -637,7 +745,9 @@
     async function processVideoFrame(feedImage) {
         // Double-check analysis is still active
         if (!analysisActive) {
-            console.log('Analysis stopped during frame processing');
+                            if (window.DEBUG_MODE) {
+                    console.log('Analysis stopped during frame processing');
+                }
             return;
         }
         
@@ -683,7 +793,9 @@
     async function detectObjectsInFrame(imageData, width, height) {
         // Early return if analysis has been stopped
         if (!analysisActive) {
-            console.log('Analysis stopped, skipping frame detection');
+                            if (window.DEBUG_MODE) {
+                    console.log('Analysis stopped, skipping frame detection');
+                }
             return;
         }
         
@@ -695,7 +807,9 @@
                 return;
             }
             
-            console.log('Sending frame for analysis...', { width, height, selectedOverlay });
+            if (window.DEBUG_MODE) {
+                console.log('Sending frame for analysis...', { width, height, selectedOverlay });
+            }
             
             // Send the frame to the server for analysis
             const response = await fetch('/api/analyze_frame', {
@@ -713,7 +827,9 @@
             
             // Check again if analysis is still active after the async operation
             if (!analysisActive) {
-                console.log('Analysis stopped during fetch, aborting processing');
+                if (window.DEBUG_MODE) {
+                    console.log('Analysis stopped during fetch, aborting processing');
+                }
                 return;
             }
             
@@ -726,11 +842,15 @@
             
             // Final check before processing results
             if (!analysisActive) {
-                console.log('Analysis stopped after receiving results, aborting processing');
+                if (window.DEBUG_MODE) {
+                    console.log('Analysis stopped after receiving results, aborting processing');
+                }
                 return;
             }
             
-            console.log('Raw analysis result:', result);
+            if (window.DEBUG_MODE) {
+                console.log('Raw analysis result:', result);
+            }
             
             // Validate response structure first
             if (!result.detections || !result.detections.people) {
@@ -786,7 +906,9 @@
             // Update detectedObjects with new data
             detectedObjects = newDetectedObjects;
             
-            console.log('Processed detected objects with tracking:', detectedObjects);
+            if (window.DEBUG_MODE) {
+                console.log('Processed detected objects with tracking:', detectedObjects);
+            }
             
             // Enhanced heatmap processing using both current detections and persistent paths
             if (result.heatmap && result.heatmap.points) {
@@ -1107,7 +1229,9 @@
     }
     
     function createFacialOverlay(container) {
-        console.log('Creating facial overlay with detected objects:', detectedObjects);
+        if (window.DEBUG_MODE) {
+            console.log('Creating facial overlay with detected objects:', detectedObjects);
+        }
         
         // Check which facial options are enabled
         const showAge = document.getElementById('show-age')?.checked || false;
@@ -1203,9 +1327,9 @@
         summaryPanel.style.zIndex = '25';
         summaryPanel.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
         
-        // Count faces detected and analyzed
+        // Count faces detected and analysed
         let facesDetected = 0;
-        let facesAnalyzed = 0;
+        let facesAnalysed = 0;
         let totalConfidence = 0;
         
         detectedObjects.forEach(person => {
@@ -1213,19 +1337,19 @@
             if (demographics.confidence > 0.1) {
                 facesDetected++;
                 if (demographics.gender !== 'unknown' || demographics.age_group !== 'unknown') {
-                    facesAnalyzed++;
+                    facesAnalysed++;
                     totalConfidence += demographics.confidence;
                 }
             }
         });
         
-        const avgConfidence = facesAnalyzed > 0 ? (totalConfidence / facesAnalyzed) : 0;
+        const avgConfidence = facesAnalysed > 0 ? (totalConfidence / facesAnalysed) : 0;
         
         summaryPanel.innerHTML = `
             <div style="font-weight: bold; margin-bottom: 5px;">🎭 Facial Analysis</div>
             <div>People detected: ${detectedObjects.length}</div>
             <div>Faces detected: ${facesDetected}</div>
-            <div>Faces analyzed: ${facesAnalyzed}</div>
+            <div>Faces analysed: ${facesAnalysed}</div>
             ${avgConfidence > 0 ? `<div>Avg. confidence: ${Math.round(avgConfidence * 100)}%</div>` : ''}
             <div style="margin-top: 5px; font-size: 10px; color: #ffeeaa;">
                 Analysis based on OpenCV face detection
@@ -1409,7 +1533,9 @@
         demographicOverlay.style.zIndex = '25';
         demographicOverlay.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
         
-        console.log('Creating demographics overlay with data:', detectedObjects);
+        if (window.DEBUG_MODE) {
+            console.log('Creating demographics overlay with data:', detectedObjects);
+        }
         
         // Use actual detected objects data instead of DOM elements
         let maleCount = 0;
@@ -1638,7 +1764,9 @@
                 // Create new element for new detection
                 personElement = createPersonElement(obj, showBoxes, showLabels);
                 container.appendChild(personElement);
+                if (window.DEBUG_MODE) {
                 console.log('Created new person element for ID:', obj.id);
+            }
             }
         });
         

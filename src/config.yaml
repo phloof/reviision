@@ -27,7 +27,7 @@ camera:
   file_path: testData/asianstoremulti.mp4
   fps: 30
   loop: true
-  playback_speed: 1.0
+  playback_speed: 1
   resolution:
   - 1280
   - 720
@@ -47,15 +47,11 @@ tracking:
   max_age: 30
   min_hits: 3
 web:
+  create_default_admin: true
   debug: true
   host: 0.0.0.0
-  port: 5000
-  # Secret key used for session encryption, CSRF protection, and other security features
-  # Change this to a random string in practice for security
-  secret_key: "abcdefghijklmnopqrstuvwxyz1234"
-  
-  # Authentication settings
-  create_default_admin: true  # Creates default admin user (admin/admin) if no users exist
-  session_timeout_hours: 2
-  max_login_attempts: 5
   lockout_duration_minutes: 15
+  max_login_attempts: 5
+  port: 5000
+  secret_key: abcdefghijklmnopqrstuvwxyz1234
+  session_timeout_hours: 2

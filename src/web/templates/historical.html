@@ -6,139 +6,252 @@
 
 {% block styles %}
 <style>
-    .chart-container {
-        background-color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
-        padding: 20px;
-        margin-bottom: 20px;
+    /* ====================================
+       Historical Data Page Styles
+       ==================================== */
+
+    /* Filter Controls Card */
+    .filter-card {
+        background-color: var(--card-background);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
     }
-    .filter-bar {
-        background-color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
-        padding: 15px;
-        margin-bottom: 20px;
+
+
+
+    /* Custom Date Range */
+    .custom-date-range {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border-color);
     }
-    .stats-card {
-        background-color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
-        padding: 20px;
-        margin-bottom: 20px;
-        text-align: center;
+
+    /* Path Analysis Styling */
+    .path-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+        padding: 0.75rem;
+        background: var(--background-color);
+        border-radius: var(--border-radius);
+        border: 1px solid var(--border-color);
     }
-    .stats-card h3 {
-        font-size: 2.5rem;
-        font-weight: 500;
-        margin-bottom: 5px;
+
+    .path-item:hover {
+        background: var(--accent-color);
     }
-    .stats-card p {
-        color: #6c757d;
-        margin-bottom: 0;
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .stats-card h3 {
+            font-size: 2rem;
+        }
+        
+        .chart-card .card-body {
+            padding: 1rem;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="filter-bar">
-    <div class="row align-items-center">
-        <div class="col-md-4">
-            <div class="form-group">
-                <label for="date-range">Date Range</label>
-                <select class="form-select" id="date-range">
-                    <option value="today">Today</option>
-                    <option value="yesterday">Yesterday</option>
-                    <option value="last7days" selected>Last 7 Days</option>
-                    <option value="last30days">Last 30 Days</option>
-                    <option value="custom">Custom Range</option>
-                </select>
-            </div>
+<!-- ====================================
+     Filter Controls Section
+     ==================================== -->
+<div class="filter-card">
+    <div class="row align-items-end">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <label for="date-range" class="form-label">Date Range</label>
+            <select class="form-select" id="date-range">
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="last7days" selected>Last 7 Days</option>
+                <option value="last30days">Last 30 Days</option>
+                <option value="custom">Custom Range</option>
+            </select>
         </div>
-        <div class="col-md-4">
-            <div class="form-group">
-                <label for="metric-select">Metric</label>
-                <select class="form-select" id="metric-select">
-                    <option value="visitors" selected>Visitors</option>
-                    <option value="dwell-time">Dwell Time</option>
-                    <option value="demographics">Demographics</option>
-                    <option value="heatmap-density">Heatmap Density</option>
-                </select>
-            </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <label for="metric-select" class="form-label">Metric</label>
+            <select class="form-select" id="metric-select">
+                <option value="visitors" selected>Visitors</option>
+                <option value="dwell-time">Dwell Time</option>
+                <option value="demographics">Demographics</option>
+                <option value="traffic-patterns">Traffic Patterns</option>
+            </select>
         </div>
-        <div class="col-md-4 d-flex align-items-end">
-            <button class="btn btn-primary mt-2 w-100" id="apply-filters">Apply Filters</button>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <label for="time-granularity" class="form-label">Time Granularity</label>
+            <select class="form-select" id="time-granularity">
+                <option value="hourly" selected>Hourly</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+            </select>
+        </div>
+        <div class="col-lg-3 col-md-12 mb-3">
+            <button class="btn btn-primary w-100" id="apply-filters">
+                <i class="fas fa-search me-2"></i>Apply Filters
+            </button>
         </div>
     </div>
-    <div class="row mt-3 custom-date-range" style="display: none;">
-        <div class="col-md-4">
-            <div class="form-group">
-                <label for="start-date">Start Date</label>
-                <input type="date" class="form-control" id="start-date">
+    
+    <!-- Custom Date Range Inputs -->
+    <div class="row custom-date-range" style="display: none;">
+        <div class="col-lg-4 col-md-6 mb-3">
+            <label for="start-date" class="form-label">Start Date</label>
+            <input type="date" class="form-control" id="start-date">
+        </div>
+        <div class="col-lg-4 col-md-6 mb-3">
+            <label for="end-date" class="form-label">End Date</label>
+            <input type="date" class="form-control" id="end-date">
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards Row -->
+<div class="row mb-4 stats-grid">
+    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x mb-3" style="color: #3498db;"></i>
+                <div class="stat-value" id="total-visitors">2,458</div>
+                <div class="stat-label">Total Visitors</div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="form-group">
-                <label for="end-date">End Date</label>
-                <input type="date" class="form-control" id="end-date">
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-clock fa-2x mb-3" style="color: #e74c3c;"></i>
+                <div class="stat-value" id="average-dwell">5:23</div>
+                <div class="stat-label">Average Dwell Time</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-2x mb-3" style="color: #f39c12;"></i>
+                <div class="stat-value" id="peak-hour">14:00</div>
+                <div class="stat-label">Peak Hour</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-percentage fa-2x mb-3" style="color: #2ecc71;"></i>
+                <div class="stat-value" id="conversion-rate">32%</div>
+                <div class="stat-label">Conversion Rate</div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- ====================================
+     Main Analysis Cards
+     ==================================== -->
+
+<!-- Traffic Chart Row -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">Visitor Traffic Over Time</h3>
+                <div class="tooltip">
+                    <i class="fas fa-info-circle"></i>
+                    <span class="tooltip-text">Historical visitor traffic patterns</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="traffic-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Demographics Chart Row -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">Demographic Breakdown</h3>
+                <div class="tooltip">
+                    <i class="fas fa-info-circle"></i>
+                    <span class="tooltip-text">Customer demographics and dwell time analysis</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <canvas id="demographics-chart"></canvas>
+                        </div>
+                        <div class="col-md-4">
+                            <canvas id="dwell-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Weekly Traffic & Customer Paths Row -->
 <div class="row">
-    <div class="col-md-3">
-        <div class="stats-card">
-            <h3 id="total-visitors">2,458</h3>
-            <p>Total Visitors</p>
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">Weekly Traffic Patterns</h3>
+                <div class="tooltip">
+                    <i class="fas fa-info-circle"></i>
+                    <span class="tooltip-text">Traffic patterns by day of week</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="week-chart"></canvas>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="stats-card">
-            <h3 id="average-dwell">5:23</h3>
-            <p>Average Dwell Time</p>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stats-card">
-            <h3 id="peak-hour">14:00</h3>
-            <p>Peak Hour</p>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stats-card">
-            <h3 id="conversion-rate">32%</h3>
-            <p>Conversion Rate</p>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-md-8">
-        <div class="chart-container">
-            <h5>Visitor Traffic Over Time</h5>
-            <canvas id="traffic-chart"></canvas>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="chart-container">
-            <h5>Visitor Demographics</h5>
-            <canvas id="demographics-chart"></canvas>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="chart-container">
-            <h5>Dwell Time Distribution</h5>
-            <canvas id="dwell-chart"></canvas>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="chart-container">
-            <h5>Traffic by Day of Week</h5>
-            <canvas id="week-chart"></canvas>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">Popular Customer Paths</h3>
+                <div class="tooltip">
+                    <i class="fas fa-info-circle"></i>
+                    <span class="tooltip-text">Most common customer journey paths</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="path-analysis">
+                    <div class="path-item">
+                        <span><i class="fas fa-arrow-right me-2"></i>Entrance → Electronics → Checkout</span>
+                        <span class="badge bg-primary">45%</span>
+                    </div>
+                    <div class="path-item">
+                        <span><i class="fas fa-arrow-right me-2"></i>Entrance → Clothing → Fitting Room → Checkout</span>
+                        <span class="badge bg-primary">30%</span>
+                    </div>
+                    <div class="path-item">
+                        <span><i class="fas fa-arrow-right me-2"></i>Entrance → Grocery → Checkout</span>
+                        <span class="badge bg-primary">25%</span>
+                    </div>
+                    <div class="path-item">
+                        <span><i class="fas fa-arrow-right me-2"></i>Entrance → Café → Exit</span>
+                        <span class="badge bg-secondary">15%</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -146,21 +259,59 @@
 
 {% block scripts %}
 <script>
-    // Toggle custom date range inputs
-    document.getElementById('date-range').addEventListener('change', function() {
-        const customDateRange = document.querySelector('.custom-date-range');
-        if (this.value === 'custom') {
-            customDateRange.style.display = 'flex';
-        } else {
-            customDateRange.style.display = 'none';
-        }
+    // ====================================
+    // Historical Data Page JavaScript
+    // ====================================
+
+    /**
+     * Initialize the page when DOM is loaded
+     */
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeDateRangeHandler();
+        initializeCharts();
+        setupEventHandlers();
     });
 
-    // Initialize charts when DOM is loaded
-    document.addEventListener('DOMContentLoaded', function() {
-        // Traffic over time chart
-        const trafficCtx = document.getElementById('traffic-chart').getContext('2d');
-        const trafficChart = new Chart(trafficCtx, {
+    /**
+     * Handle date range selection changes
+     */
+    function initializeDateRangeHandler() {
+        document.getElementById('date-range').addEventListener('change', function() {
+            const customDateRange = document.querySelector('.custom-date-range');
+            if (this.value === 'custom') {
+                customDateRange.style.display = 'flex';
+            } else {
+                customDateRange.style.display = 'none';
+            }
+        });
+    }
+
+    /**
+     * Initialize all charts on the page
+     */
+    function initializeCharts() {
+        createTrafficChart();
+        createDemographicsChart();
+        createDwellTimeChart();
+        createWeeklyTrafficChart();
+    }
+
+    /**
+     * Setup event handlers for filter controls
+     */
+    function setupEventHandlers() {
+        document.getElementById('apply-filters').addEventListener('click', function() {
+            applyFilters();
+        });
+    }
+
+    /**
+     * Create the main traffic over time chart
+     */
+    function createTrafficChart() {
+        const ctx = document.getElementById('traffic-chart').getContext('2d');
+        
+        new Chart(ctx, {
             type: 'line',
             data: {
                 labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
@@ -171,11 +322,16 @@
                     borderColor: 'rgba(13, 110, 253, 1)',
                     borderWidth: 2,
                     tension: 0.3,
-                    fill: true
+                    fill: true,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: 'rgba(13, 110, 253, 1)',
+                    pointBorderWidth: 2
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         display: false
@@ -183,15 +339,30 @@
                 },
                 scales: {
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Visitors'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Day of Week'
+                        }
                     }
                 }
             }
         });
+    }
 
-        // Demographics chart
-        const demographicsCtx = document.getElementById('demographics-chart').getContext('2d');
-        const demographicsChart = new Chart(demographicsCtx, {
+    /**
+     * Create the demographics pie chart
+     */
+    function createDemographicsChart() {
+        const ctx = document.getElementById('demographics-chart').getContext('2d');
+        
+        new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: ['Male', 'Female', 'Unknown'],
@@ -202,22 +373,41 @@
                         'rgba(255, 99, 132, 0.8)',
                         'rgba(150, 150, 150, 0.8)'
                     ],
-                    borderWidth: 1
+                    borderColor: '#fff',
+                    borderWidth: 2
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.formattedValue || '';
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((acc, data) => acc + data, 0);
+                                const percentage = Math.round((context.raw / total) * 100);
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
                     }
                 }
             }
         });
+    }
 
-        // Dwell time chart
-        const dwellCtx = document.getElementById('dwell-chart').getContext('2d');
-        const dwellChart = new Chart(dwellCtx, {
+    /**
+     * Create the dwell time distribution chart
+     */
+    function createDwellTimeChart() {
+        const ctx = document.getElementById('dwell-chart').getContext('2d');
+        
+        new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: ['<1m', '1-3m', '3-5m', '5-10m', '10m+'],
@@ -225,11 +415,13 @@
                     label: 'Visitors',
                     data: [120, 230, 310, 170, 50],
                     backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
                     borderWidth: 1
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         display: false
@@ -237,27 +429,52 @@
                 },
                 scales: {
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Visitors'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Dwell Time Range'
+                        }
                     }
                 }
             }
         });
+    }
 
-        // Day of week chart
-        const weekCtx = document.getElementById('week-chart').getContext('2d');
-        const weekChart = new Chart(weekCtx, {
+    /**
+     * Create the weekly traffic patterns chart
+     */
+    function createWeeklyTrafficChart() {
+        const ctx = document.getElementById('week-chart').getContext('2d');
+        
+        new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
                 datasets: [{
                     label: 'Average Visitors',
                     data: [320, 290, 310, 340, 370, 500, 450],
-                    backgroundColor: 'rgba(153, 102, 255, 0.8)',
+                    backgroundColor: [
+                        'rgba(153, 102, 255, 0.8)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(153, 102, 255, 0.8)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(153, 102, 255, 0.8)',
+                        'rgba(255, 99, 132, 0.8)', // Weekend highlight
+                        'rgba(255, 99, 132, 0.8)'  // Weekend highlight
+                    ],
+                    borderColor: 'rgba(153, 102, 255, 1)',
                     borderWidth: 1
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         display: false
@@ -265,24 +482,135 @@
                 },
                 scales: {
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Average Daily Visitors'
+                        }
                     }
                 }
             }
         });
+    }
 
-        // Apply filters button click
-        document.getElementById('apply-filters').addEventListener('click', function() {
-            const dateRange = document.getElementById('date-range').value;
-            const metric = document.getElementById('metric-select').value;
+    /**
+     * Apply selected filters and refresh data
+     */
+    function applyFilters() {
+        const dateRange = document.getElementById('date-range').value;
+        const metric = document.getElementById('metric-select').value;
+        const granularity = document.getElementById('time-granularity').value;
+        
+        // Show loading state
+        showLoadingState();
+        
+        // Simulate API call delay
+        setTimeout(() => {
+            // Update statistics based on filters
+            updateStatistics(dateRange, metric);
             
-            // Here you would normally fetch data from the server
-            // For now, we'll just show an alert
-            alert(`Fetching ${metric} data for ${dateRange} range`);
+            // Refresh charts with new data
+            refreshChartsWithNewData(dateRange, metric, granularity);
             
-            // In a real implementation, you would make an API call here
-            // and update the charts with the new data
-        });
-    });
+            // Hide loading state
+            hideLoadingState();
+            
+            // Show success message
+            showFilterAppliedMessage(metric, dateRange, granularity);
+        }, 1000);
+    }
+
+    /**
+     * Update statistics cards with filtered data
+     */
+    function updateStatistics(dateRange, metric) {
+        // Simulate different data based on filters
+        const stats = getFilteredStatistics(dateRange, metric);
+        
+        document.getElementById('total-visitors').textContent = stats.totalVisitors.toLocaleString();
+        document.getElementById('average-dwell').textContent = stats.avgDwellTime;
+        document.getElementById('peak-hour').textContent = stats.peakHour;
+        document.getElementById('conversion-rate').textContent = stats.conversionRate + '%';
+    }
+
+    /**
+     * Get filtered statistics based on selected filters
+     */
+    function getFilteredStatistics(dateRange, metric) {
+        // Simulate different data based on filters
+        const baseStats = {
+            totalVisitors: 2458,
+            avgDwellTime: '5:23',
+            peakHour: '14:00',
+            conversionRate: 32
+        };
+
+        // Adjust stats based on date range
+        switch(dateRange) {
+            case 'today':
+                baseStats.totalVisitors = Math.floor(baseStats.totalVisitors / 7);
+                break;
+            case 'yesterday':
+                baseStats.totalVisitors = Math.floor(baseStats.totalVisitors / 7) + Math.floor(Math.random() * 50);
+                break;
+            case 'last30days':
+                baseStats.totalVisitors = baseStats.totalVisitors * 4;
+                break;
+        }
+
+        return baseStats;
+    }
+
+    /**
+     * Refresh all charts with new filtered data
+     */
+    function refreshChartsWithNewData(dateRange, metric, granularity) {
+        // In a real implementation, this would fetch new data from the API
+        // For now, we'll just reinitialize the charts
+        console.log(`Refreshing charts for ${metric} data with ${granularity} granularity over ${dateRange}`);
+    }
+
+    /**
+     * Show loading state for filters
+     */
+    function showLoadingState() {
+        const button = document.getElementById('apply-filters');
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
+        button.disabled = true;
+    }
+
+    /**
+     * Hide loading state
+     */
+    function hideLoadingState() {
+        const button = document.getElementById('apply-filters');
+        button.innerHTML = '<i class="fas fa-search me-2"></i>Apply Filters';
+        button.disabled = false;
+    }
+
+    /**
+     * Show filter applied success message
+     */
+    function showFilterAppliedMessage(metric, dateRange, granularity) {
+        // Create temporary success message
+        const message = document.createElement('div');
+        message.className = 'alert alert-success alert-dismissible fade show';
+        message.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>
+            Filters applied: ${metric} data for ${dateRange} with ${granularity} granularity
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Insert after filter card
+        const filterCard = document.querySelector('.filter-card');
+        filterCard.parentNode.insertBefore(message, filterCard.nextSibling);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            if (message.parentNode) {
+                message.remove();
+            }
+        }, 3000);
+    }
 </script>
-{% endblock %} 
+{% endblock %}

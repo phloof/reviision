@@ -48,57 +48,345 @@
         width: 40px;
         text-align: center;
     }
+    
+    /* Mobile-specific settings styles */
+    @media (max-width: 991.98px) {
+        .settings-categories {
+            margin-bottom: 2rem;
+        }
+        
+        .list-group-item {
+            padding: 1rem;
+            font-size: 1rem;
+        }
+        
+        .list-group-item i {
+            margin-right: 0.75rem;
+        }
+        
+        .tab-content {
+            padding: 0;
+        }
+        
+        .settings-card {
+            border-radius: 12px;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-control, .form-select {
+            font-size: 16px; /* Prevents iOS zoom */
+            padding: 0.75rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1rem;
+            min-height: 44px;
+        }
+        
+        .camera-config .row .col-md-6 {
+            margin-bottom: 1rem;
+        }
+    }
+    
+    @media (max-width: 767.98px) {
+        .container-fluid {
+            padding: 1rem;
+        }
+        
+        .card-header {
+            padding: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .card-body {
+            padding: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        
+        .btn-action {
+            margin-right: 0;
+            margin-bottom: 0.5rem;
+            width: 100%;
+        }
+        
+        .video-path-entry {
+            flex-direction: column;
+        }
+        
+        .video-path-entry .form-control {
+            margin-right: 0;
+            margin-bottom: 0.5rem;
+        }
+        
+        .video-path-entry .btn-sm {
+            width: 100%;
+        }
+        
+        /* Stack ONVIF form fields on mobile */
+        .camera-config .row {
+            margin: 0;
+        }
+        
+        .camera-config .row .col-md-6 {
+            padding: 0;
+            margin-bottom: 1.25rem;
+        }
+        
+        .small, .form-text {
+            font-size: 0.9rem;
+        }
+    }
+    
+    @media (max-width: 575.98px) {
+        .page-title h1 {
+            font-size: 1.5rem;
+        }
+        
+        .card {
+            margin-bottom: 1rem;
+        }
+        
+        .form-control, .form-select {
+            padding: 0.875rem 0.75rem;
+        }
+        
+        .btn {
+            padding: 0.875rem 1rem;
+        }
+        
+        .list-group-item {
+            padding: 0.875rem;
+        }
+        
+        .card-header {
+            padding: 0.875rem;
+            font-size: 1rem;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="row">
-    <div class="col-md-3">
+    <div class="col-lg-3 col-md-4 settings-categories">
         <div class="card">
-            <div class="card-header">Setting Categories</div>
-            <div class="list-group list-group-flush">
-                <a href="#camera-settings" class="list-group-item list-group-item-action active" data-bs-toggle="list">Camera Settings</a>
-                <a href="#detection-settings" class="list-group-item list-group-item-action" data-bs-toggle="list">Detection Settings</a>
-                <a href="#tracking-settings" class="list-group-item list-group-item-action" data-bs-toggle="list">Tracking Settings</a>
-                <a href="#analysis-settings" class="list-group-item list-group-item-action" data-bs-toggle="list">Analysis Settings</a>
-                <a href="#heatmap-settings" class="list-group-item list-group-item-action" data-bs-toggle="list">Heatmap Settings</a>
-                <a href="#database-settings" class="list-group-item list-group-item-action" data-bs-toggle="list">Database Settings</a>
-                <a href="#web-settings" class="list-group-item list-group-item-action" data-bs-toggle="list">Web Settings</a>
-                <a href="#backup-restore" class="list-group-item list-group-item-action" data-bs-toggle="list">Backup & Restore</a>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-cogs me-2"></i>Category Visibility</span>
+                <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#settingsCategories" aria-expanded="false" aria-controls="settingsCategories">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
+            <div class="collapse d-lg-block" id="settingsCategories">
+                <div class="card-body p-3">
+                    <div class="form-group mb-3">
+                        <label class="form-label small text-muted mb-2">Select categories to show:</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="show-camera" checked onchange="toggleCategory('camera-settings', this.checked)">
+                            <label class="form-check-label" for="show-camera">
+                                <i class="fas fa-video me-2"></i>Camera Settings
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="show-detection" checked onchange="toggleCategory('detection-settings', this.checked)">
+                            <label class="form-check-label" for="show-detection">
+                                <i class="fas fa-search me-2"></i>Detection Settings
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="show-tracking" checked onchange="toggleCategory('tracking-settings', this.checked)">
+                            <label class="form-check-label" for="show-tracking">
+                                <i class="fas fa-route me-2"></i>Tracking Settings
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="show-analysis" checked onchange="toggleCategory('analysis-settings', this.checked)">
+                            <label class="form-check-label" for="show-analysis">
+                                <i class="fas fa-chart-line me-2"></i>Analysis Settings
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="show-database" checked onchange="toggleCategory('database-settings', this.checked)">
+                            <label class="form-check-label" for="show-database">
+                                <i class="fas fa-database me-2"></i>Database Settings
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="show-web" checked onchange="toggleCategory('web-settings', this.checked)">
+                            <label class="form-check-label" for="show-web">
+                                <i class="fas fa-globe me-2"></i>Web Settings
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="show-backup" checked onchange="toggleCategory('backup-restore', this.checked)">
+                            <label class="form-check-label" for="show-backup">
+                                <i class="fas fa-archive me-2"></i>Backup & Restore
+                            </label>
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button class="btn btn-sm btn-primary" onclick="showAllCategories()">
+                            <i class="fas fa-eye me-2"></i>Show All
+                        </button>
+                    </div>
+                </div>
+                <div class="list-group list-group-flush d-none d-lg-block" id="categoryTabs">
+                    <a href="#camera-settings" class="list-group-item list-group-item-action active" data-bs-toggle="list" id="camera-tab">
+                        <i class="fas fa-video me-2"></i>Camera Settings
+                    </a>
+                    <a href="#detection-settings" class="list-group-item list-group-item-action" data-bs-toggle="list" id="detection-tab">
+                        <i class="fas fa-search me-2"></i>Detection Settings
+                    </a>
+                    <a href="#tracking-settings" class="list-group-item list-group-item-action" data-bs-toggle="list" id="tracking-tab">
+                        <i class="fas fa-route me-2"></i>Tracking Settings
+                    </a>
+                    <a href="#analysis-settings" class="list-group-item list-group-item-action" data-bs-toggle="list" id="analysis-tab">
+                        <i class="fas fa-chart-line me-2"></i>Analysis Settings
+                    </a>
+                    <a href="#database-settings" class="list-group-item list-group-item-action" data-bs-toggle="list" id="database-tab">
+                        <i class="fas fa-database me-2"></i>Database Settings
+                    </a>
+                    <a href="#web-settings" class="list-group-item list-group-item-action" data-bs-toggle="list" id="web-tab">
+                        <i class="fas fa-globe me-2"></i>Web Settings
+                    </a>
+                    <a href="#backup-restore" class="list-group-item list-group-item-action" data-bs-toggle="list" id="backup-tab">
+                        <i class="fas fa-archive me-2"></i>Backup & Restore
+                    </a>
+                </div>
             </div>
         </div>
     </div>
     
-    <div class="col-md-9">
+    <div class="col-lg-9 col-md-8">
         <div class="tab-content">
             <!-- Camera Settings -->
             <div class="tab-pane fade show active" id="camera-settings">
                 <div class="card settings-card">
-                    <div class="card-header">Camera Settings</div>
+                    <div class="card-header">
+                        <i class="fas fa-video me-2"></i>Camera Type Selection
+                    </div>
                     <div class="card-body">
-                        <h5>Video Configuration</h5>
-                        <form id="video-config-form">
+                        <form id="camera-type-form">
                             <div class="form-group">
-                                <label for="default-video">Default Video:</label>
-                                <select class="form-select" id="default-video" name="default">
-                                    <!-- Will be populated dynamically -->
+                                <label for="camera-type" class="form-label">Camera Type:</label>
+                                <select class="form-select" id="camera-type" name="camera_type">
+                                    <option value="video_file">Video File</option>
+                                    <option value="usb">USB Camera</option>
+                                    <option value="rtsp">RTSP Camera</option>
+                                    <option value="rtsps">RTSP Secure Camera</option>
+                                    <option value="onvif">ONVIF Camera (with PTZ)</option>
                                 </select>
                             </div>
                             
-                            <h6>Video Paths:</h6>
-                            <div id="video-paths-container">
-                                <!-- Will be populated dynamically -->
+                            <!-- Video File Configuration -->
+                            <div id="video-file-config" class="camera-config">
+                                <h6>Video Configuration</h6>
+                                <div class="form-group">
+                                    <label for="default-video">Default Video:</label>
+                                    <select class="form-select" id="default-video" name="default">
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                </div>
+                                
+                                <h6>Video Paths:</h6>
+                                <div id="video-paths-container">
+                                    <!-- Will be populated dynamically -->
+                                </div>
+                                
+                                <div class="form-group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="add-video-btn">
+                                        <i class="fas fa-plus"></i> Add Video
+                                    </button>
+                                </div>
                             </div>
                             
-                            <div class="form-group">
-                                <button type="button" class="btn btn-sm btn-outline-primary" id="add-video-btn">
-                                    <i class="fas fa-plus"></i> Add Video
-                                </button>
+                            <!-- USB Camera Configuration -->
+                            <div id="usb-config" class="camera-config" style="display: none;">
+                                <h6>USB Camera Configuration</h6>
+                                <div class="form-group">
+                                    <label for="usb-device">Device Path:</label>
+                                    <input type="text" class="form-control" id="usb-device" name="device" value="/dev/video0" placeholder="/dev/video0">
+                                    <small class="form-text text-muted">Linux: /dev/video0, Windows: 0, 1, 2...</small>
+                                </div>
+                            </div>
+                            
+                            <!-- RTSP Camera Configuration -->
+                            <div id="rtsp-config" class="camera-config" style="display: none;">
+                                <h6>RTSP Camera Configuration</h6>
+                                <div class="form-group">
+                                    <label for="rtsp-url">RTSP URL:</label>
+                                    <input type="text" class="form-control" id="rtsp-url" name="url" placeholder="rtsp://username:password@192.168.1.100:554/stream">
+                                    <small class="form-text text-muted">Example: rtsp://admin:password@192.168.1.100:554/live</small>
+                                </div>
+                            </div>
+                            
+                            <!-- RTSPS Camera Configuration -->
+                            <div id="rtsps-config" class="camera-config" style="display: none;">
+                                <h6>RTSP Secure Camera Configuration</h6>
+                                <div class="form-group">
+                                    <label for="rtsps-url">RTSPS URL:</label>
+                                    <input type="text" class="form-control" id="rtsps-url" name="url" placeholder="rtsps://username:password@192.168.1.100:322/stream">
+                                    <small class="form-text text-muted">Example: rtsps://admin:password@192.168.1.100:322/live</small>
+                                </div>
+                            </div>
+                            
+                            <!-- ONVIF Camera Configuration -->
+                            <div id="onvif-config" class="camera-config" style="display: none;">
+                                <h6>ONVIF Camera Configuration</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="onvif-host">Camera IP Address:</label>
+                                            <input type="text" class="form-control" id="onvif-host" name="host" placeholder="192.168.1.100">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="onvif-port">ONVIF Port:</label>
+                                            <input type="number" class="form-control" id="onvif-port" name="port" value="80" min="1" max="65535">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="onvif-username">Username:</label>
+                                            <input type="text" class="form-control" id="onvif-username" name="username" placeholder="admin">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="onvif-password">Password:</label>
+                                            <input type="password" class="form-control" id="onvif-password" name="password" placeholder="password">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="onvif-rtsp-port">RTSP Port:</label>
+                                            <input type="number" class="form-control" id="onvif-rtsp-port" name="rtsp_port" value="554" min="1" max="65535">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="onvif-profile">Media Profile Index:</label>
+                                            <input type="number" class="form-control" id="onvif-profile" name="profile_index" value="0" min="0" max="10">
+                                            <small class="form-text text-muted">Usually 0 for main stream</small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             
                             <div class="form-group mt-4">
-                                <button type="submit" class="btn btn-primary">Save Video Configuration</button>
-                                <button type="button" class="btn btn-outline-secondary" id="reset-video-config">Reset</button>
+                                <button type="submit" class="btn btn-primary">Save Camera Configuration</button>
+                                <button type="button" class="btn btn-outline-secondary" id="reset-camera-config">Reset</button>
                             </div>
                         </form>
                     </div>
@@ -130,6 +418,131 @@
                                 <button type="button" class="btn btn-warning" id="stop-camera">Stop Current Camera</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+                
+                <!-- PTZ Controls for ONVIF Cameras -->
+                <div class="card settings-card" id="ptz-controls" style="display: none;">
+                    <div class="card-header">
+                        <i class="fas fa-video"></i> PTZ (Pan Tilt Zoom) Controls
+                        <span id="ptz-status" class="badge bg-secondary ms-2">Not Connected</span>
+                    </div>
+                    <div class="card-body">
+                        <!-- PTZ Status -->
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <h6>Camera Information</h6>
+                                <div id="camera-info" class="text-muted">
+                                    <small>No ONVIF camera connected</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Manual PTZ Control -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <h6>Manual Control</h6>
+                                <div class="ptz-joystick-container text-center">
+                                    <div class="btn-group-vertical">
+                                        <button type="button" class="btn btn-outline-primary btn-sm ptz-btn" data-direction="up">
+                                            <i class="fas fa-chevron-up"></i>
+                                        </button>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-outline-primary btn-sm ptz-btn" data-direction="left">
+                                                <i class="fas fa-chevron-left"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" id="ptz-home">
+                                                <i class="fas fa-home"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-primary btn-sm ptz-btn" data-direction="right">
+                                                <i class="fas fa-chevron-right"></i>
+                                            </button>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm ptz-btn" data-direction="down">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <div class="mt-2">
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-outline-success btn-sm ptz-zoom" data-zoom="in">
+                                                <i class="fas fa-search-plus"></i> Zoom In
+                                            </button>
+                                            <button type="button" class="btn btn-outline-success btn-sm ptz-zoom" data-zoom="out">
+                                                <i class="fas fa-search-minus"></i> Zoom Out
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Position Control</h6>
+                                <div class="form-group">
+                                    <label for="ptz-pan">Pan:</label>
+                                    <input type="range" class="form-range" min="-1" max="1" step="0.1" value="0" id="ptz-pan">
+                                    <div class="text-center">
+                                        <span id="ptz-pan-value">0.0</span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="ptz-tilt">Tilt:</label>
+                                    <input type="range" class="form-range" min="-1" max="1" step="0.1" value="0" id="ptz-tilt">
+                                    <div class="text-center">
+                                        <span id="ptz-tilt-value">0.0</span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="ptz-zoom-slider">Zoom:</label>
+                                    <input type="range" class="form-range" min="0" max="1" step="0.1" value="0" id="ptz-zoom-slider">
+                                    <div class="text-center">
+                                        <span id="ptz-zoom-value">0.0</span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-primary btn-sm" id="ptz-move-absolute">
+                                    <i class="fas fa-crosshairs"></i> Move to Position
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Preset Management -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h6>Preset Positions</h6>
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <select class="form-select" id="ptz-presets">
+                                            <option value="">Select a preset...</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="button" class="btn btn-info btn-sm" id="ptz-goto-preset">
+                                            <i class="fas fa-play"></i> Go to Preset
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-8">
+                                        <input type="text" class="form-control" id="new-preset-name" placeholder="New preset name">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="button" class="btn btn-success btn-sm" id="ptz-save-preset">
+                                            <i class="fas fa-save"></i> Save Preset
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- PTZ Actions -->
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <button type="button" class="btn btn-warning btn-sm" id="ptz-stop">
+                                    <i class="fas fa-stop"></i> Stop Movement
+                                </button>
+                                <button type="button" class="btn btn-info btn-sm" id="ptz-refresh">
+                                    <i class="fas fa-sync"></i> Refresh Status
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -365,93 +778,7 @@
                 </div>
             </div>
             
-            <!-- Heatmap Settings Tab -->
-            <div class="tab-pane fade" id="heatmap-settings">
-                <div class="card settings-card">
-                    <div class="card-header">Heatmap Colormap Settings</div>
-                    <div class="card-body">
-                        <p class="text-muted">Configure colormap settings for different heatmap visualizations.</p>
-                        
-                        <form id="colormap-settings-form">
-                            <div class="form-group">
-                                <label for="default-colormap">Default Colormap:</label>
-                                <select class="form-select" id="default-colormap">
-                                    <!-- Will be populated dynamically -->
-                                </select>
-                                <div class="colormap-preview" id="default-colormap-preview"></div>
-                            </div>
-                            
-                            <hr>
-                            <h5>Specific Heatmap Types</h5>
-                            
-                            <div class="colormap-type">
-                                <label for="position-colormap">Position Heatmap:</label>
-                                <select class="form-select colormap-select" id="position-colormap" data-type="position">
-                                    <!-- Will be populated dynamically -->
-                                </select>
-                                <div class="colormap-preview" id="position-colormap-preview"></div>
-                                
-                                <div class="form-group mt-2">
-                                    <label for="position-intensity">Intensity: <span class="intensity-value" id="position-intensity-value">0.8</span></label>
-                                    <input type="range" class="form-range intensity-slider" 
-                                           id="position-intensity" data-type="position"
-                                           min="0.1" max="1.0" step="0.05" value="0.8">
-                                </div>
-                            </div>
-                            
-                            <div class="colormap-type">
-                                <label for="dwell-colormap">Dwell Time Heatmap:</label>
-                                <select class="form-select colormap-select" id="dwell-colormap" data-type="dwell">
-                                    <!-- Will be populated dynamically -->
-                                </select>
-                                <div class="colormap-preview" id="dwell-colormap-preview"></div>
-                                
-                                <div class="form-group mt-2">
-                                    <label for="dwell-intensity">Intensity: <span class="intensity-value" id="dwell-intensity-value">0.75</span></label>
-                                    <input type="range" class="form-range intensity-slider" 
-                                           id="dwell-intensity" data-type="dwell"
-                                           min="0.1" max="1.0" step="0.05" value="0.75">
-                                </div>
-                            </div>
-                            
-                            <div class="colormap-type">
-                                <label for="zone-colormap">Zone Activity Heatmap:</label>
-                                <select class="form-select colormap-select" id="zone-colormap" data-type="zone">
-                                    <!-- Will be populated dynamically -->
-                                </select>
-                                <div class="colormap-preview" id="zone-colormap-preview"></div>
-                                
-                                <div class="form-group mt-2">
-                                    <label for="zone-intensity">Intensity: <span class="intensity-value" id="zone-intensity-value">0.7</span></label>
-                                    <input type="range" class="form-range intensity-slider" 
-                                           id="zone-intensity" data-type="zone"
-                                           min="0.1" max="1.0" step="0.05" value="0.7">
-                                </div>
-                            </div>
-                            
-                            <div class="colormap-type">
-                                <label for="comparison-colormap">Comparison Heatmap:</label>
-                                <select class="form-select colormap-select" id="comparison-colormap" data-type="comparison">
-                                    <!-- Will be populated dynamically -->
-                                </select>
-                                <div class="colormap-preview" id="comparison-colormap-preview"></div>
-                                
-                                <div class="form-group mt-2">
-                                    <label for="comparison-intensity">Intensity: <span class="intensity-value" id="comparison-intensity-value">0.85</span></label>
-                                    <input type="range" class="form-range intensity-slider" 
-                                           id="comparison-intensity" data-type="comparison"
-                                           min="0.1" max="1.0" step="0.05" value="0.85">
-                                </div>
-                            </div>
-                            
-                            <div class="form-group mt-4">
-                                <button type="submit" class="btn btn-primary">Save Heatmap Settings</button>
-                                <button type="button" class="btn btn-outline-secondary" id="reset-colormap-config">Reset to Defaults</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
+
             
             <!-- Database Settings Tab -->
             <div class="tab-pane fade" id="database-settings">
@@ -593,9 +920,17 @@
                 <div class="card settings-card">
                     <div class="card-header">Backup and Restore</div>
                     <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-outline-primary" id="backup-btn">Backup Configuration</button>
-                            <button class="btn btn-outline-secondary" id="restore-btn">Restore Configuration</button>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <button class="btn btn-outline-primary w-100" id="backup-btn">
+                                    <i class="fas fa-download me-2"></i>Backup Configuration
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <button class="btn btn-outline-secondary w-100" id="restore-btn">
+                                    <i class="fas fa-upload me-2"></i>Restore Configuration
+                                </button>
+                            </div>
                         </div>
                         
                         <div class="alert alert-info mt-3">
@@ -624,6 +959,41 @@
         loadColorMapConfig();
     });
     
+    // Category visibility functions
+    function toggleCategory(categoryId, show) {
+        const categoryElement = document.getElementById(categoryId);
+        const tabElement = document.getElementById(categoryId.replace('-settings', '-tab').replace('backup-restore', 'backup-tab'));
+        
+        if (show) {
+            categoryElement.style.display = 'block';
+            if (tabElement) tabElement.style.display = 'block';
+        } else {
+            categoryElement.style.display = 'none';
+            if (tabElement) tabElement.style.display = 'none';
+            
+            // If this was the active tab, switch to the first visible one
+            if (categoryElement.classList.contains('show') && categoryElement.classList.contains('active')) {
+                const firstVisibleTab = document.querySelector('#categoryTabs a:not([style*="display: none"])');
+                if (firstVisibleTab) {
+                    const tab = new bootstrap.Tab(firstVisibleTab);
+                    tab.show();
+                }
+            }
+        }
+    }
+    
+    function showAllCategories() {
+        const checkboxes = document.querySelectorAll('#settingsCategories input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+            const categoryId = checkbox.id.replace('show-', '').replace('camera', 'camera-settings')
+                .replace('detection', 'detection-settings').replace('tracking', 'tracking-settings')
+                .replace('analysis', 'analysis-settings').replace('database', 'database-settings')
+                .replace('web', 'web-settings').replace('backup', 'backup-restore');
+            toggleCategory(categoryId, true);
+        });
+    }
+
     // Main configuration management
     async function loadMainConfig() {
         try {
@@ -1560,6 +1930,12 @@
                 confidenceValue.textContent = this.value;
             });
         }
+        
+        // Camera type selection
+        setupCameraTypeSelection();
+        
+        // PTZ controls
+        setupPTZControls();
     });
     
     // Helper function to show alerts
@@ -1624,6 +2000,363 @@
             } catch (error) {
                 console.error('Error loading colormap config:', error);
             }
+        }
+    }
+    
+    // Camera type selection functions
+    function setupCameraTypeSelection() {
+        const cameraTypeSelect = document.getElementById('camera-type');
+        const cameraConfigs = document.querySelectorAll('.camera-config');
+        
+        cameraTypeSelect.addEventListener('change', function() {
+            const selectedType = this.value;
+            
+            // Hide all camera config sections
+            cameraConfigs.forEach(config => {
+                config.style.display = 'none';
+            });
+            
+            // Show relevant config section
+            const configId = selectedType.replace('_', '-') + '-config';
+            const configSection = document.getElementById(configId);
+            if (configSection) {
+                configSection.style.display = 'block';
+            }
+            
+            // Show/hide PTZ controls based on camera type
+            const ptzControls = document.getElementById('ptz-controls');
+            if (selectedType === 'onvif') {
+                ptzControls.style.display = 'block';
+                loadPTZStatus();
+            } else {
+                ptzControls.style.display = 'none';
+            }
+        });
+        
+        // Camera type form submission
+        document.getElementById('camera-type-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await saveCameraConfiguration();
+        });
+        
+        // Initialize with current selection
+        cameraTypeSelect.dispatchEvent(new Event('change'));
+    }
+    
+    async function saveCameraConfiguration() {
+        try {
+            const cameraType = document.getElementById('camera-type').value;
+            const config = { type: cameraType };
+            
+            // Collect type-specific configuration
+            switch (cameraType) {
+                case 'usb':
+                    config.device = document.getElementById('usb-device').value;
+                    break;
+                case 'rtsp':
+                    config.url = document.getElementById('rtsp-url').value;
+                    break;
+                case 'rtsps':
+                    config.url = document.getElementById('rtsps-url').value;
+                    break;
+                case 'onvif':
+                    config.host = document.getElementById('onvif-host').value;
+                    config.port = parseInt(document.getElementById('onvif-port').value);
+                    config.username = document.getElementById('onvif-username').value;
+                    config.password = document.getElementById('onvif-password').value;
+                    config.rtsp_port = parseInt(document.getElementById('onvif-rtsp-port').value);
+                    config.profile_index = parseInt(document.getElementById('onvif-profile').value);
+                    break;
+                case 'video_file':
+                    // Use existing video file configuration
+                    const videoConfig = collectVideoConfig();
+                    Object.assign(config, videoConfig);
+                    break;
+            }
+            
+            // Save camera configuration
+            const response = await fetch('/api/config/camera', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({camera: config})
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to save camera configuration: ${response.status}`);
+            }
+            
+            showAlert('success', 'Camera configuration saved successfully');
+            
+            // If ONVIF camera, load PTZ status
+            if (cameraType === 'onvif') {
+                setTimeout(() => loadPTZStatus(), 1000);
+            }
+            
+        } catch (error) {
+            console.error('Error saving camera configuration:', error);
+            showAlert('error', 'Failed to save camera configuration: ' + error.message);
+        }
+    }
+    
+    // PTZ control functions
+    function setupPTZControls() {
+        // PTZ direction buttons
+        document.querySelectorAll('.ptz-btn').forEach(btn => {
+            btn.addEventListener('mousedown', function() {
+                const direction = this.dataset.direction;
+                startContinuousPTZ(direction);
+            });
+            
+            btn.addEventListener('mouseup', stopPTZ);
+            btn.addEventListener('mouseleave', stopPTZ);
+        });
+        
+        // PTZ zoom buttons
+        document.querySelectorAll('.ptz-zoom').forEach(btn => {
+            btn.addEventListener('mousedown', function() {
+                const zoom = this.dataset.zoom;
+                startContinuousZoom(zoom);
+            });
+            
+            btn.addEventListener('mouseup', stopPTZ);
+            btn.addEventListener('mouseleave', stopPTZ);
+        });
+        
+        // Home button
+        document.getElementById('ptz-home').addEventListener('click', function() {
+            movePTZAbsolute(0, 0, 0);
+        });
+        
+        // Absolute move button
+        document.getElementById('ptz-move-absolute').addEventListener('click', function() {
+            const pan = parseFloat(document.getElementById('ptz-pan').value);
+            const tilt = parseFloat(document.getElementById('ptz-tilt').value);
+            const zoom = parseFloat(document.getElementById('ptz-zoom-slider').value);
+            movePTZAbsolute(pan, tilt, zoom);
+        });
+        
+        // Preset controls
+        document.getElementById('ptz-goto-preset').addEventListener('click', gotoPreset);
+        document.getElementById('ptz-save-preset').addEventListener('click', savePreset);
+        
+        // PTZ action buttons
+        document.getElementById('ptz-stop').addEventListener('click', stopPTZ);
+        document.getElementById('ptz-refresh').addEventListener('click', loadPTZStatus);
+        
+        // PTZ slider value updates
+        ['ptz-pan', 'ptz-tilt', 'ptz-zoom-slider'].forEach(id => {
+            const slider = document.getElementById(id);
+            const valueSpan = document.getElementById(id + '-value');
+            
+            slider.addEventListener('input', function() {
+                valueSpan.textContent = parseFloat(this.value).toFixed(1);
+            });
+        });
+    }
+    
+    async function loadPTZStatus() {
+        try {
+            const response = await fetch('/api/ptz/status');
+            if (!response.ok) {
+                throw new Error('Failed to get PTZ status');
+            }
+            
+            const status = await response.json();
+            updatePTZUI(status);
+            
+        } catch (error) {
+            console.error('Error loading PTZ status:', error);
+            document.getElementById('ptz-status').textContent = 'Error';
+            document.getElementById('ptz-status').className = 'badge bg-danger ms-2';
+        }
+    }
+    
+    function updatePTZUI(status) {
+        // Update status badge
+        const statusBadge = document.getElementById('ptz-status');
+        if (status.capabilities && (status.capabilities.pan || status.capabilities.tilt || status.capabilities.zoom)) {
+            statusBadge.textContent = 'Connected';
+            statusBadge.className = 'badge bg-success ms-2';
+        } else {
+            statusBadge.textContent = 'No PTZ';
+            statusBadge.className = 'badge bg-warning ms-2';
+        }
+        
+        // Update camera info
+        const cameraInfo = document.getElementById('camera-info');
+        if (status.camera_info) {
+            const info = status.camera_info;
+            cameraInfo.innerHTML = `
+                <strong>Host:</strong> ${info.host}:${info.port}<br>
+                <strong>Model:</strong> ${info.manufacturer || 'Unknown'} ${info.model || 'Unknown'}<br>
+                <strong>PTZ:</strong> Pan: ${status.capabilities.pan ? '✓' : '✗'}, 
+                Tilt: ${status.capabilities.tilt ? '✓' : '✗'}, 
+                Zoom: ${status.capabilities.zoom ? '✓' : '✗'}
+            `;
+        }
+        
+        // Update position sliders
+        if (status.position) {
+            document.getElementById('ptz-pan').value = status.position.pan || 0;
+            document.getElementById('ptz-pan-value').textContent = (status.position.pan || 0).toFixed(1);
+            
+            document.getElementById('ptz-tilt').value = status.position.tilt || 0;
+            document.getElementById('ptz-tilt-value').textContent = (status.position.tilt || 0).toFixed(1);
+            
+            document.getElementById('ptz-zoom-slider').value = status.position.zoom || 0;
+            document.getElementById('ptz-zoom-value').textContent = (status.position.zoom || 0).toFixed(1);
+        }
+        
+        // Update presets
+        const presetsSelect = document.getElementById('ptz-presets');
+        presetsSelect.innerHTML = '<option value="">Select a preset...</option>';
+        
+        if (status.presets && status.presets.length > 0) {
+            status.presets.forEach(preset => {
+                const option = document.createElement('option');
+                option.value = preset.token;
+                option.textContent = preset.name;
+                presetsSelect.appendChild(option);
+            });
+        }
+        
+        // Update slider limits if available
+        if (status.limits) {
+            const panSlider = document.getElementById('ptz-pan');
+            panSlider.min = status.limits.pan.min;
+            panSlider.max = status.limits.pan.max;
+            
+            const tiltSlider = document.getElementById('ptz-tilt');
+            tiltSlider.min = status.limits.tilt.min;
+            tiltSlider.max = status.limits.tilt.max;
+            
+            const zoomSlider = document.getElementById('ptz-zoom-slider');
+            zoomSlider.min = status.limits.zoom.min;
+            zoomSlider.max = status.limits.zoom.max;
+        }
+    }
+    
+    async function startContinuousPTZ(direction) {
+        const speed = 0.5; // Medium speed
+        let panSpeed = 0, tiltSpeed = 0;
+        
+        switch (direction) {
+            case 'up': tiltSpeed = speed; break;
+            case 'down': tiltSpeed = -speed; break;
+            case 'left': panSpeed = -speed; break;
+            case 'right': panSpeed = speed; break;
+        }
+        
+        try {
+            await fetch('/api/ptz/continuous', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pan_speed: panSpeed,
+                    tilt_speed: tiltSpeed,
+                    zoom_speed: 0
+                })
+            });
+        } catch (error) {
+            console.error('Error starting continuous PTZ:', error);
+        }
+    }
+    
+    async function startContinuousZoom(direction) {
+        const speed = direction === 'in' ? 0.3 : -0.3;
+        
+        try {
+            await fetch('/api/ptz/continuous', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pan_speed: 0,
+                    tilt_speed: 0,
+                    zoom_speed: speed
+                })
+            });
+        } catch (error) {
+            console.error('Error starting continuous zoom:', error);
+        }
+    }
+    
+    async function stopPTZ() {
+        try {
+            await fetch('/api/ptz/stop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            console.error('Error stopping PTZ:', error);
+        }
+    }
+    
+    async function movePTZAbsolute(pan, tilt, zoom) {
+        try {
+            const response = await fetch('/api/ptz/absolute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pan, tilt, zoom })
+            });
+            
+            if (response.ok) {
+                showAlert('success', 'Camera moved to position');
+                setTimeout(() => loadPTZStatus(), 500);
+            }
+        } catch (error) {
+            console.error('Error moving PTZ absolute:', error);
+            showAlert('error', 'Failed to move camera');
+        }
+    }
+    
+    async function gotoPreset() {
+        const presetToken = document.getElementById('ptz-presets').value;
+        if (!presetToken) {
+            showAlert('error', 'Please select a preset');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/ptz/preset/goto', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ preset_token: presetToken })
+            });
+            
+            if (response.ok) {
+                showAlert('success', 'Moved to preset position');
+                setTimeout(() => loadPTZStatus(), 1000);
+            }
+        } catch (error) {
+            console.error('Error going to preset:', error);
+            showAlert('error', 'Failed to move to preset');
+        }
+    }
+    
+    async function savePreset() {
+        const presetName = document.getElementById('new-preset-name').value.trim();
+        if (!presetName) {
+            showAlert('error', 'Please enter a preset name');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/ptz/preset/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: presetName })
+            });
+            
+            if (response.ok) {
+                showAlert('success', 'Preset saved successfully');
+                document.getElementById('new-preset-name').value = '';
+                setTimeout(() => loadPTZStatus(), 500);
+            }
+        } catch (error) {
+            console.error('Error saving preset:', error);
+            showAlert('error', 'Failed to save preset');
         }
     }
 </script>

@@ -472,7 +472,7 @@ class FrameAnalysisService:
                             'average_confidence': np.mean(track_info['confidence_history'][-10:]),
                             'face_analysis_done': True
                         }
-                        logger.info(f"Analyzed demographics for person {track_id}: {demographics}")
+                        logger.info(f"Analysed demographics for person {track_id}: {demographics}")
                     else:
                         # Update existing person info and re-analyze if confidence improved
                         people_db[track_id]['total_appearances'] += 1
@@ -604,7 +604,7 @@ class FrameAnalysisService:
                 'male_count': 0,
                 'female_count': 0,
                 'age_groups': {},
-                'total_analyzed': 0
+                'total_analysed': 0
             }
             
             total_dwell = 0
@@ -623,7 +623,7 @@ class FrameAnalysisService:
                 
                 if age_group != 'unknown' and age_group != 'analyzing...':
                     demographics_summary['age_groups'][age_group] = demographics_summary['age_groups'].get(age_group, 0) + 1
-                    demographics_summary['total_analyzed'] += 1
+                    demographics_summary['total_analysed'] += 1
                 
                 # Sum dwell time
                 total_dwell += person.get('dwell_time', 0)
@@ -679,7 +679,7 @@ class FrameAnalysisService:
                     "female_count": demographics_summary['female_count'],
                     "average_dwell_time": total_dwell / max(1, len(tracked_people)),
                     "age_groups": demographics_summary['age_groups'],
-                    "total_analyzed": demographics_summary['total_analyzed'],
+                    "total_analysed": demographics_summary['total_analysed'],
                     "active_tracks": len(self.detection_memory['active_tracks']),
                     "people_database_size": len(self.detection_memory['people_database'])
                 },

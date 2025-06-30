@@ -185,7 +185,10 @@
         // Performance monitoring
         window.addEventListener('load', function() {
             const perfData = performance.getEntriesByType('navigation')[0];
+            // Performance monitoring can be enabled in debug mode
+        if (window.DEBUG_MODE) {
             console.log('Register page load time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
+        }
         });
         
         // Password toggle functionality

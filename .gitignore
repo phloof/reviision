@@ -157,6 +157,7 @@ temp_frame.jpg
 *.pkl
 *.joblib
 .models/
+*.zip
 
 # Data files
 data/
