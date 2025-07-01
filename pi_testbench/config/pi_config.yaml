@@ -1,0 +1,303 @@
+# ReViision Raspberry Pi Test Bench Configuration
+
+# Network Configuration
+network:
+  # WiFi Hotspot Settings
+  hotspot:
+    ssid: "ReViision-TestBench"
+    password: "testbench2024"
+    interface: "wlan0"
+    ip_range: "192.168.4.0/24"
+    gateway: "192.168.4.1"
+    dhcp_range: "192.168.4.2,192.168.4.20"
+    
+  # Internet Connection Settings
+  internet:
+    # Connection method: 'ethernet', 'wifi', or 'disabled'
+    method: "ethernet"  # Default to ethernet for internet
+    
+    # For ethernet connection
+    ethernet:
+      interface: "eth0"
+      # Use DHCP by default, or set static IP
+      dhcp: true
+      # Static IP settings (used if dhcp: false)
+      static_ip: "192.168.1.100"
+      static_gateway: "192.168.1.1"
+      static_dns: ["8.8.8.8", "8.8.4.4"]
+    
+    # For WiFi connection (requires USB WiFi adapter or dual WiFi setup)
+    wifi:
+      interface: "wlan1"  # Secondary WiFi interface
+      ssid: "YourHomeWiFi"
+      password: "your_wifi_password"
+      # Use DHCP by default
+      dhcp: true
+      # Static IP settings (used if dhcp: false)
+      static_ip: "192.168.1.100"
+      static_gateway: "192.168.1.1"
+      static_dns: ["8.8.8.8", "8.8.4.4"]
+      
+      # WPA2 Enterprise configuration (uncomment and configure as needed)
+      # enterprise:
+      #   enabled: false
+      #   # Enterprise authentication method: 'peap', 'ttls', 'tls'
+      #   eap_method: "peap"
+      #   # Identity for outer authentication
+      #   identity: "your-username@domain.com"
+      #   # Anonymous identity (optional, for privacy)
+      #   anonymous_identity: "anonymous@domain.com"
+      #   # Password for PEAP/TTLS authentication
+      #   password: "your-enterprise-password"
+      #   # Phase 2 authentication for PEAP/TTLS: 'mschapv2', 'gtc', 'md5'
+      #   phase2_auth: "mschapv2"
+      #   
+      #   # Certificate files (for TLS or certificate validation)
+      #   certificates:
+      #     # CA certificate file path
+      #     ca_cert: "/etc/ssl/certs/enterprise-ca.crt"
+      #     # Client certificate (for TLS authentication)
+      #     client_cert: "/etc/ssl/certs/client.crt"
+      #     # Private key file (for TLS authentication)
+      #     private_key: "/etc/ssl/private/client.key"
+      #     # Private key password (if encrypted)
+      #     private_key_passwd: "key-password"
+      #   
+      #   # Additional security settings
+      #   security:
+      #     # Domain suffix match for certificate validation
+      #     domain_suffix_match: "radius.company.com"
+      #     # Subject match for certificate validation
+      #     subject_match: "/C=US/O=Company/CN=radius.company.com"
+      #     # Disable TLS version checks (not recommended)
+      #     tls_disable_time_checks: false
+      #     # Enable certificate verification
+      #     ca_cert_verification: true
+    
+    # Internet forwarding settings
+    forwarding:
+      enabled: true
+      # NAT masquerading for outbound traffic
+      masquerade: true
+      # Allow specific ports/services
+      allowed_ports:
+        - 80    # HTTP
+        - 443   # HTTPS
+        - 53    # DNS
+        - 123   # NTP
+        - 554   # RTSP
+        - 1935  # RTMP (for camera streaming)
+      # Block specific domains/IPs (optional)
+      blocked_domains: []
+      blocked_ips: []
+    
+  # ReViision Server Connection
+  server:
+    # Update this with your Windows computer's IP when connected to the Pi hotspot
+    host: "192.168.4.10"  # Windows computer IP on Pi network
+    port: 5000
+    protocol: "http"
+    
+    # Authentication
+    username: "admin"  # Default admin user
+    password: "admin"  # Update with actual password
+    
+    # API Endpoints
+    endpoints:
+      analyze_frame: "/api/analyze_frame"
+      traffic_patterns: "/api/traffic_patterns"
+      facial_analysis: "/api/facial_analysis"
+      config: "/api/config"
+      camera_feed: "/api/camera_feed"
+    
+    # Connection settings
+    timeout: 10
+    retry_attempts: 3
+    retry_delay: 5
+    
+# Display Configuration
+display:
+  # E-Paper HAT Settings (4.26 inch)
+  type: "epd4in26"
+  width: 800
+  height: 480
+  
+  # Display refresh settings
+  refresh_interval: 30  # seconds
+  full_refresh_interval: 300  # seconds (5 minutes)
+  
+  # GPIO Pin Configuration
+  gpio:
+    din: 10
+    clk: 11
+    cs: 8
+    dc: 25
+    rst: 17
+    busy: 24
+    
+  # Display Layout
+  layout:
+    header_height: 80
+    footer_height: 60
+    margin: 10
+    font_sizes:
+      title: 24
+      subtitle: 18
+      body: 14
+      small: 12
+      
+  # Data sections to display
+  sections:
+    - name: "Current Visitors"
+      type: "metric"
+      position: [10, 90, 390, 180]
+      
+    - name: "Demographics"
+      type: "chart"
+      position: [410, 90, 790, 250]
+      
+    - name: "Dwell Time"
+      type: "metric"
+      position: [10, 190, 390, 280]
+      
+    - name: "System Status"
+      type: "status"
+      position: [10, 290, 790, 380]
+      
+    - name: "Network Info"
+      type: "info"
+      position: [10, 390, 790, 420]
+
+# Data Collection Settings
+data:
+  # Polling intervals
+  polling:
+    analytics: 15  # seconds
+    system_status: 60  # seconds
+    network_status: 120  # seconds
+    
+  # Data retention (for offline display)
+  cache:
+    max_age: 3600  # seconds (1 hour)
+    max_entries: 1000
+    
+  # Metrics to collect
+  metrics:
+    visitor_count: true
+    demographics: true
+    dwell_time: true
+    traffic_patterns: true
+    system_health: true
+
+# Tapo C220 Camera Settings
+camera:
+  # RTSP stream configuration
+  rtsp:
+    # The camera will connect to the Pi's hotspot and get an IP via DHCP
+    # Expected IP range: 192.168.4.2 - 192.168.4.20
+    expected_ip: "192.168.4.15"  # Typical assignment for first device
+    port: 554
+    username: "admin"  # Default Tapo username
+    password: "your_camera_password"  # Set this to your camera password
+    
+    # Stream paths (Tapo C220 typical)
+    main_stream: "/stream1"
+    sub_stream: "/stream2"
+    
+  # Auto-discovery settings
+  discovery:
+    enabled: true
+    scan_range: "192.168.4.0/24"
+    ports: [554, 8554]
+    timeout: 10
+    
+  # Cloud access settings
+  cloud_access:
+    enabled: true  # Allow camera to access Tapo cloud services
+    allowed_domains:
+      - "*.tplinkcloud.com"
+      - "*.tp-link.com"
+      - "*.kasasmart.com"
+    # NTP servers for time synchronization
+    ntp_servers:
+      - "pool.ntp.org"
+      - "time.cloudflare.com"
+
+# Logging Configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  log_file: "logs/pi_testbench.log"
+  max_size: "10MB"
+  backup_count: 5
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  # Component-specific logging
+  components:
+    display: "INFO"
+    network: "INFO"
+    data_collector: "INFO"
+    camera_discovery: "DEBUG"
+    internet_forwarding: "INFO"
+
+# System Configuration
+system:
+  # Startup settings
+  auto_start: true
+  startup_delay: 30  # seconds to wait after boot
+  
+  # Health monitoring
+  health_check:
+    enabled: true
+    interval: 300  # seconds (5 minutes)
+    
+  # Performance settings
+  max_cpu_usage: 80  # percent
+  max_memory_usage: 80  # percent
+  
+  # Temperature monitoring
+  temperature:
+    warning_threshold: 70  # Celsius
+    critical_threshold: 80  # Celsius
+    
+  # Network monitoring
+  network_monitoring:
+    enabled: true
+    check_internet_connectivity: true
+    internet_check_hosts:
+      - "8.8.8.8"  # Google DNS
+      - "1.1.1.1"  # Cloudflare DNS
+    connectivity_check_interval: 60  # seconds
+    
+# Security Settings
+security:
+  # WiFi Security
+  wifi_encryption: "WPA2"
+  
+  # API Security
+  api_key_rotation: 86400  # seconds (24 hours)
+  
+  # Firewall settings
+  firewall:
+    enabled: true
+    # Default policies
+    default_input: "DROP"
+    default_forward: "DROP"
+    default_output: "ACCEPT"
+    
+    # Allow specific services
+    allowed_services:
+      - ssh
+      - http
+      - https
+      - dns
+      - dhcp
+    
+    # Rate limiting
+    rate_limiting:
+      enabled: true
+      ssh_max_attempts: 5
+      ssh_time_window: 600  # seconds
+  
+  # System updates
+  auto_update: false  # Set to true for automatic updates
+  update_check_interval: 86400  # seconds (24 hours) 

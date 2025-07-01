@@ -1,0 +1,65 @@
+[Unit]
+Description=ReViision Raspberry Pi Test Bench Service
+Documentation=https://github.com/your-repo/reviision
+After=multi-user.target
+After=network-online.target
+After=hostapd.service
+After=dnsmasq.service
+After=reviision-network.service
+Wants=network-online.target
+Conflicts=shutdown.target
+StartLimitBurst=3
+StartLimitIntervalSec=60
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/ReViision/pi_testbench
+Environment=PYTHONPATH=/home/pi/ReViision/pi_testbench/src
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=/home/pi/ReViision/pi_testbench/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Wait for system to be ready
+ExecStartPre=/bin/sleep 30
+ExecStartPre=/bin/bash -c 'until ping -c1 8.8.8.8 >/dev/null 2>&1 || ping -c1 192.168.4.1 >/dev/null 2>&1; do sleep 5; done'
+
+# Main application
+ExecStart=/home/pi/ReViision/pi_testbench/venv/bin/python3 main.py
+
+# Graceful shutdown
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/bin/kill -TERM $MAINPID
+TimeoutStopSec=30
+KillMode=mixed
+KillSignal=SIGTERM
+
+# Restart configuration
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=journal+console
+StandardError=journal+console
+SyslogIdentifier=reviision-pi
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/home/pi/ReViision/pi_testbench/logs
+ReadWritePaths=/home/pi/ReViision/pi_testbench/cache
+ReadWritePaths=/tmp
+
+# Resource limits
+MemoryMax=1G
+TasksMax=200
+CPUQuota=80%
+
+# Environment file for configuration overrides
+EnvironmentFile=-/home/pi/ReViision/pi_testbench/.env
+
+[Install]
+WantedBy=multi-user.target
+Alias=reviision.service 
