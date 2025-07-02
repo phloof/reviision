@@ -1,0 +1,11 @@
+fix button sizing
+use different model for higher accuracy
+add racial detection back
+make settings more functional
+remove duplicate camera box from settings page
+find better footage (find 1 hour real store footage for actual analysis)
+add onboard camera to settings option
+put heatmap opacity in to config.yaml
+make settings page actually update settings
+fix header sizing
+fix page horiontal scrollable
