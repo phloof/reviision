@@ -9,3 +9,4 @@ put heatmap opacity in to config.yaml
 make settings page actually update settings
 fix header sizing
 fix page horiontal scrollable
+exaggerate heatmap based on video length
