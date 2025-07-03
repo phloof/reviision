@@ -10,3 +10,8 @@ make settings page actually update settings
 fix header sizing
 fix page horiontal scrollable
 exaggerate heatmap based on video length
+add an x to sidebar when on mobile
+
+then:
+make inferences on product picks using demmographic data to create recommendations
+for store --> refer to marketing demographics research
