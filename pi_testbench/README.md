@@ -1,6 +1,6 @@
 # ReViision Raspberry Pi Test Bench
 
-This directory contains the Raspberry Pi 4B setup for the ReViision test bench system. The Pi serves as a WiFi access point for the Tapo C220 camera and displays real-time analytics on a 4.26" e-paper hat.
+This directory contains the Raspberry Pi 4B setup for the ReViision test bench system. The Pi serves as a WiFi access point for the Tapo C220 camera and provides networking infrastructure for the test bench.
 
 ## Recommended Operating System
 
@@ -22,82 +22,94 @@ This directory contains the Raspberry Pi 4B setup for the ReViision test bench s
 
 ## Components
 
-- **Raspberry Pi 4B**: Main controller and WiFi hotspot
+- **Raspberry Pi 4B**: Main controller and dual WiFi interface manager
 - **Tapo C220 Camera**: RTSP streaming camera  
-- **4.26" E-Paper HAT**: Display for real-time analytics
 - **Windows Computer**: Main ReViision analysis server
 
 ## Features
 
-### WiFi Hotspot with Internet Forwarding
+### Dual WiFi Network Management
+- **wlan0**: Internet connection (connects to existing WiFi network)
+- **wlan1**: WiFi hotspot for test bench devices
 - Creates a dedicated network for the test bench
-- Forwards internet traffic from Ethernet or secondary WiFi
-- Allows Tapo camera to access cloud services
+- Forwards internet traffic from wlan0 to wlan1
+- Allows Tapo camera to access cloud services while maintaining isolated test network
 - Configurable SSID and password
-- Support for WPA2 and WPA2 Enterprise
-
-### E-Paper Display
-- Real-time analytics dashboard
-- Low power consumption
-- Clear visibility in various lighting conditions
-- Displays:
-  - Current visitor count
-  - Demographics breakdown
-  - Dwell time statistics
-  - System status
-  - Network information
+- Support for WPA2 and WPA2 Enterprise on internet connection
 
 ### Data Integration
 - Connects to main ReViision server via WiFi
 - Real-time data fetching from analytics APIs
 - Automatic failover and reconnection
-- Local data caching for offline display
+- Local data caching for offline operation
 
 ### Auto-Start on Boot
 - Systemd service for automatic startup
 - Graceful shutdown handling
 - Service monitoring and restart
 - Log management and rotation
+- Custom network preparation services
 
 ## Hardware Setup
 
-### E-Paper HAT Connection
-The 4.26" e-paper HAT connects via GPIO pins:
-- VCC → 3.3V (Pin 1)
-- GND → Ground (Pin 6)
-- DIN → GPIO 10 (Pin 19)
-- CLK → GPIO 11 (Pin 23)
-- CS → GPIO 8 (Pin 24)
-- DC → GPIO 25 (Pin 22)
-- RST → GPIO 17 (Pin 11)
-- BUSY → GPIO 24 (Pin 18)
-
 ### Network Topology
 ```
-Internet → Raspberry Pi (WiFi AP + Ethernet/WiFi) → Tapo C220 Camera
-                    ↓
-              Windows Computer
-              (ReViision Server)
+Internet (ORBI58) → wlan0 (Pi) → NAT Forwarding → wlan1 (Pi Hotspot) → Tapo C220 Camera
+                              ↓                                      ↓
+                        Windows Computer                    Test Bench Devices
+                        (ReViision Server)                  (192.168.4.x network)
 ```
+
+**Network Configuration:**
+- **wlan0**: Internet connection to existing WiFi (DHCP or static)
+- **wlan1**: Hotspot at 192.168.4.1/24 serving DHCP range 192.168.4.10-192.168.4.50
+- **NAT Forwarding**: iptables rules forward traffic from wlan1 → wlan0 → Internet
 
 ## Quick Installation
 
-### Automated Installation
+### Comprehensive Automated Setup
 ```bash
 # Clone or copy the project to the Pi
 cd pi_testbench
 
-# Run the installation script
-bash scripts/install.sh
+# For SSH connections - SSH-safe version (recommended if connected via SSH)
+bash scripts/complete_network_setup_ssh_safe.sh
+
+# OR for direct console access - standard version
+sudo bash scripts/complete_network_setup.sh
 ```
 
-The installation script will:
+**SSH-Safe Setup (Recommended for SSH connections):**
+The SSH-safe version is designed specifically for remote installation and includes:
+- Automatic SSH session detection
+- Warning prompts before network service restart
+- 30-second countdown with cancel option
+- Clear instructions for reconnection after network restart
+- All configuration completed before any network services are restarted
+
+**Standard Setup:**
+Use only when you have direct console access (keyboard/monitor) or are prepared for immediate SSH disconnection.
+
+The complete setup script will:
 1. Update system packages
-2. Install required dependencies
-3. Configure Python environment
-4. Set up systemd service for auto-start
-5. Configure network (optional)
-6. Enable hardware interfaces (SPI/I2C)
+2. Install all required dependencies
+3. Configure dual WiFi interfaces (wlan0 for internet, wlan1 for hotspot)
+4. Set up NAT forwarding and firewall rules
+5. Configure all network services (hostapd, dnsmasq, dhcpcd, wpa_supplicant)
+6. Create custom systemd services for network management
+7. Set up auto-start services with proper dependencies
+8. Handle service conflicts and ensure proper startup order
+
+### Legacy Installation Options
+
+#### Manual Python Environment Setup
+```bash
+# If you need to set up only the Python environment manually
+cd pi_testbench
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
 
 ### Manual Installation
 
@@ -109,9 +121,6 @@ sudo apt update && sudo apt upgrade -y
 # Install required packages
 sudo apt install -y hostapd dnsmasq python3-pip python3-venv git \
   wireless-tools net-tools iptables-persistent
-
-# Enable SPI for e-paper display
-sudo raspi-config nonint do_spi 0
 
 # Install Python dependencies
 cd pi_testbench
@@ -133,10 +142,10 @@ sudo systemctl enable reviision-pi
 sudo systemctl start reviision-pi
 ```
 
-#### 3. Network Setup
+#### 3. Manual Network Setup
 ```bash
-# Run network configuration script
-sudo bash scripts/setup_network.sh
+# Run complete network configuration script
+sudo bash scripts/complete_network_setup.sh
 ```
 
 ## Configuration
@@ -145,8 +154,13 @@ sudo bash scripts/setup_network.sh
 Edit `config/pi_config.yaml` to match your setup:
 - ReViision server IP and port
 - WiFi network name and password
-- Display refresh intervals
 - API endpoints
+
+### Network Configuration Files
+- `config/dhcpcd.conf`: Interface configuration for wlan0 (internet) and wlan1 (hotspot)
+- `config/hostapd.conf`: WiFi hotspot configuration for wlan1
+- `config/dnsmasq.conf`: DHCP and DNS server configuration for wlan1
+- `config/wpa_supplicant-wlan0.conf`: Internet WiFi connection configuration for wlan0
 
 ### Environment Variables
 Create `.env` file for runtime overrides:
@@ -157,68 +171,52 @@ REVIISION_SERVER_PORT=5000
 WIFI_SSID=ReViision-TestBench
 WIFI_PASSWORD=testbench2024
 
+# Internet WiFi (for complete_network_setup.sh)
+INTERNET_WIFI_SSID=ORBI58
+INTERNET_WIFI_PASSWORD=your_wifi_password
+
 # Logging
 LOG_LEVEL=INFO
-
-# Hardware (for testing without hardware)
-DISABLE_EPAPER=false
-DISABLE_GPIO=false
 ```
 
 ### WPA2 Enterprise Configuration
 
-For enterprise WiFi networks, uncomment and configure the enterprise section in `config/pi_config.yaml`:
+For enterprise WiFi networks, configure the internet connection in `config/wpa_supplicant-wlan0.conf`:
 
-```yaml
-network:
-  internet:
-    wifi:
-      # Standard configuration
-      interface: "wlan1"
-      ssid: "Enterprise-WiFi"
-      dhcp: true
-      
-      # WPA2 Enterprise configuration
-      enterprise:
-        enabled: true
-        # Authentication method: 'peap', 'ttls', 'tls'
-        eap_method: "peap"
-        # User credentials
-        identity: "username@company.com"
-        anonymous_identity: "anonymous@company.com"
-        password: "your-password"
-        # Phase 2 auth: 'mschapv2', 'gtc', 'md5'
-        phase2_auth: "mschapv2"
-        
-        # Certificate configuration (for TLS or validation)
-        certificates:
-          ca_cert: "/etc/ssl/certs/company-ca.crt"
-          # For TLS authentication (uncomment if needed):
-          # client_cert: "/etc/ssl/certs/client.crt"
-          # private_key: "/etc/ssl/private/client.key"
-          # private_key_passwd: "key-password"
-        
-        # Security settings
-        security:
-          domain_suffix_match: "radius.company.com"
-          ca_cert_verification: true
+```bash
+# WPA2 Enterprise configuration for internet connection
+network={
+    ssid="Enterprise-WiFi"
+    key_mgmt=WPA-EAP
+    eap=PEAP
+    identity="username@company.com"
+    anonymous_identity="anonymous@company.com"
+    password="your-password"
+    phase2="auth=MSCHAPV2"
+    ca_cert="/etc/ssl/certs/company-ca.crt"
+    domain_suffix_match="radius.company.com"
+}
 ```
 
 **Certificate Installation**:
 ```bash
 # Copy certificates to the Pi
 sudo cp company-ca.crt /etc/ssl/certs/
-sudo cp client.crt /etc/ssl/certs/        # If using TLS
-sudo cp client.key /etc/ssl/private/      # If using TLS
-
-# Set proper permissions
-sudo chmod 644 /etc/ssl/certs/*.crt
-sudo chmod 600 /etc/ssl/private/*.key
+sudo chmod 644 /etc/ssl/certs/company-ca.crt
 ```
 
 ## Service Management
 
-### Starting/Stopping the Service
+### Network Services
+The system uses several custom systemd services for network management:
+- `reviision-network-prep.service`: Prepares network interfaces and dependencies
+- `iptables-restore.service`: Configures NAT forwarding rules
+- `hostapd.service`: WiFi hotspot service
+- `dnsmasq.service`: DHCP and DNS server
+- `dhcpcd.service`: Network interface management
+- `wpa_supplicant@wlan0.service`: Internet WiFi connection
+
+### Starting/Stopping the Main Service
 ```bash
 # Start service
 sudo systemctl start reviision-pi
@@ -237,6 +235,22 @@ sudo systemctl enable reviision-pi
 
 # Disable auto-start
 sudo systemctl disable reviision-pi
+```
+
+### Network Service Management
+```bash
+# Check all network services
+sudo systemctl status hostapd dnsmasq dhcpcd wpa_supplicant@wlan0
+
+# Restart network services
+sudo systemctl restart reviision-network-prep
+sudo systemctl restart hostapd
+sudo systemctl restart dnsmasq
+
+# Check network service logs
+sudo journalctl -u hostapd -n 20
+sudo journalctl -u dnsmasq -n 20
+sudo journalctl -u dhcpcd -n 20
 ```
 
 ### Viewing Logs
@@ -267,34 +281,76 @@ bash scripts/logs.sh
 ## Usage
 
 ### Automatic Operation
-After installation and reboot:
-1. The Pi creates a WiFi hotspot: "ReViision-TestBench"
-2. The service starts automatically
-3. Connect your Tapo camera to the hotspot
-4. Connect your Windows computer to the hotspot
-5. The e-paper display shows real-time analytics
+After running the complete setup script and rebooting:
+1. The Pi connects to your internet WiFi via wlan0
+2. The Pi creates a WiFi hotspot "ReViision-TestBench" on wlan1
+3. Internet traffic is forwarded from wlan1 → wlan0 via NAT
+4. The service starts automatically
+5. Connect your Tapo camera to the ReViision-TestBench hotspot
+6. Connect your Windows computer to the ReViision-TestBench hotspot
+7. The system provides network infrastructure for data collection
+
+### Network Setup Verification
+After running the SSH-safe setup script and reconnecting:
+```bash
+# Verify the dual WiFi setup is working correctly
+bash scripts/verify_network_setup.sh
+```
+
+This verification script will check:
+- All network services are running
+- Both WiFi interfaces have correct IP addresses
+- Hotspot is broadcasting and accessible
+- Internet connectivity is working
+- NAT forwarding rules are active
+- Any connected devices via DHCP
+
+### Updating WiFi Credentials
+To change WiFi passwords or connect to different networks:
+```bash
+# Interactive script to update WiFi credentials
+bash scripts/update_wifi_credentials.sh
+```
+
+This script allows you to:
+- Update internet WiFi connection (wlan0) SSID and password
+- Update hotspot (wlan1) SSID and password
+- Configure WPA2 Enterprise authentication for internet connection
+- Update both or just one network at a time
+- Automatically backup existing configurations
+- Handle SSH disconnection safely when changing internet WiFi
+- Restart network services with proper timing
+
+**Options available:**
+1. Internet WiFi credentials only
+2. Hotspot credentials only  
+3. Both internet and hotspot credentials
+4. Show current network status
 
 ### Manual Operation
 ```bash
 # Start manually (if auto-start is disabled)
-cd /home/pi/ReViision/pi_testbench
+cd /home/admin/pi_testbench  # Note: updated path for admin user
 source venv/bin/activate
 python3 main.py
 ```
 
 ### Network Configuration Options
 
-#### 1. Ethernet + WiFi Hotspot (Recommended)
+#### 1. Dual WiFi Setup (Implemented & Recommended)
+- **wlan0**: Connects to existing WiFi network for internet access
+- **wlan1**: Broadcasts WiFi hotspot for test bench devices
+- **NAT Forwarding**: Routes traffic from hotspot to internet
+- **Benefits**: Best performance, reliability, and isolation
+- **Setup**: Use `complete_network_setup.sh` script
+
+#### 2. Ethernet + WiFi Hotspot (Alternative)
 - Pi connects to internet via Ethernet
 - Broadcasts WiFi hotspot for devices
-- Best performance and reliability
+- Good performance and reliability
+- Requires Ethernet connection
 
-#### 2. Dual WiFi Setup
-- Requires USB WiFi adapter
-- One WiFi for internet, one for hotspot
-- More flexibility in placement
-
-#### 3. Hotspot Only
+#### 3. Hotspot Only (Development/Testing)
 - No internet forwarding
 - Isolated test environment
 - Camera operates offline only
@@ -303,83 +359,105 @@ python3 main.py
 
 ### Service Issues
 ```bash
-# Check service status
+# Check main service status
 sudo systemctl status reviision-pi
+
+# Check all network services
+sudo systemctl status hostapd dnsmasq dhcpcd wpa_supplicant@wlan0 reviision-network-prep
 
 # View detailed logs
 sudo journalctl -u reviision-pi -n 100
+sudo journalctl -u hostapd -n 50
+sudo journalctl -u dnsmasq -n 50
 
 # Restart service
 sudo systemctl restart reviision-pi
 
 # Check Python dependencies
-cd /home/pi/ReViision/pi_testbench
+cd /home/admin/pi_testbench
 source venv/bin/activate
-python3 -c "import yaml, requests, PIL, numpy, psutil, netifaces"
+python3 -c "import yaml, requests, psutil, netifaces"
 ```
 
 ### Network Issues
 ```bash
+# Check interface status
+ip addr show wlan0 wlan1
+iwconfig
+
 # Check hotspot status
 sudo systemctl status hostapd
 sudo systemctl status dnsmasq
 
-# Check network interfaces
-ip addr show
-iwconfig
+# Check internet connectivity
+ping -I wlan0 8.8.8.8
+ping -I wlan1 192.168.4.1
 
-# Test internet connectivity
-ping 8.8.8.8
-
-# View iptables rules
+# View NAT forwarding rules
 sudo iptables -L -n -v
-```
+sudo iptables -t nat -L -n -v
 
-### Hardware Issues
-```bash
-# Check SPI is enabled
-lsmod | grep spi
+# Test DHCP on hotspot
+sudo nmap -sn 192.168.4.0/24
 
-# Check GPIO access
-ls -la /dev/spidev*
-
-# Test e-paper display
-python3 scripts/test_display.py
+# Check WiFi interface assignment
+iw dev
 ```
 
 ### Common Solutions
 1. **Service won't start**: Check Python dependencies and configuration file
-2. **No WiFi hotspot**: Verify hostapd configuration and interface availability
-3. **No internet forwarding**: Check iptables rules and upstream connectivity
-4. **Display not working**: Verify SPI is enabled and GPIO connections
-5. **High CPU usage**: Check for infinite loops in logs
+2. **No WiFi hotspot**: Verify hostapd configuration and wlan1 interface availability
+3. **No internet forwarding**: Check iptables rules and wlan0 connectivity
+4. **High CPU usage**: Check for infinite loops in logs
+5. **Network service conflicts**: Use `complete_network_setup.sh` to resolve dependencies
+6. **Interface assignment issues**: Check that wlan0/wlan1 are properly configured
+
+### Network-Specific Troubleshooting
+```bash
+# Restart all network services in correct order
+sudo systemctl restart reviision-network-prep
+sudo systemctl restart dhcpcd
+sudo systemctl restart wpa_supplicant@wlan0
+sudo systemctl restart hostapd
+sudo systemctl restart dnsmasq
+
+# Check interface IP assignments
+ip addr show | grep -A 3 wlan
+
+# Test hotspot connectivity
+# From another device, connect to ReViision-TestBench and test:
+ping 192.168.4.1        # Pi hotspot interface
+ping 8.8.8.8            # Internet via NAT forwarding
+```
 
 ## File Structure
 
 ```
 pi_testbench/
-├── main.py                    # Main application entry
-├── requirements.txt           # Python dependencies
-├── .env                      # Environment variables
-├── config/                   # Configuration files
-│   ├── pi_config.yaml       # Main configuration
-│   ├── hostapd.conf         # WiFi hotspot settings
-│   ├── dnsmasq.conf         # DHCP and DNS settings
-│   └── dhcpcd.conf          # Network interface configuration
-├── src/                      # Source code
-│   ├── display/             # E-paper display drivers
-│   ├── network/             # Network management
-│   ├── data/                # Data collection from ReViision
-│   └── utils/               # Utilities
-├── services/                 # Systemd service files
-│   └── reviision-pi.service # Auto-start service
-├── scripts/                  # Helper scripts
-│   ├── install.sh           # Installation script
-│   ├── setup_network.sh     # Network configuration
-│   ├── status.sh            # System status checker
-│   ├── logs.sh              # Log viewer
-│   └── restart.sh           # Service restart
-└── logs/                     # Log files
+├── main.py                           # Main application entry
+├── requirements.txt                  # Python dependencies
+├── .env                             # Environment variables
+├── config/                          # Configuration files
+│   ├── pi_config.yaml              # Main configuration
+│   ├── hostapd.conf                # WiFi hotspot settings (wlan1)
+│   ├── dnsmasq.conf                # DHCP and DNS settings (wlan1)
+│   ├── dhcpcd.conf                 # Network interface configuration
+│   └── wpa_supplicant-wlan0.conf   # Internet WiFi connection (wlan0)
+├── src/                             # Source code
+│   ├── network/                    # Network management
+│   ├── data/                       # Data collection from ReViision
+│   └── utils/                      # Utilities
+├── services/                        # Systemd service files
+│   └── reviision-pi.service        # Auto-start service
+├── scripts/                         # Helper scripts
+│   ├── complete_network_setup.sh   # Comprehensive dual WiFi setup
+│   ├── complete_network_setup_ssh_safe.sh # SSH-safe network setup
+│   ├── verify_network_setup.sh     # Network setup verification
+│   ├── update_wifi_credentials.sh  # Update WiFi SSID/passwords
+│   ├── status.sh                   # System status checker
+│   ├── logs.sh                     # Log viewer
+│   └── restart.sh                  # Service restart
+└── logs/                            # Log files
 ```
 
 ## API Integration
@@ -392,9 +470,10 @@ The Pi connects to these ReViision API endpoints:
 
 ## Security
 
-- WiFi network uses WPA2 encryption
+- WiFi hotspot uses WPA2 encryption
+- Internet WiFi connection supports WPA2 and WPA2 Enterprise
 - API connections use authentication tokens
-- Firewall configured for minimal attack surface
+- Firewall configured with NAT forwarding rules
 - Service runs with limited privileges
 - Regular security updates via systemd timers
 
@@ -402,9 +481,6 @@ The Pi connects to these ReViision API endpoints:
 
 ### System Settings
 ```bash
-# Increase GPU memory split for display performance
-echo "gpu_mem=128" | sudo tee -a /boot/config.txt
-
 # Optimize for performance
 echo "arm_freq=1800" | sudo tee -a /boot/config.txt
 echo "over_voltage=6" | sudo tee -a /boot/config.txt
@@ -419,14 +495,6 @@ echo "dtoverlay=vc4-fkms-v3d" | sudo tee -a /boot/config.txt
 - Monitor resource usage with `htop`
 
 ## Development
-
-### Testing Without Hardware
-Set environment variables to disable hardware:
-```bash
-export DISABLE_EPAPER=true
-export DISABLE_GPIO=true
-python3 main.py
-```
 
 ### Local Development
 ```bash

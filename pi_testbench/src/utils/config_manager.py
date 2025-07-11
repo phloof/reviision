@@ -186,21 +186,6 @@ class ConfigManager:
                     'retry_delay': 5
                 }
             },
-            'display': {
-                'type': 'epd4in26',
-                'width': 800,
-                'height': 480,
-                'refresh_interval': 30,
-                'full_refresh_interval': 300,
-                'gpio': {
-                    'din': 10,
-                    'clk': 11,
-                    'cs': 8,
-                    'dc': 25,
-                    'rst': 17,
-                    'busy': 24
-                }
-            },
             'data': {
                 'polling': {
                     'analytics': 15,
@@ -272,15 +257,5 @@ class ConfigManager:
                 for field in required_server:
                     if field not in server:
                         errors.append(f"Missing 'network.server.{field}'")
-        
-        # Validate display configuration
-        if 'display' not in config:
-            errors.append("Missing 'display' section")
-        else:
-            display = config['display']
-            required_display = ['width', 'height', 'gpio']
-            for field in required_display:
-                if field not in display:
-                    errors.append(f"Missing 'display.{field}'")
         
         return len(errors) == 0, errors 

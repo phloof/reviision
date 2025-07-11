@@ -5,7 +5,6 @@ Main application entry point for the Pi-based test bench system.
 
 This application provides:
 - WiFi hotspot management
-- E-paper display for real-time analytics
 - Data collection from ReViision server
 - System monitoring and health checks
 """
@@ -23,7 +22,6 @@ from typing import Optional
 # Add src directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from src.display.epaper_manager import EpaperManager
 from src.network.hotspot_manager import HotspotManager
 from src.data.reviision_client import ReViisionClient
 from src.utils.config_manager import ConfigManager
@@ -40,7 +38,6 @@ class ReViisionPiTestBench:
         self.running = False
         
         # Component managers
-        self.epaper_manager: Optional[EpaperManager] = None
         self.hotspot_manager: Optional[HotspotManager] = None
         self.reviision_client: Optional[ReViisionClient] = None
         self.system_monitor: Optional[SystemMonitor] = None
@@ -101,10 +98,6 @@ class ReViisionPiTestBench:
             server_config = self.config.get('network', {}).get('server', {})
             self.reviision_client = ReViisionClient(server_config)
             
-            # Initialize e-paper display manager
-            display_config = self.config.get('display', {})
-            self.epaper_manager = EpaperManager(display_config)
-            
             self.logger.info("All components initialized successfully")
             return True
             
@@ -121,11 +114,6 @@ class ReViisionPiTestBench:
             data_config = self.config.get('data', {})
             self.tasks.append(asyncio.create_task(
                 self.data_collection_loop(data_config)
-            ))
-            
-            # Display update task
-            self.tasks.append(asyncio.create_task(
-                self.display_update_loop()
             ))
             
             # System monitoring task
@@ -145,7 +133,7 @@ class ReViisionPiTestBench:
         except Exception as e:
             self.logger.error(f"Error starting background tasks: {e}")
             raise
-    
+
     async def data_collection_loop(self, config: dict):
         """Main data collection loop"""
         polling_config = config.get('polling', {})
@@ -158,91 +146,93 @@ class ReViisionPiTestBench:
                 # Collect analytics data
                 analytics_data = await self.reviision_client.get_analytics_data()
                 if analytics_data:
-                    # Update display data
-                    self.epaper_manager.update_analytics_data(analytics_data)
                     self.logger.debug("Analytics data updated")
+                else:
+                    self.logger.warning("No analytics data received from server")
                 
                 await asyncio.sleep(analytics_interval)
                 
             except Exception as e:
                 self.logger.error(f"Error in data collection loop: {e}")
                 await asyncio.sleep(analytics_interval)
-    
-    async def display_update_loop(self):
-        """Display update loop"""
-        display_config = self.config.get('display', {})
-        refresh_interval = display_config.get('refresh_interval', 30)
-        
-        self.logger.info(f"Starting display update loop (interval: {refresh_interval}s)")
-        
-        while self.running:
-            try:
-                # Update the e-paper display
-                await self.epaper_manager.update_display()
-                self.logger.debug("Display updated")
-                
-                await asyncio.sleep(refresh_interval)
-                
-            except Exception as e:
-                self.logger.error(f"Error in display update loop: {e}")
-                await asyncio.sleep(refresh_interval)
-    
+
     async def system_monitoring_loop(self, config: dict):
         """System health monitoring loop"""
         health_config = config.get('health_check', {})
-        interval = health_config.get('interval', 300)
+        interval = health_config.get('interval', 60)
         
         self.logger.info(f"Starting system monitoring loop (interval: {interval}s)")
         
         while self.running:
             try:
                 # Check system health
-                health_status = await self.system_monitor.check_health()
-                
-                # Update display with system status
-                self.epaper_manager.update_system_status(health_status)
-                
-                # Log warnings or critical issues
-                if health_status.get('status') == 'warning':
-                    self.logger.warning(f"System health warning: {health_status.get('message')}")
-                elif health_status.get('status') == 'critical':
-                    self.logger.error(f"System health critical: {health_status.get('message')}")
+                health_status = await self.system_monitor.get_health_status()
+                if health_status:
+                    # Log any critical issues
+                    status = health_status.get('status', 'unknown')
+                    if status != 'healthy':
+                        self.logger.warning(f"System health warning: {status}")
+                    else:
+                        self.logger.debug(f"System health check passed: {status}")
+                else:
+                    self.logger.warning("System health check returned no data")
                 
                 await asyncio.sleep(interval)
                 
             except Exception as e:
                 self.logger.error(f"Error in system monitoring loop: {e}")
                 await asyncio.sleep(interval)
-    
+
     async def network_monitoring_loop(self):
         """Network status monitoring loop"""
-        data_config = self.config.get('data', {})
-        polling_config = data_config.get('polling', {})
-        network_interval = polling_config.get('network_status', 120)
+        self.logger.info("Starting network monitoring loop")
         
-        self.logger.info(f"Starting network monitoring loop (interval: {network_interval}s)")
+        # Check network status every 2 minutes
+        check_interval = 120
         
         while self.running:
             try:
-                # Check hotspot status
-                hotspot_status = self.hotspot_manager.get_status()
+                # Check network status
+                network_status = await self._check_network_status()
+                if network_status:
+                    self.logger.debug("Network status updated")
+                    
+                    # Log network issues
+                    if not network_status.get('hotspot', {}).get('running', False):
+                        self.logger.warning("WiFi hotspot is not running")
+                    
+                    if not network_status.get('server', {}).get('connected', False):
+                        self.logger.warning("Not connected to ReViision server")
                 
-                # Check ReViision server connectivity
-                server_status = await self.reviision_client.check_connectivity()
-                
-                # Update display with network info
-                network_info = {
-                    'hotspot': hotspot_status,
-                    'server': server_status,
-                    'timestamp': time.time()
-                }
-                self.epaper_manager.update_network_info(network_info)
-                
-                await asyncio.sleep(network_interval)
+                await asyncio.sleep(check_interval)
                 
             except Exception as e:
                 self.logger.error(f"Error in network monitoring loop: {e}")
-                await asyncio.sleep(network_interval)
+                await asyncio.sleep(check_interval)
+    
+    async def _check_network_status(self):
+        """Check current network status"""
+        try:
+            network_status = {
+                'hotspot': {'running': False},
+                'server': {'connected': False}
+            }
+            
+            # Check if hotspot is running
+            if self.hotspot_manager:
+                hotspot_running = self.hotspot_manager.is_hotspot_running()
+                network_status['hotspot']['running'] = hotspot_running
+            
+            # Check server connection
+            if self.reviision_client:
+                server_connected = await self.reviision_client.check_connectivity()
+                network_status['server']['connected'] = server_connected
+            
+            return network_status
+            
+        except Exception as e:
+            self.logger.error(f"Error checking network status: {e}")
+            return None
     
     async def shutdown(self):
         """Graceful shutdown procedure"""
@@ -258,11 +248,9 @@ class ReViisionPiTestBench:
             await asyncio.gather(*self.tasks, return_exceptions=True)
         
         # Shutdown components
-        if self.epaper_manager:
-            await self.epaper_manager.shutdown()
         
         if self.reviision_client:
-            await self.reviision_client.close()
+            await self.reviision_client.disconnect()
         
         self.logger.info("Shutdown complete")
     

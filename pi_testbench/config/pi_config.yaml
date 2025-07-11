@@ -114,59 +114,6 @@ network:
     timeout: 10
     retry_attempts: 3
     retry_delay: 5
-    
-# Display Configuration
-display:
-  # E-Paper HAT Settings (4.26 inch)
-  type: "epd4in26"
-  width: 800
-  height: 480
-  
-  # Display refresh settings
-  refresh_interval: 30  # seconds
-  full_refresh_interval: 300  # seconds (5 minutes)
-  
-  # GPIO Pin Configuration
-  gpio:
-    din: 10
-    clk: 11
-    cs: 8
-    dc: 25
-    rst: 17
-    busy: 24
-    
-  # Display Layout
-  layout:
-    header_height: 80
-    footer_height: 60
-    margin: 10
-    font_sizes:
-      title: 24
-      subtitle: 18
-      body: 14
-      small: 12
-      
-  # Data sections to display
-  sections:
-    - name: "Current Visitors"
-      type: "metric"
-      position: [10, 90, 390, 180]
-      
-    - name: "Demographics"
-      type: "chart"
-      position: [410, 90, 790, 250]
-      
-    - name: "Dwell Time"
-      type: "metric"
-      position: [10, 190, 390, 280]
-      
-    - name: "System Status"
-      type: "status"
-      position: [10, 290, 790, 380]
-      
-    - name: "Network Info"
-      type: "info"
-      position: [10, 390, 790, 420]
 
 # Data Collection Settings
 data:
@@ -176,7 +123,7 @@ data:
     system_status: 60  # seconds
     network_status: 120  # seconds
     
-  # Data retention (for offline display)
+  # Data retention (for offline caching)
   cache:
     max_age: 3600  # seconds (1 hour)
     max_entries: 1000
@@ -233,7 +180,6 @@ logging:
   
   # Component-specific logging
   components:
-    display: "INFO"
     network: "INFO"
     data_collector: "INFO"
     camera_discovery: "DEBUG"
