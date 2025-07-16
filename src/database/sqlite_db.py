@@ -783,6 +783,9 @@ class SQLiteDatabase:
             cursor.execute("DELETE FROM detections")
             cursor.execute("DELETE FROM persons")
             
+            # Reset auto-increment counters to avoid UNIQUE constraint failures
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name IN ('persons', 'detections', 'demographics', 'dwell_times')")
+            
             # Generate sample data for the last 7 days
             start_time = datetime.now() - timedelta(days=7)
             detection_records = 0
@@ -824,19 +827,18 @@ class SQLiteDatabase:
                     
                     # Generate individual person records
                     for person_num in range(base_visitors):
-                        person_id = 1000 + (day * 1000) + (hour * 100) + person_num
-                        
                         # Random visit time within the hour
                         visit_time = hour_time + timedelta(
                             minutes=random.randint(0, 59),
                             seconds=random.randint(0, 59)
                         )
                         
-                        # Create person record
+                        # Create person record (let SQLite auto-increment the ID)
                         cursor.execute('''
-                            INSERT INTO persons (id, first_detected, last_detected, total_visits)
-                            VALUES (?, ?, ?, ?)
-                        ''', (person_id, visit_time, visit_time, 1))
+                            INSERT INTO persons (first_detected, last_detected, total_visits)
+                            VALUES (?, ?, ?)
+                        ''', (visit_time, visit_time, 1))
+                        person_id = cursor.lastrowid
                         person_records += 1
                         
                         # Generate realistic bounding box (simulating person detection)
@@ -1404,3 +1406,308 @@ class SQLiteDatabase:
         except Exception as e:
             logger.error(f"Error creating default users: {e}")
             # Don't raise here to avoid breaking database initialization
+
+    def get_demographics_data(self, page=1, per_page=10, search='', sort_by='timestamp', sort_order='desc', hours=24):
+        """
+        Get detailed demographics data for table display
+        
+        Args:
+            page (int): Page number
+            per_page (int): Items per page
+            search (str): Search query
+            sort_by (str): Sort field
+            sort_order (str): Sort order
+            hours (int): Number of hours to look back
+            
+        Returns:
+            dict: Demographics data for table
+        """
+        try:
+            from datetime import timedelta
+            
+            conn = self._get_connection()
+            
+            # Calculate time range
+            end_time = datetime.now()
+            start_time = end_time - timedelta(hours=hours)
+            
+            # Build the base query with proper joins to lookup tables
+            base_query = '''
+                SELECT 
+                    d.id,
+                    d.person_id,
+                    d.timestamp,
+                    d.age,
+                    ag.group_name as age_group,
+                    g.display_name as gender,
+                    r.display_name as race,
+                    e.display_name as emotion,
+                    d.confidence,
+                    dt.total_time as dwell_time,
+                    p.first_detected,
+                    p.last_detected
+                FROM demographics d
+                JOIN persons p ON d.person_id = p.id
+                LEFT JOIN age_groups ag ON d.age_group_id = ag.id
+                JOIN genders g ON d.gender_id = g.id
+                LEFT JOIN races r ON d.race_id = r.id
+                LEFT JOIN emotions e ON d.emotion_id = e.id
+                LEFT JOIN dwell_times dt ON d.detection_id = dt.detection_id
+                WHERE d.timestamp >= ? AND d.timestamp <= ?
+            '''
+            
+            # Add search filter if provided
+            params = [start_time, end_time]
+            if search:
+                base_query += ' AND (g.display_name LIKE ? OR r.display_name LIKE ? OR e.display_name LIKE ? OR ag.group_name LIKE ?)'
+                search_term = f'%{search}%'
+                params.extend([search_term, search_term, search_term, search_term])
+            
+            # Add sorting with proper column mapping
+            column_mapping = {
+                'timestamp': 'd.timestamp',
+                'gender': 'g.display_name',
+                'age': 'd.age',
+                'emotion': 'e.display_name',
+                'confidence': 'd.confidence',
+                'dwell_time': 'dt.total_time'
+            }
+            
+            sort_column = column_mapping.get(sort_by, 'd.timestamp')
+            if sort_order.lower() not in ['asc', 'desc']:
+                sort_order = 'desc'
+            
+            base_query += f' ORDER BY {sort_column} {sort_order.upper()}'
+            
+            # Get total count for pagination
+            count_query = '''
+                SELECT COUNT(*)
+                FROM demographics d
+                JOIN persons p ON d.person_id = p.id
+                LEFT JOIN age_groups ag ON d.age_group_id = ag.id
+                JOIN genders g ON d.gender_id = g.id
+                LEFT JOIN races r ON d.race_id = r.id
+                LEFT JOIN emotions e ON d.emotion_id = e.id
+                WHERE d.timestamp >= ? AND d.timestamp <= ?
+            '''
+            
+            count_params = [start_time, end_time]
+            if search:
+                count_query += ' AND (g.display_name LIKE ? OR r.display_name LIKE ? OR e.display_name LIKE ? OR ag.group_name LIKE ?)'
+                count_params.extend([search_term, search_term, search_term, search_term])
+            
+            cursor = conn.execute(count_query, count_params)
+            total_count = cursor.fetchone()[0]
+            
+            # Calculate pagination
+            offset = (page - 1) * per_page
+            base_query += f' LIMIT {per_page} OFFSET {offset}'
+            
+            # Execute main query
+            cursor = conn.execute(base_query, params)
+            rows = cursor.fetchall()
+            
+            # Format records
+            records = []
+            for row in rows:
+                records.append({
+                    'id': row[0],
+                    'person_id': row[1],
+                    'timestamp': row[2],
+                    'age': row[3] if row[3] else 0,
+                    'age_group': row[4] or 'Unknown',
+                    'gender': row[5] or 'Unknown',
+                    'race': row[6] or 'Unknown',
+                    'emotion': row[7] or 'Neutral',
+                    'confidence': float(row[8]) if row[8] else 0.0,
+                    'dwell_time': float(row[9]) if row[9] else 0.0,
+                    'first_detected': row[10],
+                    'last_detected': row[11]
+                })
+            
+            # Calculate pagination info
+            total_pages = (total_count + per_page - 1) // per_page
+            
+            return {
+                'data': records,
+                'pagination': {
+                    'page': page,
+                    'per_page': per_page,
+                    'total_records': total_count,
+                    'total_pages': total_pages,
+                    'has_prev': page > 1,
+                    'has_next': page < total_pages,
+                    'prev_num': page - 1 if page > 1 else None,
+                    'next_num': page + 1 if page < total_pages else None
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting demographics data: {e}")
+            return {
+                'data': [],
+                'pagination': {
+                    'page': 1,
+                    'per_page': per_page,
+                    'total_records': 0,
+                    'total_pages': 0,
+                    'has_prev': False,
+                    'has_next': False,
+                    'prev_num': None,
+                    'next_num': None
+                }
+            }
+    
+    def get_demographic_trends(self, hours=24):
+        """
+        Get demographic trends over time periods
+        
+        Args:
+            hours (int): Number of hours to look back
+            
+        Returns:
+            dict: Demographic trends data grouped by time periods
+        """
+        try:
+            from datetime import timedelta
+            
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            # Calculate time range
+            end_time = datetime.now()
+            start_time = end_time - timedelta(hours=hours)
+            
+            # Determine time grouping based on hours range
+            if hours <= 24:
+                # Group by hour for daily view
+                time_format = '%Y-%m-%d %H:00:00'
+                time_label = 'Hour'
+            elif hours <= 168:  # 7 days
+                # Group by day for weekly view
+                time_format = '%Y-%m-%d'
+                time_label = 'Day'
+            else:
+                # Group by week for monthly view
+                time_format = '%Y-%W'
+                time_label = 'Week'
+            
+            # Get gender trends over time
+            cursor.execute('''
+                SELECT 
+                    strftime(?, dm.timestamp) as time_period,
+                    g.display_name as gender,
+                    COUNT(*) as count
+                FROM demographics dm
+                JOIN genders g ON dm.gender_id = g.id
+                WHERE dm.timestamp >= ? AND dm.timestamp <= ?
+                GROUP BY time_period, g.id, g.display_name
+                ORDER BY time_period, g.display_name
+            ''', (time_format, start_time, end_time))
+            
+            gender_trends = cursor.fetchall()
+            
+            # Get age group trends over time
+            cursor.execute('''
+                SELECT 
+                    strftime(?, dm.timestamp) as time_period,
+                    ag.group_name as age_group,
+                    COUNT(*) as count
+                FROM demographics dm
+                JOIN age_groups ag ON dm.age_group_id = ag.id
+                WHERE dm.timestamp >= ? AND dm.timestamp <= ?
+                GROUP BY time_period, ag.id, ag.group_name
+                ORDER BY time_period, ag.display_order
+            ''', (time_format, start_time, end_time))
+            
+            age_trends = cursor.fetchall()
+            
+            # Get emotion trends over time
+            cursor.execute('''
+                SELECT 
+                    strftime(?, dm.timestamp) as time_period,
+                    e.display_name as emotion,
+                    COUNT(*) as count
+                FROM demographics dm
+                JOIN emotions e ON dm.emotion_id = e.id
+                WHERE dm.timestamp >= ? AND dm.timestamp <= ?
+                GROUP BY time_period, e.id, e.display_name
+                ORDER BY time_period, e.display_name
+            ''', (time_format, start_time, end_time))
+            
+            emotion_trends = cursor.fetchall()
+            
+            # Process gender trends
+            gender_data = {}
+            time_periods = set()
+            
+            for row in gender_trends:
+                time_period, gender, count = row
+                time_periods.add(time_period)
+                
+                if gender not in gender_data:
+                    gender_data[gender] = {}
+                gender_data[gender][time_period] = count
+            
+            # Process age trends
+            age_data = {}
+            for row in age_trends:
+                time_period, age_group, count = row
+                time_periods.add(time_period)
+                
+                if age_group not in age_data:
+                    age_data[age_group] = {}
+                age_data[age_group][time_period] = count
+            
+            # Process emotion trends
+            emotion_data = {}
+            for row in emotion_trends:
+                time_period, emotion, count = row
+                time_periods.add(time_period)
+                
+                if emotion not in emotion_data:
+                    emotion_data[emotion] = {}
+                emotion_data[emotion][time_period] = count
+            
+            # Convert to sorted list
+            sorted_periods = sorted(list(time_periods))
+            
+            # Fill in missing periods with zeros
+            for gender in gender_data:
+                for period in sorted_periods:
+                    if period not in gender_data[gender]:
+                        gender_data[gender][period] = 0
+            
+            for age_group in age_data:
+                for period in sorted_periods:
+                    if period not in age_data[age_group]:
+                        age_data[age_group][period] = 0
+            
+            for emotion in emotion_data:
+                for period in sorted_periods:
+                    if period not in emotion_data[emotion]:
+                        emotion_data[emotion][period] = 0
+            
+            return {
+                "success": True,
+                "time_periods": sorted_periods,
+                "time_label": time_label,
+                "gender_trends": gender_data,
+                "age_trends": age_data,
+                "emotion_trends": emotion_data,
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "hours": hours
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting demographic trends: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to get demographic trends: {str(e)}",
+                "time_periods": [],
+                "time_label": "Time",
+                "gender_trends": {},
+                "age_trends": {},
+                "emotion_trends": {}
+            }

@@ -1188,6 +1188,151 @@ class FrameAnalysisService:
         except Exception as e:
             logger.error(f"Error saving detection for person {person_id} to database: {e}")
 
+    def get_analytics_summary(self, hours=24):
+        """
+        Get analytics summary data
+        
+        Args:
+            hours (int): Number of hours to look back
+            
+        Returns:
+            dict: Analytics summary data
+        """
+        try:
+            from flask import current_app
+            if hasattr(current_app, 'db'):
+                db = current_app.db
+                return db.get_analytics_summary(hours=hours)
+            else:
+                logger.warning("Database not available, returning empty analytics summary")
+                return self._get_empty_analytics_summary()
+        except Exception as e:
+            logger.error(f"Error getting analytics summary: {e}")
+            return self._get_empty_analytics_summary()
+
+    def get_traffic_data(self, hours=24):
+        """
+        Get traffic data for charts
+        
+        Args:
+            hours (int): Number of hours to look back
+            
+        Returns:
+            dict: Traffic data for charts
+        """
+        try:
+            from flask import current_app
+            if hasattr(current_app, 'db'):
+                db = current_app.db
+                return db.get_hourly_traffic(hours=hours)
+            else:
+                logger.warning("Database not available, returning empty traffic data")
+                return self._get_empty_traffic_data()
+        except Exception as e:
+            logger.error(f"Error getting traffic data: {e}")
+            return self._get_empty_traffic_data()
+
+    def get_demographics_data(self, page=1, per_page=10, search='', sort_by='timestamp', sort_order='desc', hours=24):
+        """
+        Get detailed demographics data for table
+        
+        Args:
+            page (int): Page number
+            per_page (int): Items per page
+            search (str): Search query
+            sort_by (str): Sort field
+            sort_order (str): Sort order
+            hours (int): Number of hours to look back
+            
+        Returns:
+            dict: Demographics data for table
+        """
+        try:
+            from flask import current_app
+            if hasattr(current_app, 'db'):
+                db = current_app.db
+                return db.get_demographics_data(
+                    page=page,
+                    per_page=per_page,
+                    search=search,
+                    sort_by=sort_by,
+                    sort_order=sort_order,
+                    hours=hours
+                )
+            else:
+                logger.warning("Database not available, returning empty demographics data")
+                return self._get_empty_demographics_data()
+        except Exception as e:
+            logger.error(f"Error getting demographics data: {e}")
+            return self._get_empty_demographics_data()
+
+    def get_demographic_trends(self, hours=24):
+        """
+        Get demographic trends over time
+        
+        Args:
+            hours (int): Number of hours to look back
+            
+        Returns:
+            dict: Demographic trends data
+        """
+        try:
+            from flask import current_app
+            if hasattr(current_app, 'db'):
+                db = current_app.db
+                return db.get_demographic_trends(hours=hours)
+            else:
+                logger.warning("Database not available, returning empty demographic trends")
+                return self._get_empty_demographic_trends()
+        except Exception as e:
+            logger.error(f"Error getting demographic trends: {e}")
+            return self._get_empty_demographic_trends()
+
+    def _get_empty_analytics_summary(self):
+        """Return empty analytics summary structure"""
+        return {
+            "total_visitors": 0,
+            "avg_dwell_time": 0,
+            "conversion_rate": 0,
+            "peak_hour": "--:--",
+            "gender_distribution": {},
+            "age_groups": {},
+            "emotions": {},
+            "races": {},
+            "avg_age": 0,
+            "start_time": "",
+            "end_time": ""
+        }
+
+    def _get_empty_traffic_data(self):
+        """Return empty traffic data structure"""
+        return {
+            "labels": [],
+            "data": []
+        }
+
+    def _get_empty_demographics_data(self):
+        """Return empty demographics data structure"""
+        return {
+            "data": [],
+            "pagination": {
+                "page": 1,
+                "per_page": 10,
+                "total": 0,
+                "pages": 0
+            }
+        }
+
+    def _get_empty_demographic_trends(self):
+        """Return empty demographic trends structure"""
+        return {
+            "success": False,
+            "time_periods": [],
+            "time_label": "Time",
+            "gender_trends": {},
+            "age_trends": {},
+            "emotion_trends": {}
+        }
 
 # Global service instance
 analysis_service = FrameAnalysisService()

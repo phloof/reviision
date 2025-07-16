@@ -6,208 +6,355 @@
 
 {% block styles %}
 <style>
-    /* ====================================
-       Historical Data Page Styles
-       ==================================== */
-
-    /* Filter Controls Card */
-    .filter-card {
-        background-color: var(--card-background);
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow);
-        padding: 1.5rem;
+    .historical-nav {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 1rem;
         margin-bottom: 2rem;
     }
-
-    /* Custom Date Range */
-    .custom-date-range {
-        margin-top: 1.5rem;
-        padding-top: 1.5rem;
-        border-top: 1px solid var(--border-color);
+    
+    .historical-nav .nav-link {
+        border-radius: 8px;
+        color: #6c757d;
+        font-weight: 500;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
     }
-
-    /* Path Analysis Styling */
-    .path-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.75rem;
+    
+    .historical-nav .nav-link:hover {
+        background: #f8f9fa;
+        color: #495057;
+    }
+    
+    .historical-nav .nav-link.active {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+    }
+    
+    .historical-section {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
         padding: 0.75rem;
-        background: var(--background-color);
-        border-radius: var(--border-radius);
-        border: 1px solid var(--border-color);
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
-
-    .path-item:hover {
-        background: var(--accent-color);
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
     }
-
-    /* Loading overlay for statistics */
-    .stat-loading {
-        opacity: 0.5;
-        pointer-events: none;
+    
+    .btn {
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
     }
-
-    /* No data message */
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        border: none;
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        border: none;
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        border: none;
+    }
+    
+    .btn-warning {
+        background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        border: none;
+        color: white;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        text-align: center;
+        transition: transform 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin-bottom: 1rem;
+    }
+    
+    .chart-container canvas {
+        max-height: 400px;
+    }
+    
+    .alert {
+        border-radius: 8px;
+        border: none;
+    }
+    
+    .spinner-border-sm {
+        width: 1rem;
+        height: 1rem;
+    }
+    
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+    }
+    
     .no-data-message {
         text-align: center;
-        padding: 2rem;
+        padding: 3rem;
         color: #6c757d;
     }
-
-    /* Responsive adjustments */
+    
+    .no-data-message i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #dee2e6;
+    }
+    
     @media (max-width: 768px) {
-        .stats-card h3 {
-            font-size: 2rem;
+        .stats-grid {
+            grid-template-columns: 1fr;
         }
         
-        .chart-card .card-body {
-            padding: 1rem;
+        .chart-container {
+            height: 300px;
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- ====================================
-     Filter Controls Section
-     ==================================== -->
-<div class="filter-card">
-    <div class="row align-items-end">
-        <div class="col-lg-3 col-md-6 mb-3">
-            <label for="date-range" class="form-label">Date Range</label>
-            <select class="form-select" id="date-range">
-                <option value="1h">Last Hour</option>
-                <option value="6h">Last 6 Hours</option>
-                <option value="24h" selected>Last 24 Hours</option>
-                <option value="7d">Last 7 Days</option>
-                <option value="30d">Last 30 Days</option>
-                <option value="custom">Custom Range</option>
-            </select>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <label for="metric-select" class="form-label">Metric</label>
-            <select class="form-select" id="metric-select">
-                <option value="visitors" selected>Visitors</option>
-                <option value="dwell-time">Dwell Time</option>
-                <option value="demographics">Demographics</option>
-                <option value="traffic-patterns">Traffic Patterns</option>
-            </select>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <label for="time-granularity" class="form-label">Time Granularity</label>
-            <select class="form-select" id="time-granularity">
-                <option value="hourly" selected>Hourly</option>
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-            </select>
-        </div>
-        <div class="col-lg-3 col-md-12 mb-3">
-            <button class="btn btn-primary w-100" id="apply-filters">
-                <i class="fas fa-search me-2"></i>Apply Filters
-            </button>
-        </div>
-    </div>
-    
-    <!-- Custom Date Range Inputs -->
-    <div class="row custom-date-range" style="display: none;">
-        <div class="col-lg-4 col-md-6 mb-3">
-            <label for="start-date" class="form-label">Start Date</label>
-            <input type="date" class="form-control" id="start-date">
-        </div>
-        <div class="col-lg-4 col-md-6 mb-3">
-            <label for="end-date" class="form-label">End Date</label>
-            <input type="date" class="form-control" id="end-date">
-        </div>
-    </div>
-</div>
-
-<!-- Statistics Cards Row -->
-<div class="row mb-4 stats-grid">
-    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <i class="fas fa-users fa-2x mb-3" style="color: #3498db;"></i>
-                <div class="stat-value" id="total-visitors">Loading...</div>
-                <div class="stat-label">Total Visitors</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <i class="fas fa-clock fa-2x mb-3" style="color: #e74c3c;"></i>
-                <div class="stat-value" id="average-dwell">Loading...</div>
-                <div class="stat-label">Average Dwell Time</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <i class="fas fa-chart-line fa-2x mb-3" style="color: #f39c12;"></i>
-                <div class="stat-value" id="peak-hour">Loading...</div>
-                <div class="stat-label">Peak Hour</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <i class="fas fa-percentage fa-2x mb-3" style="color: #2ecc71;"></i>
-                <div class="stat-value" id="conversion-rate">Loading...</div>
-                <div class="stat-label">Conversion Rate</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ====================================
-     Main Analysis Cards
-     ==================================== -->
-
-<!-- Traffic Chart Row -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="mb-0">Visitor Traffic Over Time</h3>
-                <div class="tooltip">
-                    <i class="fas fa-info-circle"></i>
-                    <span class="tooltip-text">Historical visitor traffic patterns</span>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="traffic-chart"></canvas>
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex align-items-center mb-4">
+                <div>
+                    <h1 class="h2 mb-1">Historical Data</h1>
+                    <p class="text-muted mb-0">View and analyze historical visitor data and trends</p>
                 </div>
             </div>
         </div>
     </div>
-</div>
-
-<!-- Demographics Chart Row -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="mb-0">Demographic Breakdown</h3>
-                <div class="tooltip">
-                    <i class="fas fa-info-circle"></i>
-                    <span class="tooltip-text">Customer demographics and dwell time analysis</span>
+    
+    <div class="row">
+        <!-- Filter Navigation -->
+        <div class="col-lg-3 mb-4">
+            <div class="historical-nav">
+                <div class="nav nav-pills flex-column" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                    <button class="nav-link active" id="v-pills-overview-tab" data-bs-toggle="pill" data-bs-target="#v-pills-overview" type="button" role="tab">
+                        <i class="fas fa-chart-line me-2"></i>Overview
+                    </button>
+                    <button class="nav-link" id="v-pills-traffic-tab" data-bs-toggle="pill" data-bs-target="#v-pills-traffic" type="button" role="tab">
+                        <i class="fas fa-users me-2"></i>Traffic Analysis
+                    </button>
+                    <button class="nav-link" id="v-pills-demographics-tab" data-bs-toggle="pill" data-bs-target="#v-pills-demographics" type="button" role="tab">
+                        <i class="fas fa-user-friends me-2"></i>Demographics
+                    </button>
+                    <button class="nav-link" id="v-pills-patterns-tab" data-bs-toggle="pill" data-bs-target="#v-pills-patterns" type="button" role="tab">
+                        <i class="fas fa-route me-2"></i>Patterns
+                    </button>
+                </div>
+                
+                <!-- Date Range Filter -->
+                <div class="mt-3">
+                    <label for="date-range" class="form-label">Date Range</label>
+                    <select class="form-select" id="date-range">
+                        <option value="1h">Last Hour</option>
+                        <option value="6h">Last 6 Hours</option>
+                        <option value="24h" selected>Last 24 Hours</option>
+                        <option value="7d">Last 7 Days</option>
+                        <option value="30d">Last 30 Days</option>
+                    </select>
+                </div>
+                
+                <div class="mt-3">
+                    <button class="btn btn-primary w-100" id="refresh-data">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh Data
+                    </button>
                 </div>
             </div>
-            <div class="card-body">
-                <div class="chart-container">
+        </div>
+        
+        <!-- Historical Content -->
+        <div class="col-lg-9">
+            <div class="tab-content" id="v-pills-tabContent">
+                
+                <!-- Overview Tab -->
+                <div class="tab-pane fade show active" id="v-pills-overview" role="tabpanel">
+                    <!-- Statistics Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <i class="fas fa-users fa-2x mb-3" style="color: #3498db;"></i>
+                            <div class="stat-value" id="total-visitors">--</div>
+                            <div class="stat-label">Total Visitors</div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-clock fa-2x mb-3" style="color: #e74c3c;"></i>
+                            <div class="stat-value" id="avg-dwell-time">--</div>
+                            <div class="stat-label">Average Dwell Time</div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-chart-line fa-2x mb-3" style="color: #f39c12;"></i>
+                            <div class="stat-value" id="peak-hour">--</div>
+                            <div class="stat-label">Peak Hour</div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-percentage fa-2x mb-3" style="color: #2ecc71;"></i>
+                            <div class="stat-value" id="conversion-rate">--</div>
+                            <div class="stat-label">Conversion Rate</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Charts -->
+                    <div class="historical-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-chart-area me-2"></i>Traffic Overview
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="overview-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Traffic Analysis Tab -->
+                <div class="tab-pane fade" id="v-pills-traffic" role="tabpanel">
+                    <div class="historical-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-users me-2"></i>Visitor Traffic Analysis
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="traffic-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="historical-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-calendar-week me-2"></i>Weekly Patterns
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="weekly-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Demographics Tab -->
+                <div class="tab-pane fade" id="v-pills-demographics" role="tabpanel">
                     <div class="row">
-                        <div class="col-md-8">
-                            <canvas id="demographics-chart"></canvas>
+                        <div class="col-md-6">
+                            <div class="historical-section">
+                                <h3 class="section-title">
+                                    <i class="fas fa-venus-mars me-2"></i>Gender Distribution
+                                </h3>
+                                <div class="chart-container">
+                                    <canvas id="gender-chart"></canvas>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <canvas id="dwell-chart"></canvas>
+                        <div class="col-md-6">
+                            <div class="historical-section">
+                                <h3 class="section-title">
+                                    <i class="fas fa-birthday-cake me-2"></i>Age Groups
+                                </h3>
+                                <div class="chart-container">
+                                    <canvas id="age-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="historical-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-clock me-2"></i>Dwell Time Distribution
+                        </h3>
+                        <div id="dwell-content">
+                            <div class="no-data-message">
+                                <i class="fas fa-clock"></i>
+                                <h5>Dwell Time Analysis</h5>
+                                <p>Dwell time distribution will be displayed here when sufficient data is available.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Patterns Tab -->
+                <div class="tab-pane fade" id="v-pills-patterns" role="tabpanel">
+                    <div class="historical-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-route me-2"></i>Customer Journey Patterns
+                        </h3>
+                        <div id="patterns-content">
+                            <div class="no-data-message">
+                                <i class="fas fa-route"></i>
+                                <h5>Pattern Analysis</h5>
+                                <p>Customer journey patterns will be displayed here when sufficient data is available.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -216,45 +363,16 @@
     </div>
 </div>
 
-<!-- Weekly Traffic Chart Row -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="mb-0">Weekly Traffic Patterns</h3>
-                <div class="tooltip">
-                    <i class="fas fa-info-circle"></i>
-                    <span class="tooltip-text">Day-by-day traffic analysis</span>
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center p-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
                 </div>
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="weekly-chart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Path Analysis Row -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="mb-0">Customer Journey Analysis</h3>
-                <div class="tooltip">
-                    <i class="fas fa-info-circle"></i>
-                    <span class="tooltip-text">Most common customer paths and behavior patterns</span>
-                </div>
-            </div>
-            <div class="card-body">
-                <div id="path-analysis">
-                    <div class="no-data-message">
-                        <i class="fas fa-route fa-3x mb-3 text-muted"></i>
-                        <h5>Path Analysis</h5>
-                        <p>Customer path analysis will appear here when sufficient data is available.</p>
-                    </div>
-                </div>
+                <h5>Loading Analytics Data...</h5>
+                <p class="text-muted mb-0">Please wait while we fetch the latest data.</p>
             </div>
         </div>
     </div>
@@ -264,159 +382,131 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // ====================================
-    // Historical Data Page JavaScript
-    // ====================================
-
-    // Global variables
-    let trafficChart, demographicsChart, dwellChart, weeklyChart;
-    let currentAnalyticsData = null;
-
-    /**
-     * Initialize the page when DOM is loaded
-     */
-    document.addEventListener('DOMContentLoaded', function() {
-        initializeDateRangeHandler();
-        setupEventHandlers();
-        loadInitialData();
-    });
-
-    /**
-     * Handle date range selection changes
-     */
-    function initializeDateRangeHandler() {
-        document.getElementById('date-range').addEventListener('change', function() {
-            const customDateRange = document.querySelector('.custom-date-range');
-            if (this.value === 'custom') {
-                customDateRange.style.display = 'flex';
-            } else {
-                customDateRange.style.display = 'none';
-            }
+// Historical Data Page JavaScript
+class HistoricalDataManager {
+    constructor() {
+        this.charts = {};
+        this.currentData = null;
+        this.init();
+    }
+    
+    init() {
+        this.setupEventHandlers();
+        this.loadData();
+    }
+    
+    setupEventHandlers() {
+        // Date range change
+        document.getElementById('date-range').addEventListener('change', () => {
+            this.loadData();
+        });
+        
+        // Refresh button
+        document.getElementById('refresh-data').addEventListener('click', () => {
+            this.loadData(true);
+        });
+        
+        // Tab changes
+        document.querySelectorAll('[data-bs-toggle="pill"]').forEach(tab => {
+            tab.addEventListener('shown.bs.tab', (e) => {
+                this.handleTabChange(e.target);
+            });
         });
     }
-
-    /**
-     * Setup event handlers for filter controls
-     */
-    function setupEventHandlers() {
-        document.getElementById('apply-filters').addEventListener('click', function() {
-            loadAnalyticsData();
-        });
-
-        // Auto-refresh data when date range changes
-        document.getElementById('date-range').addEventListener('change', function() {
-            loadAnalyticsData();
-        });
+    
+    handleTabChange(tab) {
+        // Resize charts when tab becomes visible
+        setTimeout(() => {
+            Object.values(this.charts).forEach(chart => {
+                if (chart && typeof chart.resize === 'function') {
+                    chart.resize();
+                }
+            });
+        }, 100);
     }
-
-    /**
-     * Load initial data on page load
-     */
-    function loadInitialData() {
-        loadAnalyticsData();
-    }
-
-    /**
-     * Load analytics data from API
-     */
-    async function loadAnalyticsData() {
+    
+    async loadData(showLoading = false) {
         try {
-            showLoadingState();
-            
-            const dateRange = document.getElementById('date-range').value;
-            const hours = getHoursFromDateRange(dateRange);
-            
-            // Fetch analytics summary
-            const summaryResponse = await fetch(`/api/analytics/summary?hours=${hours}`);
-            const summaryData = await summaryResponse.json();
-            
-            // Fetch traffic data
-            const trafficResponse = await fetch(`/api/analytics/traffic?hours=${hours}`);
-            const trafficData = await trafficResponse.json();
-            
-            if (summaryData.success && trafficData.success) {
-                currentAnalyticsData = {
-                    summary: summaryData,
-                    traffic: trafficData
-                };
-                
-                // Update statistics cards
-                updateStatisticsCards(summaryData);
-                
-                // Create/update charts
-                createTrafficChart(trafficData);
-                createDemographicsChart(summaryData);
-                createDwellTimeChart(summaryData);
-                createWeeklyTrafficChart(trafficData);
-                
-                hideLoadingState();
-            } else {
-                // Show no data state
-                showNoDataState();
-                hideLoadingState();
+            if (showLoading) {
+                this.showLoading();
             }
             
+            const hours = this.getHoursFromRange();
+            const response = await fetch(`/api/analytics/historical?hours=${hours}`, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Invalid response format - expected JSON');
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.currentData = data;
+                this.updateUI(data);
+                this.showSuccessMessage('Data loaded successfully');
+            } else {
+                throw new Error(data.message || 'Failed to load data');
+            }
         } catch (error) {
-            console.error('Error loading analytics data:', error);
-            showErrorState(error.message);
-            hideLoadingState();
+            console.error('Error loading data:', error);
+            this.showError(error.message);
+            this.showNoDataState();
+        } finally {
+            if (showLoading) {
+                this.hideLoading();
+            }
         }
     }
-
-    /**
-     * Convert date range to hours
-     */
-    function getHoursFromDateRange(dateRange) {
-        const rangeMap = {
-            '1h': 1,
-            '6h': 6,
-            '24h': 24,
-            '7d': 168,  // 7 * 24
-            '30d': 720, // 30 * 24
-            'custom': 24 // default for custom
-        };
-        return rangeMap[dateRange] || 24;
+    
+    updateUI(data) {
+        this.updateStatistics(data);
+        this.updateCharts(data);
     }
-
-    /**
-     * Update statistics cards with real data
-     */
-    function updateStatisticsCards(data) {
-        document.getElementById('total-visitors').textContent = data.total_visitors?.toLocaleString() || '0';
-        document.getElementById('average-dwell').textContent = formatDwellTime(data.avg_dwell_time) || '0s';
+    
+    updateStatistics(data) {
+        document.getElementById('total-visitors').textContent = (data.total_visitors || 0).toLocaleString();
+        document.getElementById('avg-dwell-time').textContent = this.formatDwellTime(data.avg_dwell_time || 0);
         document.getElementById('peak-hour').textContent = data.peak_hour || '--:--';
         document.getElementById('conversion-rate').textContent = `${data.conversion_rate || 0}%`;
     }
-
-    /**
-     * Format dwell time in seconds to readable format
-     */
-    function formatDwellTime(seconds) {
-        if (!seconds || seconds === 0) return '0s';
-        
-        if (seconds < 60) {
-            return `${Math.round(seconds)}s`;
-        } else {
-            const minutes = Math.floor(seconds / 60);
-            const remainingSeconds = Math.round(seconds % 60);
-            return remainingSeconds > 0 ? `${minutes}:${remainingSeconds.toString().padStart(2, '0')}` : `${minutes}:00`;
-        }
+    
+    updateCharts(data) {
+        this.createOverviewChart(data);
+        this.createTrafficChart(data);
+        this.createWeeklyChart(data);
+        this.createGenderChart(data);
+        this.createAgeChart(data);
     }
-
-    /**
-     * Create the main traffic chart
-     */
-    function createTrafficChart(data) {
-        const ctx = document.getElementById('traffic-chart').getContext('2d');
+    
+    createOverviewChart(data) {
+        const ctx = document.getElementById('overview-chart');
+        if (!ctx) return;
         
-        if (trafficChart) {
-            trafficChart.destroy();
+        if (this.charts.overview) {
+            this.charts.overview.destroy();
         }
         
-        const labels = data.labels || [];
-        const values = data.data || [];
+        const traffic = data.traffic || {};
+        const labels = traffic.labels || [];
+        const values = traffic.data || [];
         
-        trafficChart = new Chart(ctx, {
+        this.charts.overview = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
@@ -425,113 +515,8 @@
                     data: values,
                     borderColor: '#3498db',
                     backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Number of Visitors'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Time'
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    /**
-     * Create demographics chart
-     */
-    function createDemographicsChart(data) {
-        const ctx = document.getElementById('demographics-chart').getContext('2d');
-        
-        if (demographicsChart) {
-            demographicsChart.destroy();
-        }
-        
-        // Prepare data from age groups and gender distribution
-        const ageGroups = data.age_groups || {};
-        const genderDist = data.gender_distribution || {};
-        
-        const ageLabels = Object.keys(ageGroups);
-        const ageValues = Object.values(ageGroups);
-        
-        demographicsChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ageLabels,
-                datasets: [{
-                    data: ageValues,
-                    backgroundColor: [
-                        '#3498db', '#e74c3c', '#f39c12', '#2ecc71', 
-                        '#9b59b6', '#1abc9c', '#34495e'
-                    ],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    },
-                    title: {
-                        display: true,
-                        text: 'Age Distribution'
-                    }
-                }
-            }
-        });
-    }
-
-    /**
-     * Create dwell time chart
-     */
-    function createDwellTimeChart(data) {
-        const ctx = document.getElementById('dwell-chart').getContext('2d');
-        
-        if (dwellChart) {
-            dwellChart.destroy();
-        }
-        
-        // Create mock dwell time distribution if not provided
-        const dwellData = data.dwell_time_distribution || {
-            '0-30s': 20,
-            '30s-1m': 35,
-            '1-3m': 25,
-            '3-5m': 15,
-            '5m+': 5
-        };
-        
-        dwellChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: Object.keys(dwellData),
-                datasets: [{
-                    label: 'Visitors',
-                    data: Object.values(dwellData),
-                    backgroundColor: '#e74c3c',
-                    borderColor: '#c0392b',
-                    borderWidth: 1
+                    fill: true,
+                    tension: 0.4
                 }]
             },
             options: {
@@ -540,51 +525,78 @@
                 plugins: {
                     legend: {
                         display: false
-                    },
-                    title: {
-                        display: true,
-                        text: 'Dwell Time Distribution'
                     }
                 },
                 scales: {
                     y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Number of Visitors'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Dwell Time Range'
-                        }
+                        beginAtZero: true
                     }
                 }
             }
         });
     }
-
-    /**
-     * Create weekly traffic chart
-     */
-    function createWeeklyTrafficChart(data) {
-        const ctx = document.getElementById('weekly-chart').getContext('2d');
+    
+    createTrafficChart(data) {
+        const ctx = document.getElementById('traffic-chart');
+        if (!ctx) return;
         
-        if (weeklyChart) {
-            weeklyChart.destroy();
+        if (this.charts.traffic) {
+            this.charts.traffic.destroy();
         }
         
-        // Create weekly data from hourly data if available
-        const weeklyData = aggregateWeeklyData(data);
+        const traffic = data.traffic || {};
+        const labels = traffic.labels || [];
+        const values = traffic.data || [];
         
-        weeklyChart = new Chart(ctx, {
+        this.charts.traffic = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: weeklyData.labels,
+                labels: labels,
+                datasets: [{
+                    label: 'Visitors',
+                    data: values,
+                    backgroundColor: '#3498db',
+                    borderColor: '#2980b9',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+    
+    createWeeklyChart(data) {
+        const ctx = document.getElementById('weekly-chart');
+        if (!ctx) return;
+        
+        if (this.charts.weekly) {
+            this.charts.weekly.destroy();
+        }
+        
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        const values = new Array(7).fill(0);
+        
+        // Aggregate data by day of week if available
+        if (data.traffic && data.traffic.data) {
+            data.traffic.data.forEach((value, index) => {
+                values[index % 7] += value;
+            });
+        }
+        
+        this.charts.weekly = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: days,
                 datasets: [{
                     label: 'Daily Visitors',
-                    data: weeklyData.values,
+                    data: values,
                     backgroundColor: '#f39c12',
                     borderColor: '#e67e22',
                     borderWidth: 1
@@ -593,6 +605,75 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+    
+    createGenderChart(data) {
+        const ctx = document.getElementById('gender-chart');
+        if (!ctx) return;
+        
+        if (this.charts.gender) {
+            this.charts.gender.destroy();
+        }
+        
+        const genderData = data.gender_distribution || {};
+        const labels = Object.keys(genderData);
+        const values = Object.values(genderData);
+        
+        this.charts.gender = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: ['#3498db', '#e74c3c', '#f39c12']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    createAgeChart(data) {
+        const ctx = document.getElementById('age-chart');
+        if (!ctx) return;
+        
+        if (this.charts.age) {
+            this.charts.age.destroy();
+        }
+        
+        const ageData = data.age_groups || {};
+        const labels = Object.keys(ageData);
+        const values = Object.values(ageData);
+        
+        this.charts.age = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Visitors',
+                    data: values,
+                    backgroundColor: '#2ecc71',
+                    borderColor: '#27ae60',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         display: false
@@ -600,110 +681,97 @@
                 },
                 scales: {
                     y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Number of Visitors'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Day of Week'
-                        }
+                        beginAtZero: true
                     }
                 }
             }
         });
     }
-
-    /**
-     * Aggregate hourly data into weekly data
-     */
-    function aggregateWeeklyData(data) {
-        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-        
-        if (!data.labels || !data.data) {
-            return {
-                labels: days,
-                values: [0, 0, 0, 0, 0, 0, 0]
-            };
-        }
-        
-        // Simple aggregation - in real implementation would group by actual days
-        const dailyTotals = new Array(7).fill(0);
-        data.data.forEach((value, index) => {
-            const dayIndex = index % 7;
-            dailyTotals[dayIndex] += value;
-        });
-        
-        return {
-            labels: days,
-            values: dailyTotals
+    
+    getHoursFromRange() {
+        const range = document.getElementById('date-range').value;
+        const map = {
+            '1h': 1,
+            '6h': 6,
+            '24h': 24,
+            '7d': 168,
+            '30d': 720
         };
+        return map[range] || 24;
     }
-
-    /**
-     * Show loading state
-     */
-    function showLoadingState() {
-        const button = document.getElementById('apply-filters');
-        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
-        button.disabled = true;
+    
+    formatDwellTime(seconds) {
+        if (!seconds) return '0s';
         
-        // Add loading class to stat cards
-        document.querySelectorAll('.stat-card').forEach(card => {
-            card.classList.add('stat-loading');
-        });
+        if (seconds < 60) {
+            return `${Math.round(seconds)}s`;
+        } else {
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.round(seconds % 60);
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
     }
-
-    /**
-     * Hide loading state
-     */
-    function hideLoadingState() {
-        const button = document.getElementById('apply-filters');
-        button.innerHTML = '<i class="fas fa-search me-2"></i>Apply Filters';
-        button.disabled = false;
+    
+    showLoading() {
+        const modal = new bootstrap.Modal(document.getElementById('loadingModal'));
+        modal.show();
+    }
+    
+    hideLoading() {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('loadingModal'));
+        if (modal) {
+            modal.hide();
+        }
+    }
+    
+    showError(message) {
+        this.showToast('danger', `Error: ${message}`);
+    }
+    
+    showSuccessMessage(message) {
+        this.showToast('success', message);
+    }
+    
+    showToast(type, message) {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                <div style="flex-grow: 1;">${message}</div>
+                <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+            </div>
+        `;
         
-        // Remove loading class from stat cards
-        document.querySelectorAll('.stat-card').forEach(card => {
-            card.classList.remove('stat-loading');
-        });
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 5000);
     }
-
-    /**
-     * Show no data state
-     */
-    function showNoDataState() {
+    
+    showNoDataState() {
         document.getElementById('total-visitors').textContent = '0';
-        document.getElementById('average-dwell').textContent = '0s';
+        document.getElementById('avg-dwell-time').textContent = '0s';
         document.getElementById('peak-hour').textContent = '--:--';
         document.getElementById('conversion-rate').textContent = '0%';
         
-        // Create empty charts
-        createTrafficChart({labels: [], data: []});
-        createDemographicsChart({age_groups: {}, gender_distribution: {}});
-        createDwellTimeChart({});
-        createWeeklyTrafficChart({labels: [], data: []});
+        // Clear charts
+        Object.values(this.charts).forEach(chart => {
+            if (chart) {
+                chart.destroy();
+            }
+        });
+        this.charts = {};
     }
+}
 
-    /**
-     * Show error state
-     */
-    function showErrorState(message) {
-        console.error('Analytics error:', message);
-        showNoDataState();
-        
-        // Could add user-visible error notification here
-        const errorMsg = document.createElement('div');
-        errorMsg.className = 'alert alert-warning';
-        errorMsg.innerHTML = `
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            Unable to load analytics data. ${message}
-        `;
-        document.querySelector('.filter-card').after(errorMsg);
-        
-        setTimeout(() => errorMsg.remove(), 5000);
-    }
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    new HistoricalDataManager();
+});
 </script>
 {% endblock %}

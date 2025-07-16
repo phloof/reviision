@@ -9,23 +9,23 @@ analysis:
     - emotion
     confidence_threshold: 0.7
     detection_interval: 30
+    embedding_normalize: true
+    embedding_similarity_threshold: 0.4
+    embedding_window_size: 100
     emotion_backend: retinaface
     emotion_model: Emotion
     enabled: true
+    face_match_backend: model
+    face_match_threshold: 0.8
     gender_backend: retinaface
     gender_model: Gender
     min_face_size: 50
     model: deepface
     model_dir: ./models
+    one_time_demographics: true
     race_backend: retinaface
     race_model: Race
     use_insightface: true
-    one_time_demographics: true  # Only analyze demographics once per person
-    embedding_similarity_threshold: 0.4  # Stricter for better ReID
-    embedding_normalize: true  # Normalize embeddings before comparison
-    embedding_window_size: 100  # Rolling window size for recent embeddings
-    face_match_backend: model  # 'model' for dedicated face verification, 'cosine' for cosine similarity
-    face_match_threshold: 0.8  # Higher threshold for model-based matching
   dwell_time:
     enabled: true
     min_duration: 5
@@ -34,27 +34,27 @@ analysis:
     enabled: true
     grid_size: 0.5
 camera:
-  password: reviision
-  #url: rtsp://reviision:reviision@172.20.10.3:8554/stream1
-  url: rtsp://reviision:reviision@192.168.4.31:554/stream1
-  type: rtsp
-  username: reviision
-  buffer_size: 1  # Reduced buffer for better H.264 error recovery
-  timeout: 20.0
-  retry_interval: 3.0
-  max_retries: -1
-  rtsp_transport: tcp
+  backend: pyav
+  buffer_size: 1
   connection_timeout: 20.0
   fps: 15
-  resolution: [1280, 720]
-  process_latest_only: true  # Always process the latest frame, drop stale frames
-  backend: pyav  # Use 'pyav' (FFmpeg) for RTSP frame grabbing
-  # H.264 Error Handling Configuration
-  h264_error_threshold: 20      # Max consecutive H.264 errors before reconnection
-  frame_skip_on_error: true     # Enable frame skipping for error recovery
-  recovery_frame_count: 5       # Number of frames to skip during recovery
-  min_frame_size: 100          # Minimum valid frame size in pixels
-  max_decode_errors: 50        # Max decode errors before extended delay
+  frame_skip_on_error: true
+  h264_error_threshold: 20
+  max_decode_errors: 50
+  max_retries: -1
+  min_frame_size: 100
+  password: reviision
+  process_latest_only: true
+  recovery_frame_count: 5
+  resolution:
+  - 1280
+  - 720
+  retry_interval: 3.0
+  rtsp_transport: tcp
+  timeout: 20.0
+  type: rtsp
+  url: rtsp://reviision:reviision@192.168.4.31:554/stream1
+  username: reviision
 database:
   path: reviision.db
   type: sqlite
@@ -68,29 +68,24 @@ heatmap:
 logging:
   level: INFO
 tracking:
-  # Enhanced tracking parameters for duplicate reduction
+  confirmation_frames: 12
+  demographic_consistency_threshold: 0.8
+  distance_threshold: 120
+  feature_similarity_threshold: 0.85
+  feature_weight: 0.4
   iou_threshold: 0.2
   max_age: 45
+  min_confidence_for_db: 0.75
+  min_frames_for_db: 12
   min_hits: 8
-  distance_threshold: 120
-  feature_weight: 0.4
-  position_weight: 0.6
   min_track_confidence: 0.4
-  confirmation_frames: 12
-
-  # Re-identification settings
-  reid_enabled: true
+  position_weight: 0.6
   reid_distance_threshold: 250
+  reid_enabled: true
   reid_feature_threshold: 0.75
   reid_max_age: 120
-
-  # Duplicate reduction settings
-  min_frames_for_db: 12
-  min_confidence_for_db: 0.75
-  demographic_consistency_threshold: 0.8
-  feature_similarity_threshold: 0.85
-  temporal_window: 30.0
   spatial_threshold: 100
+  temporal_window: 30.0
 web:
   create_default_admin: true
   debug: true

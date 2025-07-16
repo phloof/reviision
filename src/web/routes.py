@@ -298,6 +298,61 @@ def settings():
 # API Routes - Analysis
 # ============================================================================
 
+@web_bp.route('/api/analytics/summary', methods=['GET'])
+@require_auth()
+def get_analytics_summary():
+    """
+    Get analytics summary data
+    """
+    try:
+        hours = int(request.args.get('hours', 24))
+        summary_data = analysis_service.get_analytics_summary(hours=hours)
+        return jsonify({"success": True, **summary_data})
+    except Exception as e:
+        logger.error(f"Error getting analytics summary: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@web_bp.route('/api/analytics/traffic', methods=['GET'])
+@require_auth()
+def get_traffic_data():
+    """
+    Get traffic data for charts
+    """
+    try:
+        hours = int(request.args.get('hours', 24))
+        traffic_data = analysis_service.get_traffic_data(hours=hours)
+        return jsonify({"success": True, **traffic_data})
+    except Exception as e:
+        logger.error(f"Error getting traffic data: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@web_bp.route('/api/analytics/demographics', methods=['GET'])
+@require_auth()
+def get_demographics_data():
+    """
+    Get detailed demographics data for table
+    """
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+        search = request.args.get('search', '')
+        sort_by = request.args.get('sort_by', 'timestamp')
+        sort_order = request.args.get('sort_order', 'desc')
+        hours = int(request.args.get('hours', 24))
+
+        demographics_data = analysis_service.get_demographics_data(
+            page=page,
+            per_page=per_page,
+            search=search,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            hours=hours
+        )
+        return jsonify({"success": True, **demographics_data})
+    except Exception as e:
+        logger.error(f"Error getting demographics data: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
 @web_bp.route('/api/analyze_frame', methods=['POST'])
 def analyze_frame():
     """
@@ -1340,3 +1395,48 @@ def ptz_delete_preset():
         logger.error(f"PTZ delete preset error: {e}")
         return jsonify({"success": False, "message": f"Failed to delete preset: {str(e)}"}), 500
 
+@web_bp.route('/api/analytics/historical', methods=['GET'])
+@require_auth()
+def get_historical_analytics():
+    """
+    Get combined historical analytics data for the historical page
+    This endpoint combines summary and traffic data into a single response
+    """
+    try:
+        hours = int(request.args.get('hours', 24))
+        
+        # Get analytics summary
+        summary_data = analysis_service.get_analytics_summary(hours=hours)
+        
+        # Get traffic data
+        traffic_data = analysis_service.get_traffic_data(hours=hours)
+        
+        # Combine the data as expected by the frontend
+        combined_data = {
+            "success": True,
+            "total_visitors": summary_data.get("total_visitors", 0),
+            "avg_dwell_time": summary_data.get("avg_dwell_time", 0),
+            "conversion_rate": summary_data.get("conversion_rate", 0),
+            "peak_hour": summary_data.get("peak_hour", "--:--"),
+            "gender_distribution": summary_data.get("gender_distribution", {}),
+            "age_groups": summary_data.get("age_groups", {}),
+            "emotions": summary_data.get("emotions", {}),
+            "races": summary_data.get("races", {}),
+            "avg_age": summary_data.get("avg_age", 0),
+            "traffic": traffic_data,
+            "weekly_traffic": traffic_data,  # Frontend expects this field
+            "dwell_time_distribution": {
+                "0-30s": 20,
+                "30s-1m": 35,
+                "1-3m": 25,
+                "3-5m": 15,
+                "5m+": 5
+            },
+            "start_time": summary_data.get("start_time", ""),
+            "end_time": summary_data.get("end_time", "")
+        }
+        
+        return jsonify(combined_data)
+    except Exception as e:
+        logger.error(f"Error getting historical analytics: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
