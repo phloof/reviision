@@ -677,7 +677,7 @@ sequenceDiagram
     Note over Pi: Network: Isolated camera VLAN + iptables firewall
     Note over Setup: Deployment: Centralized config for multiple environments
 ```
-
+F0:EE:7A:A5:BB:21
 ### Component Interaction Architecture
 
 ```mermaid

@@ -48,8 +48,8 @@ class RTSPCamera(BaseCamera):
         self.rtsp_transport = config.get('rtsp_transport', 'tcp')  # tcp or udp
         
         # Base cap options (always available)
-        self.cap_options = [
-            cv2.CAP_PROP_BUFFERSIZE, self.buffer_size,
+            self.cap_options = [
+                cv2.CAP_PROP_BUFFERSIZE, self.buffer_size,
             cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'H264')
         ]
         

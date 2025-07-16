@@ -67,7 +67,18 @@ python setup_reviision.py
 python setup_reviision.py pi_testbench
 python setup_reviision.py production
 python setup_reviision.py corporate
+python setup_reviision.py phone_demo    # For client demonstrations
 ```
+
+### Demo Environment (Phone Hotspot)
+For client demonstrations using your phone's hotspot:
+```bash
+python setup_reviision.py phone_demo
+```
+- Simplified network topology
+- Static IP on Raspberry Pi (192.168.43.100)
+- Portable demonstration setup
+- See `DEMO_SETUP_GUIDE.md` for detailed instructions
 
 ### What the Setup Does
 

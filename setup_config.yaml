@@ -48,6 +48,21 @@ deployment:
 
 # Alternative Environments (examples for different deployments)
 environments:
+  phone_demo:
+    network:
+      pi_ip: "192.168.43.100"  # Static IP on phone hotspot
+      pi_hotspot_ssid: "ReViision-Demo"
+      pi_hotspot_password: "demo2024"
+      camera_ip: "192.168.4.31"
+      camera_port: 554
+      external_port: 8554
+      enable_port_forwarding: true
+      phone_hotspot_network: "192.168.43.0/24"  # Typical phone hotspot range
+    app:
+      log_level: "INFO"
+    deployment:
+      create_systemd_service: false  # Skip service for demo
+      
   production:
     network:
       pi_ip: "10.0.1.100"
