@@ -144,79 +144,134 @@ This iterative design process demonstrates the engineering evolution from initia
 
 ```mermaid
 graph TB
-    subgraph "Retail Environment"
-        C1[Tapo C220 Camera 1]
-        C2[RTSP IP Camera 2]
-        C3[USB Camera 3]
-        C4[ONVIF Camera 4]
+    subgraph "Corporate Network - 192.168.1.x"
+        CORP_ROUTER[Corporate Router<br/>WPA2/WPA3]
+        DEV_PC[Development PC<br/>Windows + NVIDIA GPU<br/>192.168.1.23]
+        USERS[Store Management<br/>Access via Browser]
     end
     
-    subgraph "Edge Computing Layer"
-        subgraph "3D Printed Testbench"
-            PI[Raspberry Pi 4B<br/>8GB RAM]
-            WIFI[ALFA AWUS036AXML<br/>WiFi Adapter]
-            COOL[Active/Passive<br/>Cooling System]
+    subgraph "Pi Testbench - 192.168.1.60"
+        subgraph "3D Printed Enclosure"
+            PI4[Raspberry Pi 4B<br/>8GB RAM<br/>ARM Cortex-A72]
+            WIFI_ALFA[ALFA AWUS036AXML<br/>Dual-Band WiFi]
+            COOLING[Active/Passive<br/>Cooling System]
         end
         
-        subgraph "Network Segmentation"
-            WLAN0[wlan0<br/>Internet Connection<br/>WPA2/WPA3]
-            WLAN1[wlan1<br/>Camera Hotspot<br/>192.168.4.x]
+        subgraph "Network Interfaces"
+            WLAN0[wlan0: Internet Access<br/>192.168.1.60<br/>WPA2/WPA3]
+            WLAN1[wlan1: Camera Hotspot<br/>192.168.4.1/24<br/>ReViision-TestBench]
         end
+        
+        subgraph "Port Forwarding"
+            IPTABLES[iptables Rules<br/>8554→554 forwarding]
+            NAT[NAT/MASQUERADE<br/>Network Bridge]
+        end
+    end
+    
+    subgraph "Isolated Camera Network - 192.168.4.x"
+        TAPO[Tapo C220 Camera<br/>192.168.4.31:554<br/>reviision:reviision]
+        ONVIF1[ONVIF IP Camera<br/>192.168.4.32:554]
+        USB_CAM[USB Camera<br/>Direct Pi Connection]
     end
     
     subgraph "Processing Pipeline"
-        YOLO[YOLOv8<br/>Person Detection]
-        TRACK[Kalman Filter<br/>Person Tracking]
-        DEMO[Demographic<br/>Analysis]
-        PATH[Path Analysis<br/>& Correlation]
+        subgraph "Computer Vision"
+            YOLO[YOLOv8 Person Detection<br/>TensorRT Optimized]
+            TRACKER[Kalman Filter Tracking<br/>Multi-Modal Re-ID]
+            DEMOGRAPHICS[DeepFace + InsightFace<br/>Age/Gender/Emotion]
+        end
+        
+        subgraph "Analytics Engine"
+            PATH[Path Analysis<br/>NetworkX Graphs]
+            DWELL[Dwell Time Calculator<br/>Zone-Based Analysis]
+            HEAT[Heatmap Generator<br/>Traffic Visualization]
+            CORR[Correlation Analysis<br/>Demographic Insights]
+        end
     end
     
-    subgraph "Data Storage"
-        SQLITE[(SQLite Database<br/>Local Storage)]
+    subgraph "Data Storage & Security"
+        SQLITE[(SQLite Database<br/>3NF Normalized<br/>Local Storage)]
+        ENCRYPTION[Fernet Encryption<br/>Credential Management]
+        AUTH[Argon2id Authentication<br/>Role-Based Access]
     end
     
     subgraph "Web Interface"
-        FLASK[Flask Application<br/>Service Layer]
-        DASH[Real-time Dashboard<br/>Analytics Visualization]
+        FLASK[Flask Application<br/>Service Architecture]
         API[REST API<br/>TLS 1.3 Encrypted]
+        DASHBOARD[Real-Time Dashboard<br/>Analytics Visualization]
     end
     
-    subgraph "Security Layer"
-        ARGON[Argon2id<br/>Password Hashing]
-        FERNET[Fernet Encryption<br/>Credential Management]
-        TLS[TLS 1.3<br/>Transport Security]
+    subgraph "Centralized Setup System"
+        SETUP_CONFIG[setup_config.yaml<br/>Environment Profiles]
+        SETUP_SCRIPT[setup_reviision.py<br/>Automated Configuration]
+        SETUP_GUIDE[SETUP_GUIDE.md<br/>Documentation]
     end
     
-    C1 --> WLAN1
-    C2 --> WLAN1
-    C3 --> PI
-    C4 --> WLAN1
+    %% Network Connections
+    CORP_ROUTER --> WLAN0
+    WLAN0 --> PI4
+    PI4 --> WLAN1
+    WLAN1 --> TAPO
+    WLAN1 --> ONVIF1
+    USB_CAM --> PI4
     
-    WLAN1 --> PI
-    PI --> WLAN0
-    WLAN0 --> Internet[Internet/Corporate Network]
+    %% Development Environment
+    DEV_PC --> CORP_ROUTER
+    DEV_PC -.->|CUDA Development| YOLO
     
-    PI --> YOLO
-    YOLO --> TRACK
-    TRACK --> DEMO
-    TRACK --> PATH
+    %% Port Forwarding
+    WLAN0 --> IPTABLES
+    IPTABLES --> NAT
+    NAT --> WLAN1
     
-    DEMO --> SQLITE
+    %% Processing Flow
+    TAPO -->|RTSP Stream| YOLO
+    ONVIF1 -->|RTSP Stream| YOLO
+    USB_CAM -->|Direct Feed| YOLO
+    
+    YOLO --> TRACKER
+    TRACKER --> DEMOGRAPHICS
+    TRACKER --> PATH
+    PATH --> DWELL
+    DWELL --> HEAT
+    DEMOGRAPHICS --> CORR
+    
+    %% Data Flow
     PATH --> SQLITE
-    DEMO --> SQLITE
-    PATH --> SQLITE
+    DWELL --> SQLITE
+    HEAT --> SQLITE
+    CORR --> SQLITE
     
     SQLITE --> FLASK
-    FLASK --> DASH
     FLASK --> API
+    FLASK --> DASHBOARD
     
-    FLASK --> ARGON
-    FLASK --> FERNET
-    API --> TLS
+    %% Security Layer
+    FLASK --> ENCRYPTION
+    FLASK --> AUTH
+    API --> AUTH
     
-    WIFI --> WLAN0
-    WIFI --> WLAN1
-    PI --> COOL
+    %% Setup System
+    SETUP_CONFIG --> SETUP_SCRIPT
+    SETUP_SCRIPT -->|Configures| PI4
+    SETUP_SCRIPT -->|Updates| FLASK
+    SETUP_GUIDE -.->|Documentation| SETUP_SCRIPT
+    
+    %% User Access
+    USERS --> DASHBOARD
+    USERS --> API
+    
+    %% Hardware Integration
+    WIFI_ALFA --> WLAN0
+    WIFI_ALFA --> WLAN1
+    PI4 --> COOLING
+    
+    %% Styling
+    style DEV_PC fill:#E6F3FF
+    style PI4 fill:#FFE6E6
+    style TAPO fill:#E6FFE6
+    style SQLITE fill:#FFFACD
+    style SETUP_CONFIG fill:#F0E6FF
 ```
 
 ### Data Flow Diagram - Level 0 (Context Diagram)
@@ -224,275 +279,575 @@ graph TB
 ```mermaid
 graph LR
     subgraph "External Entities"
-        CAMERAS[IP Cameras<br/>RTSP/ONVIF]
-        ADMIN[Store Admin<br/>Users]
-        RETAIL[Retail Staff<br/>Operators]
+        CAMERAS[IP Cameras<br/>RTSP/ONVIF<br/>192.168.4.x]
+        ADMIN[Store Administrators<br/>Configuration Management]
+        OPERATORS[Retail Staff<br/>Analytics Users]
+        DEV_ENV[Development Environment<br/>Windows + CUDA]
     end
     
-    subgraph "ReViision System"
-        MAIN[ReViision<br/>Retail Analytics<br/>System]
+    subgraph "ReViision System Core"
+        MAIN[ReViision Analytics Platform<br/>Hybrid Edge/Cloud Architecture]
     end
     
     subgraph "External Systems"
-        CLOUD[Cloud Services<br/>Optional]
-        NET[Corporate<br/>Network]
+        SETUP_SYS[Centralized Setup System<br/>Multi-Environment Config]
+        CORP_NET[Corporate Network<br/>192.168.1.x]
+        INTERNET[Internet<br/>Updates & Sync]
     end
     
-    CAMERAS -->|Video Streams<br/>RTSP/H.264| MAIN
-    MAIN -->|Analytics Data<br/>Anonymized| ADMIN
-    MAIN -->|Real-time Insights<br/>Dashboard| RETAIL
-    ADMIN -->|Configuration<br/>User Management| MAIN
-    RETAIL -->|Query Parameters<br/>Time Ranges| MAIN
+    subgraph "Data Flows"
+        VIDEO_IN[Video Streams<br/>H.264 RTSP]
+        CONFIG_DATA[Configuration Data<br/>Environment Profiles]
+        ANALYTICS_OUT[Analytics Insights<br/>Real-Time Dashboard]
+        MGMT_IN[Management Commands<br/>System Configuration]
+        DEV_DATA[Development Data<br/>CUDA Acceleration]
+    end
     
-    MAIN <-->|Firmware Updates<br/>Time Sync| NET
-    MAIN <-->|Optional Backup<br/>Encrypted| CLOUD
+    %% Input Flows
+    CAMERAS -->|VIDEO_IN| MAIN
+    ADMIN -->|MGMT_IN| MAIN
+    SETUP_SYS -->|CONFIG_DATA| MAIN
+    DEV_ENV -->|DEV_DATA| MAIN
+    
+    %% Output Flows
+    MAIN -->|ANALYTICS_OUT| OPERATORS
+    MAIN -->|ANALYTICS_OUT| ADMIN
+    MAIN -.->|System Logs| ADMIN
+    
+    %% Bidirectional Flows
+    MAIN <-->|Network Traffic<br/>TLS 1.3 Encrypted| CORP_NET
+    MAIN <-->|Updates & Sync<br/>Secure Channel| INTERNET
+    SETUP_SYS <-->|Environment Config<br/>YAML Files| ADMIN
+    
+    %% Development Flow
+    DEV_ENV -.->|Algorithm Testing<br/>125 fps CUDA| MAIN
+    MAIN -.->|Optimized Models<br/>Edge Deployment| DEV_ENV
+    
+    style MAIN fill:#FFE6CC
+    style SETUP_SYS fill:#E6F2FF
+    style DEV_ENV fill:#F0E6FF
 ```
 
 ### Data Flow Diagram - Level 1 (System Decomposition)
 
 ```mermaid
 graph TB
-    subgraph "Data Collection Layer"
-        CAM[Camera Interface<br/>Manager]
-        RTSP[RTSP Stream<br/>Processor]
-        FRAME[Frame Buffer<br/>Manager]
+    subgraph "Camera Interface Layer"
+        CAM_FACTORY[Camera Factory<br/>Dynamic Instantiation]
+        RTSP_MGR[RTSP Stream Manager<br/>Port Forwarding Support]
+        USB_MGR[USB Camera Manager<br/>Direct Capture]
+        ONVIF_MGR[ONVIF Protocol Handler<br/>Discovery & Control]
+        FRAME_BUFFER[Frame Buffer Pool<br/>Circular Buffer Management]
     end
     
     subgraph "Computer Vision Layer"
-        DETECT[Person Detection<br/>YOLOv8]
-        TRACK[Multi-Object<br/>Tracking]
-        DEMO[Demographic<br/>Analysis]
+        YOLO_DETECTOR[YOLOv8 Detector<br/>Person Detection Engine]
+        CUDA_ACCEL[CUDA Acceleration<br/>TensorRT Optimization]
+        PERSON_TRACKER[Multi-Object Tracker<br/>Kalman Filter + Re-ID]
+        DEMO_ANALYZER[Demographic Analyzer<br/>DeepFace + InsightFace]
+        MEMORY_MGR[Detection Memory<br/>Persistent Tracking Database]
     end
     
-    subgraph "Analytics Layer"
-        PATH[Path Analysis<br/>Engine]
-        DWELL[Dwell Time<br/>Calculator]
-        HEAT[Heatmap<br/>Generator]
-        CORR[Correlation<br/>Analyzer]
+    subgraph "Analytics Processing Layer"
+        PATH_ENGINE[Path Analysis Engine<br/>NetworkX Graph Processing]
+        DWELL_CALC[Dwell Time Calculator<br/>Zone-Based Temporal Analysis]
+        HEAT_GEN[Heatmap Generator<br/>Traffic Density Visualization]
+        CORR_ENGINE[Correlation Analyzer<br/>Demographic Insights Engine]
+        ANALYTICS_CACHE[Analytics Cache<br/>Redis-like In-Memory Store]
+    end
+    
+    subgraph "Service Orchestration Layer"
+        FRAME_SERVICE[Frame Analysis Service<br/>Core Processing Pipeline]
+        CONFIG_SERVICE[Configuration Service<br/>Centralized Config Management]
+        AUTH_SERVICE[Authentication Service<br/>Argon2id + JWT Tokens]
+        CRED_SERVICE[Credential Management<br/>Fernet Encryption System]
+        SETUP_SERVICE[Setup Automation Service<br/>Environment Configuration]
     end
     
     subgraph "Data Management Layer"
-        PROC[Data Processing<br/>Service]
-        STORE[Database<br/>Manager]
-        CACHE[Redis Cache<br/>Real-time Data]
+        DB_FACTORY[Database Factory<br/>SQLite Connection Pool]
+        SQLITE_CORE[SQLite Core<br/>3NF Normalized Schema]
+        MIGRATION_SYS[Migration System<br/>Schema Version Control]
+        BACKUP_MGR[Backup Manager<br/>Automated Data Archival]
     end
     
-    subgraph "Presentation Layer"
-        WEB[Web Service<br/>Layer]
-        AUTH[Authentication<br/>Service]
-        VIZ[Visualization<br/>Engine]
+    subgraph "Web Presentation Layer"
+        FLASK_CORE[Flask Application Core<br/>Factory Pattern]
+        ROUTE_HANDLERS[Route Handlers<br/>436 Lines Optimized]
+        API_ENDPOINTS[REST API Endpoints<br/>TLS 1.3 Secured]
+        TEMPLATE_ENGINE[Jinja2 Templates<br/>Dynamic UI Generation]
+        STATIC_ASSETS[Static Asset Manager<br/>CSS/JS/Media Files]
+        REALTIME_WS[WebSocket Handler<br/>Real-Time Updates]
     end
     
-    CAM --> RTSP
-    RTSP --> FRAME
-    FRAME --> DETECT
-    DETECT --> TRACK
-    TRACK --> DEMO
+    subgraph "Security & Monitoring"
+        TLS_HANDLER[TLS 1.3 Handler<br/>Certificate Management]
+        FIREWALL[iptables Integration<br/>Network Security Rules]
+        AUDIT_LOG[Audit Logging<br/>HMAC-SHA256 Integrity]
+        PERF_MONITOR[Performance Monitor<br/>Resource Usage Tracking]
+    end
     
-    TRACK --> PATH
-    TRACK --> DWELL
-    PATH --> HEAT
-    DEMO --> CORR
+    %% Camera Layer Connections
+    CAM_FACTORY --> RTSP_MGR
+    CAM_FACTORY --> USB_MGR
+    CAM_FACTORY --> ONVIF_MGR
+    RTSP_MGR --> FRAME_BUFFER
+    USB_MGR --> FRAME_BUFFER
+    ONVIF_MGR --> FRAME_BUFFER
     
-    PATH --> PROC
-    DWELL --> PROC
-    HEAT --> PROC
-    CORR --> PROC
+    %% Vision Layer Connections
+    FRAME_BUFFER --> YOLO_DETECTOR
+    CUDA_ACCEL --> YOLO_DETECTOR
+    YOLO_DETECTOR --> PERSON_TRACKER
+    PERSON_TRACKER --> DEMO_ANALYZER
+    PERSON_TRACKER --> MEMORY_MGR
+    DEMO_ANALYZER --> MEMORY_MGR
     
-    PROC --> STORE
-    PROC --> CACHE
-    STORE --> WEB
-    CACHE --> WEB
+    %% Analytics Layer Connections
+    MEMORY_MGR --> PATH_ENGINE
+    MEMORY_MGR --> DWELL_CALC
+    PATH_ENGINE --> HEAT_GEN
+    DWELL_CALC --> CORR_ENGINE
+    DEMO_ANALYZER --> CORR_ENGINE
+    PATH_ENGINE --> ANALYTICS_CACHE
+    HEAT_GEN --> ANALYTICS_CACHE
+    CORR_ENGINE --> ANALYTICS_CACHE
     
-    WEB --> AUTH
-    WEB --> VIZ
+    %% Service Layer Connections
+    PERSON_TRACKER --> FRAME_SERVICE
+    PATH_ENGINE --> FRAME_SERVICE
+    DEMO_ANALYZER --> FRAME_SERVICE
+    CONFIG_SERVICE --> FRAME_SERVICE
+    AUTH_SERVICE --> CONFIG_SERVICE
+    CRED_SERVICE --> CONFIG_SERVICE
+    SETUP_SERVICE --> CONFIG_SERVICE
     
-    AUTH --> VIZ
+    %% Data Layer Connections
+    FRAME_SERVICE --> DB_FACTORY
+    DB_FACTORY --> SQLITE_CORE
+    MIGRATION_SYS --> SQLITE_CORE
+    BACKUP_MGR --> SQLITE_CORE
+    ANALYTICS_CACHE --> DB_FACTORY
+    
+    %% Web Layer Connections
+    FRAME_SERVICE --> FLASK_CORE
+    CONFIG_SERVICE --> FLASK_CORE
+    AUTH_SERVICE --> FLASK_CORE
+    FLASK_CORE --> ROUTE_HANDLERS
+    FLASK_CORE --> API_ENDPOINTS
+    ROUTE_HANDLERS --> TEMPLATE_ENGINE
+    ROUTE_HANDLERS --> STATIC_ASSETS
+    API_ENDPOINTS --> REALTIME_WS
+    
+    %% Security Integration
+    TLS_HANDLER --> API_ENDPOINTS
+    TLS_HANDLER --> REALTIME_WS
+    FIREWALL --> RTSP_MGR
+    AUTH_SERVICE --> AUDIT_LOG
+    FRAME_SERVICE --> PERF_MONITOR
+    
+    %% Setup System Integration
+    SETUP_SERVICE -.->|Configures| CAM_FACTORY
+    SETUP_SERVICE -.->|Updates| CONFIG_SERVICE
+    SETUP_SERVICE -.->|Initializes| CRED_SERVICE
 ```
 
 ### Network Security Architecture
 
 ```mermaid
 graph TB
-    subgraph "Internet/Corporate Network"
-        ROUTER[Corporate Router<br/>WPA2/WPA3]
-        FIREWALL[Corporate Firewall<br/>DMZ Rules]
+    subgraph "Corporate Network Environment"
+        subgraph "Main Network - 192.168.1.x"
+            CORP_ROUTER[Corporate Router<br/>WPA2/WPA3<br/>Firewall Protection]
+            DEV_WORKSTATION[Development Workstation<br/>192.168.1.23<br/>Windows + NVIDIA GPU]
+            MGMT_ACCESS[Management Access<br/>Store Administrators<br/>Web Interface Users]
+        end
     end
     
-    subgraph "Raspberry Pi Network Bridge"
-        subgraph "Network Interfaces"
-            WLAN0[wlan0<br/>Client Mode<br/>Internet Access]
-            WLAN1[wlan1<br/>AP Mode<br/>192.168.4.1/24]
+    subgraph "Pi Testbench Security Bridge - 192.168.1.60"
+        subgraph "Network Interface Security"
+            WLAN0_SEC[wlan0 Security<br/>Client Mode<br/>WPA2/WPA3 Auth<br/>Corporate Network Access]
+            WLAN1_SEC[wlan1 Security<br/>AP Mode Isolation<br/>WPA2-PSK: testbench2024<br/>Camera Network SSID]
+        end
+        
+        subgraph "Firewall & Traffic Control"
+            IPTABLES_RULES[iptables Firewall Rules<br/>Stateful Packet Filtering<br/>Connection Tracking]
+            PORT_FORWARD[Port Forwarding Rules<br/>8554→192.168.4.31:554<br/>RTSP Traffic Routing]
+            NAT_MASQ[NAT/MASQUERADE<br/>Network Address Translation<br/>Traffic Isolation]
+            TRAFFIC_SHAPING[Traffic Shaping<br/>QoS for Video Streams<br/>Bandwidth Management]
         end
         
         subgraph "Security Services"
-            IPTABLES[iptables<br/>Firewall Rules]
-            HOSTAPD[hostapd<br/>Access Point]
-            DNSMASQ[dnsmasq<br/>DHCP Server]
+            HOSTAPD_SEC[hostapd Security<br/>Access Point Management<br/>Client Authentication]
+            DNSMASQ_SEC[dnsmasq Security<br/>DHCP Server<br/>DNS Filtering<br/>192.168.4.10-192.168.4.50]
+            INTRUSION_DETECT[Intrusion Detection<br/>Fail2ban Integration<br/>Anomaly Monitoring]
+        end
+    end
+    
+    subgraph "Isolated Camera Network - 192.168.4.x"
+        subgraph "Camera Security Zone"
+            TAPO_CAM[Tapo C220<br/>192.168.4.31:554<br/>Credentials: reviision:reviision<br/>H.264 RTSP Stream]
+            ONVIF_CAM1[ONVIF Camera 1<br/>192.168.4.32:554<br/>Encrypted Authentication]
+            ONVIF_CAM2[ONVIF Camera 2<br/>192.168.4.33:554<br/>Motion Detection]
+            USB_DIRECT[USB Camera<br/>Direct Pi Connection<br/>No Network Exposure]
         end
         
-        subgraph "Traffic Management"
-            NAT[NAT Forwarding<br/>MASQUERADE]
-            BRIDGE[Network Bridge<br/>Isolation]
+        subgraph "Camera Network Security"
+            CAM_ISOLATION[Camera Isolation<br/>No Peer-to-Peer<br/>Pi-Only Communication]
+            FIRMWARE_CTRL[Firmware Control<br/>Update Validation<br/>Version Management]
+            STREAM_ENCRYPT[Stream Encryption<br/>Local Processing<br/>No Cloud Upload]
         end
     end
     
-    subgraph "Isolated Camera Network"
-        subgraph "IP Cameras"
-            TAPO[Tapo C220<br/>192.168.4.10]
-            ONVIF1[ONVIF Camera<br/>192.168.4.11]
-            ONVIF2[RTSP Camera<br/>192.168.4.12]
-        end
+    subgraph "Security Zones & Trust Boundaries"
+        TRUSTED_ZONE[Trusted Zone<br/>Corporate Network<br/>192.168.1.x<br/>Full Internet Access]
+        DMZ_ZONE[DMZ Zone<br/>Pi Management Interface<br/>Controlled Access<br/>Admin Functions]
+        QUARANTINE_ZONE[Quarantine Zone<br/>Camera Network<br/>192.168.4.x<br/>Isolated & Monitored]
     end
     
-    subgraph "Security Zones"
-        TRUSTED[Trusted Zone<br/>Corporate Network]
-        DMZ[DMZ Zone<br/>Pi Management]
-        ISOLATED[Isolated Zone<br/>Camera Network]
+    subgraph "Encryption & Authentication Layers"
+        TLS_LAYER[TLS 1.3 Encryption<br/>All Web Traffic<br/>Certificate Validation<br/>Perfect Forward Secrecy]
+        FERNET_LAYER[Fernet Encryption<br/>Credential Storage<br/>AES-256 CBC + HMAC<br/>Key Rotation Support]
+        ARGON2_LAYER[Argon2id Authentication<br/>Password Hashing<br/>Memory-Hard Function<br/>Brute-Force Protection]
+        RTSP_AUTH[RTSP Authentication<br/>Basic Auth over TLS<br/>Credential Rotation<br/>Session Management]
     end
     
-    ROUTER --> WLAN0
-    WLAN0 --> IPTABLES
-    IPTABLES --> NAT
-    NAT --> BRIDGE
-    BRIDGE --> WLAN1
-    WLAN1 --> HOSTAPD
-    HOSTAPD --> DNSMASQ
+    %% Network Flow Connections
+    CORP_ROUTER --> WLAN0_SEC
+    WLAN0_SEC --> IPTABLES_RULES
+    IPTABLES_RULES --> PORT_FORWARD
+    PORT_FORWARD --> NAT_MASQ
+    NAT_MASQ --> WLAN1_SEC
+    WLAN1_SEC --> HOSTAPD_SEC
+    HOSTAPD_SEC --> DNSMASQ_SEC
     
-    DNSMASQ --> TAPO
-    DNSMASQ --> ONVIF1
-    DNSMASQ --> ONVIF2
+    %% Camera Network Connections
+    DNSMASQ_SEC --> TAPO_CAM
+    DNSMASQ_SEC --> ONVIF_CAM1
+    DNSMASQ_SEC --> ONVIF_CAM2
+    USB_DIRECT -.->|Direct Connection| WLAN0_SEC
     
-    WLAN0 -.-> TRUSTED
-    WLAN0 -.-> DMZ
-    WLAN1 -.-> ISOLATED
+    %% Security Zone Mapping
+    CORP_ROUTER -.-> TRUSTED_ZONE
+    WLAN0_SEC -.-> DMZ_ZONE
+    WLAN1_SEC -.-> QUARANTINE_ZONE
     
-    style TRUSTED fill:#90EE90
-    style DMZ fill:#FFE4B5
-    style ISOLATED fill:#FFB6C1
+    %% Traffic Control & Monitoring
+    IPTABLES_RULES --> TRAFFIC_SHAPING
+    TRAFFIC_SHAPING --> INTRUSION_DETECT
+    INTRUSION_DETECT -.->|Alerts| MGMT_ACCESS
+    
+    %% Encryption Layer Integration
+    TLS_LAYER -.->|Secures| DEV_WORKSTATION
+    TLS_LAYER -.->|Secures| MGMT_ACCESS
+    FERNET_LAYER -.->|Protects| RTSP_AUTH
+    ARGON2_LAYER -.->|Validates| MGMT_ACCESS
+    RTSP_AUTH -.->|Authenticates| TAPO_CAM
+    
+    %% Camera Security Integration
+    CAM_ISOLATION --> IPTABLES_RULES
+    FIRMWARE_CTRL --> DNSMASQ_SEC
+    STREAM_ENCRYPT --> PORT_FORWARD
+    
+    %% Development Environment Security
+    DEV_WORKSTATION -.->|Secure Development<br/>CUDA Testing| CORP_ROUTER
+    
+    %% Security Monitoring Flow
+    INTRUSION_DETECT --> CAM_ISOLATION
+    INTRUSION_DETECT --> FIRMWARE_CTRL
+    
+    %% Zone Color Coding
+    style TRUSTED_ZONE fill:#90EE90
+    style DMZ_ZONE fill:#FFE4B5
+    style QUARANTINE_ZONE fill:#FFB6C1
+    style TLS_LAYER fill:#E6E6FA
+    style FERNET_LAYER fill:#F0E68C
+    style ARGON2_LAYER fill:#DDA0DD
 ```
 
 ### Detection and Analysis Sequence Flow
 
 ```mermaid
 sequenceDiagram
-    participant Camera as IP Camera
-    participant Pi as Raspberry Pi
+    participant Setup as Setup System
+    participant Camera as IP Camera (192.168.4.31)
+    participant Pi as Raspberry Pi (192.168.1.60)
     participant YOLO as YOLOv8 Detector
     participant Tracker as Person Tracker
-    participant Demo as Demographics
-    participant DB as Database
-    participant Web as Web Interface
+    participant Demographics as Demographics Engine
+    participant Analytics as Analytics Engine
+    participant DB as SQLite Database
+    participant Web as Flask Web App
     participant User as Store Manager
+    participant DevEnv as Dev Environment (CUDA)
     
-    Camera->>Pi: RTSP Stream (H.264)
-    Pi->>Pi: Frame Buffer (30fps)
+    %% Setup Phase
+    Setup->>Pi: Configure Environment (setup_reviision.py)
+    Setup->>Pi: Set Port Forwarding (8554→554)
+    Setup->>Pi: Update src/config.yaml
+    Setup->>Pi: Set Encryption Key (REVIISION_KEY)
+    Pi->>Pi: Validate Configuration
     
-    loop Every Frame
-        Pi->>YOLO: Raw Frame Data
-        YOLO->>YOLO: Person Detection
-        YOLO->>Tracker: Bounding Boxes + Confidence
+    %% Camera Initialization
+    Pi->>Camera: Establish RTSP Connection
+    Camera-->>Pi: Authentication Challenge
+    Pi->>Camera: Credentials (reviision:reviision)
+    Camera-->>Pi: RTSP Stream Authorized
+    
+    %% Development Environment Parallel Processing
+    DevEnv->>DevEnv: CUDA Acceleration (125 fps)
+    DevEnv->>DevEnv: Algorithm Testing & Optimization
+    DevEnv->>Pi: Deploy Optimized Models
+    
+    %% Real-Time Processing Loop
+    loop Every Frame (30fps)
+        Camera->>Pi: H.264 RTSP Stream (rtsp://192.168.1.60:8554/stream1)
+        Pi->>Pi: Frame Buffer Management
+        Pi->>YOLO: Raw Frame Data (640x480)
+        
+        alt CUDA Available (Development)
+            YOLO->>YOLO: TensorRT Acceleration (8ms inference)
+        else CPU Only (Edge Deployment)
+            YOLO->>YOLO: ARM Optimization (180ms inference)
+        end
+        
+        YOLO->>Tracker: Person Detection Results (bbox + confidence)
         
         Tracker->>Tracker: Kalman Filter Prediction
-        Tracker->>Tracker: Person Re-identification
-        Tracker->>Demo: Person Crop Image
+        Tracker->>Tracker: Multi-Modal Re-Identification
+        alt New Person Detected
+            Tracker->>Demographics: Person Crop + Features
+            Demographics->>Demographics: Face Detection & Analysis
+            Demographics->>Demographics: Age/Gender/Emotion Classification
+            Demographics-->>Tracker: Demographic Attributes
+        end
         
-        Demo->>Demo: Face Detection
-        Demo->>Demo: Age/Gender/Emotion Analysis
-        Demo->>Tracker: Demographic Attributes
+        Tracker->>Analytics: Updated Person Tracks
+        Analytics->>Analytics: Path Analysis (NetworkX)
+        Analytics->>Analytics: Dwell Time Calculation
+        Analytics->>Analytics: Heatmap Generation
+        Analytics->>Analytics: Correlation Analysis
         
-        Tracker->>DB: Person Track + Demographics
-        DB->>DB: Path Analysis + Correlation
+        Analytics->>DB: Store Anonymized Analytics
+        DB->>DB: 3NF Normalized Storage
+        
+        Note over Pi,Analytics: Processing Latency: 47ms avg
     end
     
-    User->>Web: Request Analytics Dashboard
+    %% User Interaction Flow
+    User->>Web: Request Real-Time Dashboard
+    Web->>Web: Authentication (Argon2id)
     Web->>DB: Query Analytics Data
-    DB->>Web: Aggregated Insights
-    Web->>User: Real-time Dashboard
+    DB-->>Web: Aggregated Insights (JSON)
+    Web->>Web: Generate Visualization
+    Web-->>User: Interactive Dashboard (TLS 1.3)
     
-    Note over Camera,User: Processing: 47ms avg latency
-    Note over DB: Privacy: No PII stored
-    Note over Web: Security: TLS 1.3 + Argon2id
+    %% Configuration Management
+    User->>Web: Update Camera Settings
+    Web->>Pi: Restart Camera Service
+    Pi->>Camera: Reconnect with New Config
+    Camera-->>Pi: Updated Stream Parameters
+    
+    %% Security & Monitoring
+    Pi->>Pi: Audit Log Generation (HMAC-SHA256)
+    Pi->>Pi: Performance Monitoring
+    Pi->>Pi: Memory Cleanup & Optimization
+    
+    %% Error Handling & Recovery
+    alt Camera Connection Lost
+        Pi->>Pi: Automatic Reconnection (5s interval)
+        Pi->>Camera: Re-establish RTSP Stream
+        Camera-->>Pi: Stream Restored
+    end
+    
+    alt System Overload
+        Pi->>Pi: Adaptive Frame Rate Reduction
+        Pi->>Pi: Garbage Collection & Memory Cleanup
+        Pi->>Pi: Resource Optimization
+    end
+    
+    %% Setup System Integration
+    Setup->>Setup: Monitor System Health
+    Setup->>Pi: Update Configuration (if needed)
+    Setup->>Web: Apply New Settings
+    
+    %% Privacy & Security Notes
+    Note over Camera,DB: Privacy: No PII stored, local processing only
+    Note over Web,User: Security: TLS 1.3 + Argon2id + Fernet encryption
+    Note over Pi: Network: Isolated camera VLAN + iptables firewall
+    Note over Setup: Deployment: Centralized config for multiple environments
 ```
 
 ### Component Interaction Architecture
 
 ```mermaid
 graph TB
-    subgraph "Camera Layer"
-        CAM_FACTORY[Camera Factory<br/>Pattern]
-        USB_CAM[USB Camera<br/>Interface]
-        RTSP_CAM[RTSP Camera<br/>Interface]
-        ONVIF_CAM[ONVIF Camera<br/>Interface]
+    subgraph "Centralized Setup & Configuration Layer"
+        SETUP_CONFIG[setup_config.yaml<br/>Multi-Environment Profiles]
+        SETUP_SCRIPT[setup_reviision.py<br/>Automated Configuration]
+        SETUP_GUIDE[SETUP_GUIDE.md<br/>User Documentation]
+        ENV_MANAGER[Environment Manager<br/>Profile Switching]
     end
     
-    subgraph "Detection Layer"
-        DETECTOR[Person Detector<br/>YOLOv8]
-        TRACKER[Person Tracker<br/>Kalman Filter]
-        MEMORY[Detection Memory<br/>Person Database]
+    subgraph "Camera Interface Layer"
+        CAM_FACTORY[Camera Factory Pattern<br/>Dynamic Type Resolution]
+        USB_INTERFACE[USB Camera Interface<br/>cv2.VideoCapture]
+        RTSP_INTERFACE[RTSP Camera Interface<br/>Port Forwarding Support]
+        ONVIF_INTERFACE[ONVIF Camera Interface<br/>Discovery Protocol]
+        CAM_MANAGER[Camera Manager<br/>Connection Pooling]
     end
     
-    subgraph "Analysis Layer"
-        PATH_ANALYZER[Path Analyzer<br/>NetworkX]
-        DEMO_ANALYZER[Demographic Analyzer<br/>OpenCV]
-        DWELL_ANALYZER[Dwell Time Analyzer<br/>Temporal Analysis]
-        HEAT_GENERATOR[Heatmap Generator<br/>Matplotlib]
-        CORR_ANALYZER[Correlation Analyzer<br/>Statistical Methods]
+    subgraph "Computer Vision & Detection Layer"
+        DETECTOR_CORE[YOLOv8 Detector Core<br/>Person Detection Engine]
+        CUDA_ENGINE[CUDA Acceleration Engine<br/>TensorRT Optimization]
+        CPU_FALLBACK[CPU Fallback Engine<br/>ARM Optimization]
+        TRACKER_CORE[Person Tracker Core<br/>Kalman Filter + Re-ID]
+        TRACK_MEMORY[Tracking Memory Store<br/>Persistent Person Database]
     end
     
-    subgraph "Service Layer"
-        FRAME_SERVICE[Frame Analysis<br/>Service]
-        AUTH_SERVICE[Authentication<br/>Service]
-        CONFIG_SERVICE[Configuration<br/>Service]
-        CRED_SERVICE[Credential<br/>Management]
+    subgraph "Analytics & Intelligence Layer"
+        PATH_ANALYZER[Path Analysis Engine<br/>NetworkX Graph Processing]
+        DEMO_ANALYZER[Demographic Analyzer<br/>DeepFace + InsightFace]
+        DWELL_ANALYZER[Dwell Time Analyzer<br/>Zone-Based Temporal Analysis]
+        HEAT_GENERATOR[Heatmap Generator<br/>Traffic Density Visualization]
+        CORR_ANALYZER[Correlation Analyzer<br/>Statistical Insights Engine]
+        ANALYTICS_CACHE[Analytics Cache<br/>In-Memory Aggregations]
     end
     
-    subgraph "Web Layer"
-        FLASK_APP[Flask Application<br/>Factory]
-        ROUTES[Route Handlers<br/>436 lines]
-        TEMPLATES[HTML Templates<br/>Jinja2]
-        STATIC[Static Assets<br/>CSS/JS]
+    subgraph "Service Orchestration Layer"
+        FRAME_SERVICE[Frame Analysis Service<br/>Core Processing Pipeline]
+        CONFIG_SERVICE[Configuration Service<br/>Dynamic Config Management]
+        AUTH_SERVICE[Authentication Service<br/>Argon2id + JWT]
+        CRED_SERVICE[Credential Management<br/>Fernet Encryption]
+        NETWORK_SERVICE[Network Service<br/>Port Forwarding Management]
+        DEPLOYMENT_SERVICE[Deployment Service<br/>Environment Adaptation]
     end
     
-    subgraph "Storage Layer"
-        DB_FACTORY[Database Factory<br/>Pattern]
-        SQLITE_DB[SQLite Database<br/>Local Storage]
+    subgraph "Data Persistence Layer"
+        DB_FACTORY[Database Factory<br/>Connection Management]
+        SQLITE_ENGINE[SQLite Engine<br/>3NF Normalized Schema]
+        MIGRATION_ENGINE[Migration Engine<br/>Schema Version Control]
+        BACKUP_SERVICE[Backup Service<br/>Automated Archival]
+        AUDIT_LOGGER[Audit Logger<br/>HMAC-SHA256 Integrity]
     end
     
-    CAM_FACTORY --> USB_CAM
-    CAM_FACTORY --> RTSP_CAM
-    CAM_FACTORY --> ONVIF_CAM
+    subgraph "Web Application Layer"
+        FLASK_FACTORY[Flask Application Factory<br/>Modular Architecture]
+        ROUTE_CONTROLLER[Route Controller<br/>436 Lines Optimized]
+        API_GATEWAY[API Gateway<br/>RESTful Endpoints]
+        TEMPLATE_RENDERER[Template Renderer<br/>Jinja2 Dynamic UI]
+        STATIC_HANDLER[Static Asset Handler<br/>CSS/JS/Media]
+        WEBSOCKET_MGR[WebSocket Manager<br/>Real-Time Updates]
+    end
     
-    USB_CAM --> DETECTOR
-    RTSP_CAM --> DETECTOR
-    ONVIF_CAM --> DETECTOR
+    subgraph "Security & Infrastructure Layer"
+        TLS_MANAGER[TLS Manager<br/>Certificate Handling]
+        FIREWALL_MGR[Firewall Manager<br/>iptables Integration]
+        ENCRYPTION_MGR[Encryption Manager<br/>Multi-Layer Security]
+        MONITOR_SYS[Monitoring System<br/>Performance & Health]
+        ERROR_HANDLER[Error Handler<br/>Graceful Degradation]
+    end
     
-    DETECTOR --> TRACKER
-    TRACKER --> MEMORY
-    MEMORY --> PATH_ANALYZER
-    MEMORY --> DEMO_ANALYZER
-    MEMORY --> DWELL_ANALYZER
+    subgraph "Development & Deployment Tools"
+        DEV_OPTIMIZER[Development Optimizer<br/>CUDA Performance Tuning]
+        EDGE_OPTIMIZER[Edge Optimizer<br/>ARM Resource Management]
+        CROSS_VALIDATOR[Cross Validator<br/>Platform Compatibility]
+        PERF_PROFILER[Performance Profiler<br/>Bottleneck Analysis]
+    end
     
+    %% Setup System Connections
+    SETUP_CONFIG --> SETUP_SCRIPT
+    SETUP_SCRIPT --> ENV_MANAGER
+    SETUP_GUIDE -.->|Documentation| SETUP_SCRIPT
+    ENV_MANAGER --> CONFIG_SERVICE
+    ENV_MANAGER --> DEPLOYMENT_SERVICE
+    
+    %% Camera Layer Connections
+    CAM_FACTORY --> USB_INTERFACE
+    CAM_FACTORY --> RTSP_INTERFACE
+    CAM_FACTORY --> ONVIF_INTERFACE
+    CAM_MANAGER --> CAM_FACTORY
+    NETWORK_SERVICE --> RTSP_INTERFACE
+    
+    %% Detection Layer Connections
+    USB_INTERFACE --> DETECTOR_CORE
+    RTSP_INTERFACE --> DETECTOR_CORE
+    ONVIF_INTERFACE --> DETECTOR_CORE
+    
+    DETECTOR_CORE --> CUDA_ENGINE
+    DETECTOR_CORE --> CPU_FALLBACK
+    CUDA_ENGINE --> TRACKER_CORE
+    CPU_FALLBACK --> TRACKER_CORE
+    TRACKER_CORE --> TRACK_MEMORY
+    
+    %% Analytics Layer Connections
+    TRACK_MEMORY --> PATH_ANALYZER
+    TRACK_MEMORY --> DEMO_ANALYZER
+    TRACK_MEMORY --> DWELL_ANALYZER
     PATH_ANALYZER --> HEAT_GENERATOR
     DEMO_ANALYZER --> CORR_ANALYZER
     DWELL_ANALYZER --> CORR_ANALYZER
     
-    TRACKER --> FRAME_SERVICE
+    PATH_ANALYZER --> ANALYTICS_CACHE
+    HEAT_GENERATOR --> ANALYTICS_CACHE
+    CORR_ANALYZER --> ANALYTICS_CACHE
+    
+    %% Service Layer Connections
+    TRACKER_CORE --> FRAME_SERVICE
     PATH_ANALYZER --> FRAME_SERVICE
     DEMO_ANALYZER --> FRAME_SERVICE
     DWELL_ANALYZER --> FRAME_SERVICE
     
-    FRAME_SERVICE --> FLASK_APP
-    AUTH_SERVICE --> FLASK_APP
-    CONFIG_SERVICE --> FLASK_APP
+    CONFIG_SERVICE --> FRAME_SERVICE
+    AUTH_SERVICE --> CONFIG_SERVICE
     CRED_SERVICE --> CONFIG_SERVICE
+    NETWORK_SERVICE --> CONFIG_SERVICE
+    DEPLOYMENT_SERVICE --> CONFIG_SERVICE
     
-    FLASK_APP --> ROUTES
-    ROUTES --> TEMPLATES
-    ROUTES --> STATIC
-    
+    %% Data Layer Connections
     FRAME_SERVICE --> DB_FACTORY
-    DB_FACTORY --> SQLITE_DB
+    ANALYTICS_CACHE --> DB_FACTORY
+    DB_FACTORY --> SQLITE_ENGINE
+    MIGRATION_ENGINE --> SQLITE_ENGINE
+    BACKUP_SERVICE --> SQLITE_ENGINE
+    AUDIT_LOGGER --> SQLITE_ENGINE
+    
+    %% Web Layer Connections
+    FRAME_SERVICE --> FLASK_FACTORY
+    CONFIG_SERVICE --> FLASK_FACTORY
+    AUTH_SERVICE --> FLASK_FACTORY
+    
+    FLASK_FACTORY --> ROUTE_CONTROLLER
+    FLASK_FACTORY --> API_GATEWAY
+    ROUTE_CONTROLLER --> TEMPLATE_RENDERER
+    ROUTE_CONTROLLER --> STATIC_HANDLER
+    API_GATEWAY --> WEBSOCKET_MGR
+    
+    %% Security Layer Integration
+    TLS_MANAGER --> API_GATEWAY
+    TLS_MANAGER --> WEBSOCKET_MGR
+    FIREWALL_MGR --> NETWORK_SERVICE
+    ENCRYPTION_MGR --> CRED_SERVICE
+    ENCRYPTION_MGR --> AUTH_SERVICE
+    MONITOR_SYS --> FRAME_SERVICE
+    ERROR_HANDLER --> FLASK_FACTORY
+    
+    %% Development Tools Integration
+    DEV_OPTIMIZER -.->|Optimizes| CUDA_ENGINE
+    EDGE_OPTIMIZER -.->|Optimizes| CPU_FALLBACK
+    CROSS_VALIDATOR -.->|Validates| DEPLOYMENT_SERVICE
+    PERF_PROFILER -.->|Monitors| MONITOR_SYS
+    
+    %% Setup System Integration Points
+    SETUP_SCRIPT -.->|Configures| CAM_MANAGER
+    SETUP_SCRIPT -.->|Updates| CONFIG_SERVICE
+    SETUP_SCRIPT -.->|Initializes| CRED_SERVICE
+    SETUP_SCRIPT -.->|Sets Up| NETWORK_SERVICE
+    
+    %% Deployment Environment Adaptation
+    DEPLOYMENT_SERVICE -.->|Configures| DETECTOR_CORE
+    DEPLOYMENT_SERVICE -.->|Adapts| FRAME_SERVICE
+    DEPLOYMENT_SERVICE -.->|Optimizes| ANALYTICS_CACHE
 ```
 
 **Modeling and Design Tools:**
