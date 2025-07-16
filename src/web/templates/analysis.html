@@ -333,10 +333,7 @@
                             <input type="radio" name="overlay" id="heatmap-overlay" value="heatmap">
                             <label for="heatmap-overlay">Traffic Heatmap</label>
                         </div>
-                        <div class="overlay-toggle">
-                            <input type="radio" name="overlay" id="path-overlay" value="path">
-                            <label for="path-overlay">Customer Paths</label>
-                        </div>
+
                         <div class="overlay-toggle">
                             <input type="radio" name="overlay" id="demographic-overlay" value="demographic">
                             <label for="demographic-overlay">Demographics</label>
@@ -357,10 +354,7 @@
                             <input class="form-check-input" type="checkbox" id="show-labels" checked>
                             <label class="form-check-label" for="show-labels">Labels</label>
                         </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="show-paths" checked>
-                            <label class="form-check-label" for="show-paths">Movement Paths</label>
-                        </div>
+
                         <div class="form-check form-check-inline">
                             <input class="form-check-input" type="checkbox" id="show-metrics" checked>
                             <label class="form-check-label" for="show-metrics">Metrics</label>
@@ -543,7 +537,7 @@
         let overlayName = 'No Overlay';
         if (selectedOverlay === 'facial') overlayName = 'Facial Recognition';
         else if (selectedOverlay === 'heatmap') overlayName = 'Traffic Heatmap';
-        else if (selectedOverlay === 'path') overlayName = 'Customer Paths';
+
         else if (selectedOverlay === 'demographic') overlayName = 'Demographics';
         else if (selectedOverlay === 'dwell') overlayName = 'Dwell Time';
         
@@ -634,10 +628,10 @@
         feedImage.style.height = '100%';
         feedImage.style.objectFit = 'cover';
         
-        // Set source to backend video stream
-        const streamUrl = `/video_stream/${selectedVideo}`;
+        // Set source to backend camera stream (uses main config.yaml settings)
+        const streamUrl = `/camera_stream`;
         if (window.DEBUG_MODE) {
-            console.log('Loading video stream:', streamUrl);
+            console.log('Loading camera stream using main configuration:', streamUrl);
         }
         
         // Add load handler
@@ -676,17 +670,18 @@
         
         // Add error handler
         feedImage.onerror = function() {
-            console.error('Video stream error occurred for URL:', streamUrl);
+            console.error('Camera stream error occurred for URL:', streamUrl);
             const errorMessage = `
                 <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;background:#333;text-align:center;padding:20px;">
                     <i class="fas fa-exclamation-triangle fa-3x mb-3" style="color:#ffc107;"></i>
-                    <h5>Video Stream Failed</h5>
-                    <p>Could not load video stream: ${streamUrl}</p>
+                    <h5>Camera Stream Failed</h5>
+                    <p>Could not load camera from configuration</p>
                     <p style="font-size:0.9em;">Please check:</p>
                     <ul style="text-align:left;font-size:0.8em;">
-                        <li>Camera service is running</li>
-                        <li>Video file exists: ${selectedVideo}</li>
-                        <li>Network connection</li>
+                        <li>Camera is properly configured in Settings</li>
+                        <li>Camera/device is accessible</li>
+                        <li>Network connection (for IP cameras)</li>
+                        <li>Check system logs for detailed errors</li>
                     </ul>
                     <button class="btn btn-sm btn-warning mt-2" onclick="initializeVideoFeeds()">Retry</button>
                 </div>
@@ -1063,8 +1058,7 @@
             applyHeatmapOverlay(overlayContainer);
         } else if (selectedOverlay === 'facial') {
             createFacialOverlay(overlayContainer);
-        } else if (selectedOverlay === 'path') {
-            createPathOverlay(overlayContainer);
+
         } else if (selectedOverlay === 'demographic') {
             createDemographicOverlay(overlayContainer);
         } else if (selectedOverlay === 'dwell') {
@@ -1359,163 +1353,7 @@
         container.appendChild(summaryPanel);
     }
     
-    function createPathOverlay(container) {
-        // Create a canvas for drawing paths
-        const pathCanvas = document.createElement('canvas');
-        pathCanvas.className = 'path-canvas';
-        pathCanvas.width = container.offsetWidth;
-        pathCanvas.height = container.offsetHeight;
-        pathCanvas.style.position = 'absolute';
-        pathCanvas.style.top = '0';
-        pathCanvas.style.left = '0';
-        pathCanvas.style.pointerEvents = 'none';
-        
-        const ctx = pathCanvas.getContext('2d');
-        
-        // Draw individual person paths with different colors
-        const colors = ['#00ffff', '#ff00ff', '#ffff00', '#ff6600', '#00ff00', '#ff0099', '#0099ff', '#99ff00'];
-        let colorIndex = 0;
-        
-        // Draw paths for each detected person
-        detectedObjects.forEach(person => {
-            const color = colors[colorIndex % colors.length];
-            colorIndex++;
-            
-            // Use person's movement history or path data
-            let pathPoints = [];
-            
-            // First try to use the backend-provided path
-            if (person.path && person.path.length > 1) {
-                pathPoints = person.path;
-            } 
-            // Fall back to movement history
-            else if (person.movement_history && person.movement_history.length > 1) {
-                pathPoints = person.movement_history;
-            }
-            
-            // Draw the path if we have enough points
-            if (pathPoints.length > 1) {
-                ctx.strokeStyle = color;
-                ctx.lineWidth = 3;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                
-                // Draw path with smooth curves
-                ctx.beginPath();
-                ctx.moveTo(pathPoints[0].x, pathPoints[0].y);
-                
-                // Use quadratic curves for smoother paths
-                for (let i = 1; i < pathPoints.length - 1; i++) {
-                    const current = pathPoints[i];
-                    const next = pathPoints[i + 1];
-                    const cpx = (current.x + next.x) / 2;
-                    const cpy = (current.y + next.y) / 2;
-                    ctx.quadraticCurveTo(current.x, current.y, cpx, cpy);
-                }
-                
-                // Draw to the last point
-                if (pathPoints.length > 1) {
-                    const lastPoint = pathPoints[pathPoints.length - 1];
-                    ctx.lineTo(lastPoint.x, lastPoint.y);
-                }
-                
-                ctx.stroke();
-                
-                // Draw direction arrows
-                if (pathPoints.length > 1) {
-                    const lastTwo = pathPoints.slice(-2);
-                    if (lastTwo.length === 2) {
-                        drawArrow(ctx, lastTwo[0], lastTwo[1], color);
-                    }
-                }
-                
-                // Draw start point
-                ctx.fillStyle = color;
-                ctx.beginPath();
-                ctx.arc(pathPoints[0].x, pathPoints[0].y, 4, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Draw end point (current position)
-                ctx.beginPath();
-                const lastPoint = pathPoints[pathPoints.length - 1];
-                ctx.arc(lastPoint.x, lastPoint.y, 6, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.fill();
-            }
-        });
-        
-        // Add the canvas to the container
-        container.appendChild(pathCanvas);
-        
-        // Update person boxes to match path overlay style with their respective colors
-        const people = container.querySelectorAll('.person-element');
-        people.forEach((person, index) => {
-            const color = colors[index % colors.length];
-            person.style.border = `2px solid ${color}`;
-            person.style.boxShadow = `0 0 8px ${color}40`; // Add glow effect
-        });
-        
-        // Add a legend
-        createPathLegend(container, colors, detectedObjects.length);
-    }
-    
-    function drawArrow(ctx, from, to, color) {
-        const headSize = 8;
-        const angle = Math.atan2(to.y - from.y, to.x - from.x);
-        
-        ctx.strokeStyle = color;
-        ctx.fillStyle = color;
-        ctx.lineWidth = 2;
-        
-        // Draw arrow head
-        ctx.beginPath();
-        ctx.moveTo(to.x, to.y);
-        ctx.lineTo(
-            to.x - headSize * Math.cos(angle - Math.PI/6),
-            to.y - headSize * Math.sin(angle - Math.PI/6)
-        );
-        ctx.moveTo(to.x, to.y);
-        ctx.lineTo(
-            to.x - headSize * Math.cos(angle + Math.PI/6),
-            to.y - headSize * Math.sin(angle + Math.PI/6)
-        );
-        ctx.stroke();
-    }
-    
-    function createPathLegend(container, colors, peopleCount) {
-        const legend = document.createElement('div');
-        legend.className = 'path-legend';
-        legend.style.position = 'absolute';
-        legend.style.top = '10px';
-        legend.style.left = '10px';
-        legend.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-        legend.style.color = '#fff';
-        legend.style.padding = '8px';
-        legend.style.borderRadius = '4px';
-        legend.style.fontSize = '12px';
-        legend.style.maxWidth = '150px';
-        
-        let legendHTML = '<div style="font-weight: bold; margin-bottom: 5px;">Customer Paths</div>';
-        
-        for (let i = 0; i < Math.min(peopleCount, colors.length); i++) {
-            const personData = detectedObjects[i];
-            const pathLength = (personData?.path?.length || personData?.movement_history?.length || 0);
-            const dwellTime = Math.round(personData?.dwell_time || 0);
-            
-            legendHTML += `
-                <div style="margin-bottom: 3px;">
-                    <span style="color: ${colors[i]};">●</span> 
-                    Person ${personData?.id || (i + 1)} 
-                    <div style="font-size: 10px; margin-left: 12px; color: #ccc;">
-                        ${pathLength} points • ${dwellTime}s
-                    </div>
-                </div>
-            `;
-        }
-        
-        legend.innerHTML = legendHTML;
-        container.appendChild(legend);
-    }
+
     
     function createDemographicOverlay(container) {
         // Create a demographic overlay panel

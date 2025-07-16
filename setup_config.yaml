@@ -1,0 +1,72 @@
+# ReViision Setup Configuration
+# Configure this file for your specific deployment environment
+
+# Environment name (used for identification)
+environment: "pi_testbench"
+
+# Network Configuration
+network:
+  # Pi Network Settings
+  pi_ip: "192.168.1.60"  # Pi's IP on main network
+  pi_hotspot_ssid: "ReViision-TestBench"
+  pi_hotspot_password: "testbench2024"
+  pi_hotspot_network: "192.168.4.0/24"  # Hotspot network range
+  
+  # Camera Settings
+  camera_ip: "192.168.4.31"  # Camera IP on hotspot network
+  camera_port: 554  # RTSP port on camera
+  camera_username: "reviision"
+  camera_password: "reviision"
+  
+  # Port Forwarding (for external access)
+  external_port: 8554  # Port on Pi for external access
+  enable_port_forwarding: true
+
+# Application Settings
+app:
+  # Encryption (leave empty to generate new key)
+  encryption_key: ""
+  
+  # Camera Configuration
+  camera_type: "rtsp"  # rtsp, usb, mp4
+  camera_url_template: "rtsp://{username}:{password}@{host}:{port}/stream1"  # Creates 'url' field in config
+  
+  # Database
+  database_path: "reviision.db"
+
+# Deployment Settings
+deployment:
+  # Service configuration
+  create_systemd_service: true
+  service_name: "reviision"
+  
+  # Auto-start configuration
+  enable_autostart: true
+  
+  # Log level
+  log_level: "INFO"
+
+# Alternative Environments (examples for different deployments)
+environments:
+  production:
+    network:
+      pi_ip: "10.0.1.100"
+      camera_ip: "10.0.1.200"
+      external_port: 8554
+    app:
+      log_level: "WARNING"
+  
+  development:
+    network:
+      pi_ip: "192.168.1.50"
+      camera_ip: "192.168.1.51"
+      enable_port_forwarding: false
+    app:
+      log_level: "DEBUG"
+  
+  corporate:
+    network:
+      pi_ip: "172.16.0.100"
+      pi_hotspot_ssid: "ReViision-Corp"
+      camera_ip: "172.16.0.200"
+      external_port: 9554 

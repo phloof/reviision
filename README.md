@@ -77,7 +77,7 @@ NetworkX was implemented for graph-based analysis of customer movements, enablin
 
 ### 2.3: Contribution of Back-End Engineering to Success and Ease of Use
 
-The back-end architecture significantly contributes to the system's success through a carefully designed data pipeline that processes, analyzes, and stores information efficiently. The implementation supports both document-oriented (MongoDB) and relational (SQLite) databases, enabling flexible storage of heterogeneous data (trajectories, demographics, dwell times) based on deployment requirements.
+The back-end architecture significantly contributes to the system's success through a carefully designed data pipeline that processes, analyzes, and stores information efficiently. The implementation uses SQLite for reliable relational data storage, providing efficient storage of analytics data (trajectories, demographics, dwell times) with ACID compliance and zero-configuration deployment.
 
 **Enhanced API Architecture:**
 - **Service Layer Pattern:** Business logic extracted into dedicated service classes for better testability and maintainability
@@ -133,7 +133,7 @@ The local-first processing approach with minimal cloud dependencies gives retail
 - OpenCV 4.5+ for image processing and computer vision
 - PyTorch 1.10+ for ML model inference (YOLOv8)
 - Flask with service layer architecture for web implementation
-- SQLite/MongoDB for flexible data storage options
+- SQLite for reliable relational data storage
 - Pathlib for cross-platform file handling
 - Comprehensive logging with configurable levels
 
@@ -189,8 +189,7 @@ src/
 │   ├── config.py        # Configuration management
 │   └── credentials.py   # Secure credential handling
 └── database/            # Database abstraction layer
-    ├── sqlite_db.py     # SQLite implementation
-    └── mongodb.py       # MongoDB implementation
+    └── sqlite_db.py     # SQLite implementation
 ```
 
 ### Key Architectural Improvements

@@ -1,37 +1,37 @@
 analysis:
-  correlation:
-    enabled: true
-    min_samples: 10
-    time_bins: 24
   demographics:
+    age_backend: opencv
+    age_model: Age
     attributes:
     - age
     - gender
     - race
     - emotion
+    confidence_threshold: 0.7
+    detection_interval: 30
+    emotion_backend: opencv
+    emotion_model: Emotion
     enabled: true
+    gender_backend: opencv
+    gender_model: Gender
+    min_face_size: 50
     model: deepface
+    model_dir: ./models
+    race_backend: opencv
+    race_model: Race
+    use_insightface: true
   dwell_time:
     enabled: true
     min_duration: 5
-    zone_radius: 1.0
   heatmap:
     decay_factor: 0.1
     enabled: true
     grid_size: 0.5
-  path:
-    enabled: true
-    smoothing_window: 5
-    zone_detection_threshold: 0.7
 camera:
-  file_path: testData/asianstoremulti.mp4
-  fps: 30
-  loop: true
-  playback_speed: 1
-  resolution:
-  - 1280
-  - 720
-  type: video_file
+  password: reviision
+  url: rtsp://reviision:reviision@192.168.1.60:8554/stream1
+  type: rtsp
+  username: reviision
 database:
   path: reviision.db
   type: sqlite
@@ -42,6 +42,8 @@ detection:
 heatmap:
   decay_factor: 0.1
   grid_size: 0.5
+logging:
+  level: INFO
 tracking:
   iou_threshold: 0.15
   max_age: 30

@@ -65,7 +65,7 @@ def create_app(config, db):
         }
         return jsonify(status)
     
-    @app.route('/api/config', methods=['GET'])
+    @app.route('/api/system/config', methods=['GET'])
     def get_config():
         """Get system configuration (public fields only)"""
         public_config = {

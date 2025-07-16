@@ -28,6 +28,7 @@
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shared-page-styles.css') }}">
     
     <!-- Block for additional page-specific styles -->
     {% block styles %}{% endblock %}
@@ -58,8 +59,13 @@
             <div class="logo">
                 <h1><i class="fas fa-eye me-2" aria-hidden="true"></i><span class="logo-text">ReViision</span></h1>
             </div>
+            <!-- Desktop sidebar toggle -->
             <button class="sidebar-toggle d-none d-lg-block" id="sidebar-toggle" type="button" aria-label="Toggle sidebar">
                 <i class="fas fa-chevron-left"></i>
+            </button>
+            <!-- Mobile close button -->
+            <button class="mobile-close-btn d-lg-none" id="mobile-close-btn" type="button" aria-label="Close navigation menu">
+                <i class="fas fa-times"></i>
             </button>
         </div>
         
@@ -165,6 +171,7 @@
                     <div class="dropdown">
                         <button class="btn btn-outline-secondary dropdown-toggle" 
                                 type="button" 
+                                id="profile-dropdown-btn"
                                 data-bs-toggle="dropdown" 
                                 aria-expanded="false"
                                 aria-label="User menu">
@@ -236,7 +243,7 @@
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" 
             integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" 
-            crossorigin="anonymous" defer></script>
+            crossorigin="anonymous"></script>
     
     <!-- jQuery (loaded conditionally) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js" 
@@ -282,13 +289,14 @@
                 });
             });
             
-            // Keyboard navigation enhancements
+            // Enhanced keyboard navigation
             document.addEventListener('keydown', function(e) {
                 // ESC key closes modals and dropdowns
                 if (e.key === 'Escape') {
                     const openModal = document.querySelector('.modal.show');
                     if (openModal) {
                         bootstrap.Modal.getInstance(openModal).hide();
+                        return;
                     }
                     
                     // Close any open dropdowns
@@ -300,16 +308,38 @@
                     
                     // Close mobile sidebar on ESC
                     const sidebar = document.getElementById('sidebar');
-                    const overlay = document.getElementById('sidebar-overlay');
-                    if (sidebar.classList.contains('show')) {
+                    if (sidebar && sidebar.classList.contains('show')) {
                         closeMobileSidebar();
+                        return;
                     }
                 }
                 
-                // Toggle sidebar with Ctrl+B
-                if (e.ctrlKey && e.key === 'b') {
+                // Toggle sidebar with Ctrl+B (desktop only)
+                if (e.ctrlKey && e.key === 'b' && window.innerWidth >= 992) {
                     e.preventDefault();
                     toggleDesktopSidebar();
+                }
+                
+                // Arrow key navigation within mobile sidebar
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar && sidebar.classList.contains('show') && window.innerWidth < 992) {
+                    const navLinks = sidebar.querySelectorAll('.nav-links a');
+                    const currentFocus = document.activeElement;
+                    const currentIndex = Array.from(navLinks).indexOf(currentFocus);
+                    
+                    if (e.key === 'ArrowDown' && currentIndex < navLinks.length - 1) {
+                        e.preventDefault();
+                        navLinks[currentIndex + 1].focus();
+                    } else if (e.key === 'ArrowUp' && currentIndex > 0) {
+                        e.preventDefault();
+                        navLinks[currentIndex - 1].focus();
+                    } else if (e.key === 'Home' && navLinks.length > 0) {
+                        e.preventDefault();
+                        navLinks[0].focus();
+                    } else if (e.key === 'End' && navLinks.length > 0) {
+                        e.preventDefault();
+                        navLinks[navLinks.length - 1].focus();
+                    }
                 }
             });
             
@@ -332,6 +362,7 @@
             const sidebar = document.getElementById('sidebar');
             const sidebarToggle = document.getElementById('sidebar-toggle');
             const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+            const mobileCloseBtn = document.getElementById('mobile-close-btn');
             const overlay = document.getElementById('sidebar-overlay');
             
             // Desktop sidebar toggle
@@ -344,6 +375,11 @@
                 mobileMenuToggle.addEventListener('click', toggleMobileSidebar);
             }
             
+            // Mobile close button
+            if (mobileCloseBtn) {
+                mobileCloseBtn.addEventListener('click', closeMobileSidebar);
+            }
+            
             // Overlay click to close mobile sidebar
             if (overlay) {
                 overlay.addEventListener('click', closeMobileSidebar);
@@ -354,7 +390,7 @@
             navLinks.forEach(link => {
                 link.addEventListener('click', function() {
                     if (window.innerWidth < 992) {
-                        closeMobileSidebar();
+                        setTimeout(() => closeMobileSidebar(), 200); // Small delay for better UX
                     }
                 });
             });
@@ -396,20 +432,26 @@
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
             const mobileToggle = document.getElementById('mobile-menu-toggle');
+            const mobileCloseBtn = document.getElementById('mobile-close-btn');
             
+            // Add opening animation class
             sidebar.classList.add('show');
             overlay.classList.add('show');
             document.body.style.overflow = 'hidden';
             
-            // Update button aria state
+            // Update button aria states
             if (mobileToggle) {
                 mobileToggle.setAttribute('aria-expanded', 'true');
             }
             
-            // Focus first nav item for accessibility
-            const firstNavLink = sidebar.querySelector('.nav-links a');
-            if (firstNavLink) {
-                setTimeout(() => firstNavLink.focus(), 100);
+            // Focus close button for better UX
+            if (mobileCloseBtn) {
+                setTimeout(() => mobileCloseBtn.focus(), 300);
+            }
+            
+            // Add subtle haptic feedback for mobile devices
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
             }
             
             announceToScreenReader('Navigation menu opened');
@@ -422,12 +464,21 @@
             
             sidebar.classList.remove('show');
             overlay.classList.remove('show');
-            document.body.style.overflow = '';
             
-            // Update button aria state
+            // Delay removing scroll lock to allow animation to complete
+            setTimeout(() => {
+                document.body.style.overflow = '';
+            }, 300);
+            
+            // Update button aria state and return focus
             if (mobileToggle) {
                 mobileToggle.setAttribute('aria-expanded', 'false');
-                mobileToggle.focus(); // Return focus to button
+                setTimeout(() => mobileToggle.focus(), 300); // Return focus after animation
+            }
+            
+            // Add subtle haptic feedback for mobile devices
+            if (navigator.vibrate) {
+                navigator.vibrate(30);
             }
             
             announceToScreenReader('Navigation menu closed');
@@ -500,27 +551,44 @@
             });
         }
         
-        // Touch gesture support for mobile sidebar
+        // Enhanced touch gesture support for mobile sidebar
         if ('ontouchstart' in window) {
             let touchStartX = 0;
             let touchEndX = 0;
+            let touchStartY = 0;
+            let touchEndY = 0;
+            let touchStartTime = 0;
             
             document.addEventListener('touchstart', function(e) {
                 touchStartX = e.changedTouches[0].screenX;
-            });
+                touchStartY = e.changedTouches[0].screenY;
+                touchStartTime = Date.now();
+            }, { passive: true });
             
             document.addEventListener('touchend', function(e) {
                 touchEndX = e.changedTouches[0].screenX;
+                touchEndY = e.changedTouches[0].screenY;
                 handleSwipeGesture();
-            });
+            }, { passive: true });
             
             function handleSwipeGesture() {
-                const swipeThreshold = 100;
+                const swipeThreshold = 80;
+                const maxSwipeTime = 300;
+                const maxVerticalDistance = 100;
                 const sidebar = document.getElementById('sidebar');
                 
-                if (window.innerWidth < 992) {
+                const horizontalDistance = Math.abs(touchEndX - touchStartX);
+                const verticalDistance = Math.abs(touchEndY - touchStartY);
+                const swipeTime = Date.now() - touchStartTime;
+                
+                // Only handle horizontal swipes that are faster than vertical movement
+                if (horizontalDistance > swipeThreshold && 
+                    verticalDistance < maxVerticalDistance && 
+                    swipeTime < maxSwipeTime &&
+                    window.innerWidth < 992) {
+                    
                     // Swipe right to open sidebar (from left edge)
-                    if (touchStartX < 50 && touchEndX - touchStartX > swipeThreshold) {
+                    if (touchStartX < 30 && touchEndX - touchStartX > swipeThreshold && !sidebar.classList.contains('show')) {
                         openMobileSidebar();
                     }
                     // Swipe left to close sidebar
@@ -531,62 +599,27 @@
             }
         }
         
-        // Initialize dropdown functionality
+        // Initialize dropdown functionality with Bootstrap
         function initializeDropdowns() {
-            // Ensure all dropdowns are properly hidden on page load
-            const allDropdowns = document.querySelectorAll('.dropdown-menu');
-            allDropdowns.forEach(dropdown => {
-                dropdown.classList.remove('show');
-                dropdown.removeAttribute('style');
-                dropdown.removeAttribute('data-popper-placement');
-            });
-            
-            // Add click event listeners to dropdown toggles
-            const dropdownToggles = document.querySelectorAll('[data-bs-toggle="dropdown"]');
-            dropdownToggles.forEach(toggle => {
-                toggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const dropdown = this.nextElementSibling;
-                    const isCurrentlyOpen = dropdown.classList.contains('show');
-                    
-                    // Close all other dropdowns first
-                    closeAllDropdowns();
-                    
-                    // Toggle current dropdown
-                    if (!isCurrentlyOpen) {
-                        dropdown.classList.add('show');
-                        this.setAttribute('aria-expanded', 'true');
-                    } else {
-                        dropdown.classList.remove('show');
-                        dropdown.removeAttribute('style');
-                        this.setAttribute('aria-expanded', 'false');
-                    }
-                });
-            });
-            
-            // Close dropdowns when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.dropdown')) {
-                    closeAllDropdowns();
+            // Let Bootstrap handle dropdowns natively
+            // Just ensure dropdowns are initialized when Bootstrap is ready
+            if (typeof bootstrap !== 'undefined') {
+                console.log('Bootstrap dropdowns initialized');
+                
+                // Optional: Add custom event listeners for specific dropdowns
+                const profileDropdown = document.getElementById('profile-dropdown-btn');
+                if (profileDropdown) {
+                    profileDropdown.addEventListener('shown.bs.dropdown', function () {
+                        console.log('Profile dropdown opened');
+                    });
+                    profileDropdown.addEventListener('hidden.bs.dropdown', function () {
+                        console.log('Profile dropdown closed');
+                    });
                 }
-            });
-        }
-        
-        function closeAllDropdowns() {
-            const openDropdowns = document.querySelectorAll('.dropdown-menu.show');
-            const toggles = document.querySelectorAll('[data-bs-toggle="dropdown"]');
-            
-            openDropdowns.forEach(dropdown => {
-                dropdown.classList.remove('show');
-                dropdown.removeAttribute('style');
-                dropdown.removeAttribute('data-popper-placement');
-            });
-            
-            toggles.forEach(toggle => {
-                toggle.setAttribute('aria-expanded', 'false');
-            });
+            } else {
+                console.warn('Bootstrap not loaded yet, retrying dropdown initialization...');
+                setTimeout(initializeDropdowns, 100);
+            }
         }
     </script>
     

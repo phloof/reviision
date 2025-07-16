@@ -54,11 +54,20 @@ class RTSPSCamera(RTSPCamera):
         
         # RTSPS uses TCP by default
         self.rtsp_transport = 'tcp'
+        
+        # Base cap options (always available)
         self.cap_options = [
             cv2.CAP_PROP_BUFFERSIZE, self.buffer_size,
-            cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'H264'),
-            cv2.CAP_PROP_RTSP_TRANSPORT, 0  # Use TCP (0 = TCP, 1 = UDP)
+            cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'H264')
         ]
+        
+        # Add RTSP transport option if available (compatibility check)
+        if hasattr(cv2, 'CAP_PROP_RTSP_TRANSPORT'):
+            self.cap_options.extend([cv2.CAP_PROP_RTSP_TRANSPORT, 0])  # Use TCP (0 = TCP, 1 = UDP)
+            logger.debug(f"RTSPS transport set to: {self.rtsp_transport}")
+        else:
+            logger.warning("CAP_PROP_RTSP_TRANSPORT not available in this OpenCV version. "
+                         "RTSPS transport protocol will use OpenCV defaults.")
         
         # Extra options
         extra_options = config.get('cap_options', [])

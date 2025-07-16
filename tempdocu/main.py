@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 from utils.config import ConfigManager
 from camera import get_camera, stop_camera
 from detection import PersonDetector, PersonTracker
-from analysis import DemographicAnalyzer, PathAnalyzer, DwellTimeAnalyzer, HeatmapGenerator, CorrelationAnalyzer
+from analysis import DemographicAnalyzer, DwellTimeAnalyzer, HeatmapGenerator
 from database import get_database
 from web import create_app
 
@@ -201,10 +201,8 @@ def main():
         
         # Initialize analysis modules
         demographic_analyzer = DemographicAnalyzer(config['analysis']['demographics'])
-        path_analyzer = PathAnalyzer(config['analysis']['path'])
         dwell_time_analyzer = DwellTimeAnalyzer(config['analysis']['dwell_time'])
         heatmap_generator = HeatmapGenerator(config['analysis']['heatmap'])
-        correlation_analyzer = CorrelationAnalyzer(config['analysis']['correlation'])
         
         # Initialize Flask web application
         app = create_app(config, db)

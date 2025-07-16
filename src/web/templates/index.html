@@ -4,11 +4,286 @@
 
 {% block header %}Dashboard Overview{% endblock %}
 
+{% block styles %}
+<style>
+    /* Enhanced Dashboard Styling */
+    .dashboard-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 1.5rem;
+    }
+
+    /* Enhanced Card Styling */
+    .card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        margin-bottom: 2rem;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        background: #ffffff;
+        overflow: hidden;
+    }
+
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+        color: white;
+        font-weight: 600;
+        font-size: 1.2rem;
+        padding: 1.5rem 2rem;
+        border-radius: 16px 16px 0 0 !important;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .card-header h3 {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+    }
+
+    .card-header h3 i {
+        margin-right: 0.8rem;
+        font-size: 1.3rem;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    /* Enhanced Statistics Cards */
+    .stat-card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid rgba(30, 58, 138, 0.1);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        border-color: rgba(30, 58, 138, 0.2);
+    }
+
+    .stat-card .card-body {
+        padding: 2rem 1.5rem;
+        text-align: center;
+        position: relative;
+    }
+
+    .stat-card i {
+        margin-bottom: 1rem;
+        padding: 1rem;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(52, 152, 219, 0.1) 0%, rgba(52, 152, 219, 0.05) 100%);
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover i {
+        transform: scale(1.1);
+        background: linear-gradient(135deg, rgba(52, 152, 219, 0.15) 0%, rgba(52, 152, 219, 0.1) 100%);
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1e3a8a;
+        margin-bottom: 0.5rem;
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 1rem;
+        color: #6b7280;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Chart Container Enhancement */
+    .chart-container {
+        position: relative;
+        width: 100%;
+        min-height: 400px;
+        padding: 1rem;
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+        border-radius: 12px;
+        margin: 1rem 0;
+    }
+
+    /* Enhanced Grid Layout */
+    .stats-grid {
+        margin-bottom: 3rem;
+    }
+
+    .stats-grid .col-xl-3,
+    .stats-grid .col-lg-6,
+    .stats-grid .col-md-6 {
+        margin-bottom: 1.5rem;
+    }
+
+    /* Enhanced Tooltips */
+    .tooltip {
+        position: relative;
+        display: inline-block;
+        cursor: help;
+    }
+
+    .tooltip i {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1.1rem;
+        transition: color 0.3s ease;
+    }
+
+    .tooltip:hover i {
+        color: white;
+    }
+
+    .tooltip-text {
+        visibility: hidden;
+        width: 200px;
+        background-color: rgba(0, 0, 0, 0.9);
+        color: white;
+        text-align: center;
+        border-radius: 8px;
+        padding: 0.75rem;
+        position: absolute;
+        z-index: 1000;
+        bottom: 125%;
+        right: 0;
+        font-size: 0.9rem;
+        font-weight: 400;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        backdrop-filter: blur(10px);
+    }
+
+    .tooltip:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    /* Enhanced Loading States */
+    .loading-state {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+        color: #6b7280;
+        font-size: 1.1rem;
+    }
+
+    .loading-spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid rgba(30, 58, 138, 0.3);
+        border-radius: 50%;
+        border-top-color: #1e3a8a;
+        animation: spin 1s linear infinite;
+        margin-right: 1rem;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Responsive Enhancements */
+    @media (max-width: 768px) {
+        .dashboard-container {
+            padding: 1rem;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .card-header {
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+        }
+
+        .stat-card .card-body {
+            padding: 1.5rem 1rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+        }
+
+        .chart-container {
+            min-height: 300px;
+            padding: 0.5rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .card-header h3 {
+            font-size: 1rem;
+        }
+
+        .card-header h3 i {
+            font-size: 1.1rem;
+        }
+
+        .stat-card i {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
+<div class="page-container">
+    <!-- Page Header -->
+    <div class="section-header">
+        <h1 class="section-title">
+            <i class="fas fa-tachometer-alt"></i>
+            Analytics Dashboard
+        </h1>
+        <p class="section-subtitle">Real-time customer insights and system monitoring</p>
+    </div>
 <!-- Statistics Cards Row -->
 <div class="row mb-4 stats-grid">
     <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
-        <div class="card stat-card">
+        <div class="stats-card">
             <div class="card-body text-center">
                 <i class="fas fa-users fa-2x mb-3" style="color: #3498db;"></i>
                 <div class="stat-value" id="total-visitors">--</div>
@@ -18,7 +293,7 @@
     </div>
     
     <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
-        <div class="card stat-card">
+        <div class="stats-card">
             <div class="card-body text-center">
                 <i class="fas fa-clock fa-2x mb-3" style="color: #e74c3c;"></i>
                 <div class="stat-value" id="avg-dwell-time">--</div>
@@ -28,7 +303,7 @@
     </div>
     
     <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
-        <div class="card stat-card">
+        <div class="stats-card">
             <div class="card-body text-center">
                 <i class="fas fa-percentage fa-2x mb-3" style="color: #2ecc71;"></i>
                 <div class="stat-value" id="conversion-rate">--</div>
@@ -38,7 +313,7 @@
     </div>
     
     <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
-        <div class="card stat-card">
+        <div class="stats-card">
             <div class="card-body text-center">
                 <i class="fas fa-venus-mars fa-2x mb-3" style="color: #9b59b6;"></i>
                 <div class="stat-value" id="gender-ratio">--</div>
@@ -52,8 +327,11 @@
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="mb-0">Store Traffic Over Time</h3>
+            <div class="card-header">
+                <h3>
+                    <i class="fas fa-chart-line"></i>
+                    Store Traffic Over Time
+                </h3>
                 <div class="tooltip">
                     <i class="fas fa-info-circle"></i>
                     <span class="tooltip-text">Shows visitor count over time period</span>
@@ -72,8 +350,11 @@
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="mb-0">Demographic Breakdown</h3>
+            <div class="card-header">
+                <h3>
+                    <i class="fas fa-users"></i>
+                    Demographic Breakdown
+                </h3>
                 <div class="tooltip">
                     <i class="fas fa-info-circle"></i>
                     <span class="tooltip-text">Customer demographics analysis</span>
@@ -146,7 +427,8 @@
             </div>
         </div>
     </div>
-</div>
+    </div>
+</div> <!-- Close page-container -->
 {% endblock %}
 
 {% block scripts %}
@@ -166,18 +448,48 @@
     /**
      * Fetch and display dashboard data
      */
-    function fetchDashboardData() {
-        // Simulate data fetch for dashboard
-        setTimeout(() => {
+    async function fetchDashboardData() {
+        try {
+            // Fetch real analytics data
+            const response = await fetch('/api/analytics/summary?hours=24');
+            const result = await response.json();
+            
+            if (result.success) {
+                // Update dashboard with real data
+                updateDashboardStats({
+                    totalVisitors: result.total_visitors,
+                    avgDwellTime: result.avg_dwell_time,
+                    conversionRate: result.conversion_rate,
+                    genderRatio: result.gender_ratio
+                });
+                
+                // Create charts with real data
+                await createTrafficChart();
+                createDemographicCharts(result.age_groups, result.gender_distribution);
+            } else {
+                // Fallback to placeholder data if API fails
+                console.warn('Failed to fetch real analytics data, using placeholder data');
+                updateDashboardStats({
+                    totalVisitors: 0,
+                    avgDwellTime: 0,
+                    conversionRate: 0,
+                    genderRatio: "0/0"
+                });
+                createTrafficChart();
+                createDemographicCharts();
+            }
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+            // Fallback to placeholder data on error
             updateDashboardStats({
-                totalVisitors: 2456,
-                avgDwellTime: 15.3,
-                conversionRate: 34.5,
-                genderRatio: "55/45"
+                totalVisitors: 0,
+                avgDwellTime: 0,
+                conversionRate: 0,
+                genderRatio: "0/0"
             });
             createTrafficChart();
             createDemographicCharts();
-        }, 300);
+        }
     }
 
     /**
@@ -193,86 +505,138 @@
     /**
      * Create the main traffic chart
      */
-    function createTrafficChart() {
+    async function createTrafficChart() {
         const ctx = document.getElementById('trafficChart').getContext('2d');
         
-        // Generate sample data for the last 24 hours
-        const labels = [];
-        const data = [];
-        
-        const now = new Date();
-        for (let i = 23; i >= 0; i--) {
-            const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-            labels.push(time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+        try {
+            // Fetch real traffic data
+            const response = await fetch('/api/analytics/traffic?hours=24');
+            const result = await response.json();
             
-            // Generate realistic traffic data with business hour patterns
-            const hour = time.getHours();
-            let baseTraffic = 5;
-            if (hour >= 9 && hour <= 17) {
-                baseTraffic = 25;
-            } else if (hour >= 18 && hour <= 21) {
-                baseTraffic = 15;
+            let labels = [];
+            let data = [];
+            
+            if (result.success && result.labels && result.data) {
+                // Use real data
+                labels = result.labels;
+                data = result.data;
+            } else {
+                // Fallback to placeholder data
+                console.warn('Using placeholder traffic data');
+                const now = new Date();
+                for (let i = 23; i >= 0; i--) {
+                    const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+                    labels.push(time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+                    data.push(0); // Empty data
+                }
             }
-            data.push(Math.floor(Math.random() * 20) + baseTraffic);
-        }
-        
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Visitors',
-                    data: data,
-                    backgroundColor: 'rgba(52, 152, 219, 0.2)',
-                    borderColor: 'rgba(52, 152, 219, 1)',
-                    borderWidth: 2,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: 'rgba(52, 152, 219, 1)',
-                    pointBorderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Number of Visitors'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Time'
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Visitors',
+                        data: data,
+                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: 'rgba(52, 152, 219, 1)',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Visitors'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            }
                         }
                     }
                 }
-            }
-        });
+            });
+        } catch (error) {
+            console.error('Error fetching traffic data:', error);
+            // Create empty chart on error
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['No Data Available'],
+                    datasets: [{
+                        label: 'Visitors',
+                        data: [0],
+                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Visitors'
+                            }
+                        }
+                    }
+                }
+            });
+        }
     }
 
     /**
      * Create demographic distribution charts
      */
-    function createDemographicCharts() {
+    function createDemographicCharts(ageGroups = {}, genderDistribution = {}) {
+        // Prepare age data
+        const defaultAgeGroups = ['18-24', '25-34', '35-44', '45-54', '55+'];
+        const ageLabels = [];
+        const ageData = [];
+        
+        // Use real data if available, otherwise show empty chart
+        if (Object.keys(ageGroups).length > 0) {
+            for (const group of defaultAgeGroups) {
+                if (ageGroups[group]) {
+                    ageLabels.push(group);
+                    ageData.push(ageGroups[group]);
+                }
+            }
+        } else {
+            ageLabels.push('No Data');
+            ageData.push(1);
+        }
+        
         // Age Distribution Pie Chart
         const ageCtx = document.getElementById('ageChart').getContext('2d');
         new Chart(ageCtx, {
             type: 'pie',
             data: {
-                labels: ['18-24', '25-34', '35-44', '45-54', '55+'],
+                labels: ageLabels,
                 datasets: [{
-                    data: [15, 30, 25, 18, 12],
+                    data: ageData,
                     backgroundColor: [
                         'rgba(52, 152, 219, 0.7)',
                         'rgba(46, 204, 113, 0.7)',
                         'rgba(155, 89, 182, 0.7)',
                         'rgba(241, 196, 15, 0.7)',
-                        'rgba(230, 126, 34, 0.7)'
+                        'rgba(230, 126, 34, 0.7)',
+                        'rgba(128, 128, 128, 0.7)' // Gray for "No Data"
                     ],
                     borderColor: '#fff',
                     borderWidth: 2
@@ -293,17 +657,37 @@
             }
         });
         
+        // Prepare gender data
+        const genderLabels = [];
+        const genderData = [];
+        
+        if (Object.keys(genderDistribution).length > 0) {
+            for (const [gender, count] of Object.entries(genderDistribution)) {
+                if (count > 0) {
+                    genderLabels.push(gender);
+                    genderData.push(count);
+                }
+            }
+        }
+        
+        // Fallback if no gender data
+        if (genderLabels.length === 0) {
+            genderLabels.push('No Data');
+            genderData.push(1);
+        }
+        
         // Gender Distribution Doughnut Chart
         const genderCtx = document.getElementById('genderChart').getContext('2d');
         new Chart(genderCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Male', 'Female'],
+                labels: genderLabels,
                 datasets: [{
-                    data: [55, 45],
+                    data: genderData,
                     backgroundColor: [
                         'rgba(52, 152, 219, 0.7)',
-                        'rgba(231, 76, 60, 0.7)'
+                        'rgba(231, 76, 60, 0.7)',
+                        'rgba(128, 128, 128, 0.7)' // Gray for "No Data"
                     ],
                     borderColor: '#fff',
                     borderWidth: 2

@@ -6,47 +6,71 @@
 
 {% block styles %}
 <style>
-    .settings-section {
-        margin-bottom: 30px;
-    }
-    .settings-card {
-        margin-bottom: 20px;
-    }
-    .form-group {
-        margin-bottom: 15px;
-    }
-    .btn-action {
-        margin-right: 10px;
-    }
-    .alert-info {
-        margin-top: 20px;
-    }
+    /* Settings-specific styles that complement the modern design */
     .video-path-entry {
         display: flex;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
+        align-items: center;
+        gap: 10px;
     }
+    
     .video-path-entry .form-control {
-        margin-right: 10px;
+        flex: 1;
     }
-    .video-path-entry .btn-sm {
-        padding: 0.25rem 0.5rem;
-    }
+    
     .colormap-preview {
-        height: 30px;
+        height: 40px;
         width: 100%;
-        margin-top: 5px;
+        margin-top: 10px;
         background: linear-gradient(to right, blue, cyan, green, yellow, red);
-        border-radius: 3px;
+        border-radius: 8px;
+        border: 2px solid #e1e8ed;
     }
+    
     .colormap-type {
-        margin-bottom: 20px;
-        padding-bottom: 10px;
-        border-bottom: 1px dashed #eee;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e9ecef;
     }
+    
     .intensity-value {
         display: inline-block;
-        width: 40px;
+        width: 50px;
         text-align: center;
+        font-weight: 600;
+        color: #3498db;
+    }
+    
+    /* Tab styling */
+    .nav-tabs .nav-link {
+        border-radius: 12px 12px 0 0;
+        border: none;
+        background: #f8f9fa;
+        color: #6c757d;
+        font-weight: 600;
+        padding: 1rem 1.5rem;
+        margin-right: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .nav-tabs .nav-link.active {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    }
+    
+    .nav-tabs .nav-link:hover:not(.active) {
+        background: #e9ecef;
+        transform: translateY(-1px);
+    }
+    
+    .tab-content {
+        background: white;
+        border-radius: 0 16px 16px 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        padding: 0;
+        border: none;
     }
     
     /* Mobile-specific settings styles */
@@ -170,21 +194,135 @@
             font-size: 1rem;
         }
     }
+
+    /* Data Management Styling */
+    .data-management-card .card-header {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+        border: none;
+        color: white;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .data-action-section {
+        padding: 1.5rem;
+        border-radius: 12px;
+        background: rgba(248, 249, 250, 0.5);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+
+    .data-action-section:hover {
+        background: rgba(248, 249, 250, 0.8);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .action-icon-wrapper {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .data-action-section:hover .action-icon-wrapper {
+        transform: scale(1.1);
+    }
+
+    .btn-lg {
+        padding: 0.8rem 2rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        border-radius: 10px;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        border: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-lg::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .btn-lg:hover::before {
+        opacity: 1;
+    }
+
+    .btn-lg:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-success.btn-lg {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-success.btn-lg:hover {
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+    }
+
+    .btn-danger.btn-lg {
+        background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+    }
+
+    .btn-danger.btn-lg:hover {
+        box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
+    }
+
+    /* Non-admin notice styling */
+    #data-management-notice .card-body {
+        background: linear-gradient(135deg, rgba(248, 249, 250, 0.8) 0%, rgba(233, 236, 239, 0.6) 100%);
+    }
+
+    #data-management-notice .fas.fa-shield-alt {
+        opacity: 0.3;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 0.3; }
+        50% { transform: scale(1.05); opacity: 0.5; }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-3 col-md-4 settings-categories">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="fas fa-cogs me-2"></i>Category Visibility</span>
-                <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#settingsCategories" aria-expanded="false" aria-controls="settingsCategories">
-                    <i class="fas fa-chevron-down"></i>
-                </button>
-            </div>
+<div class="page-container">
+    <!-- Page Header -->
+    <div class="section-header">
+        <h1 class="section-title">
+            <i class="fas fa-cogs"></i>
+            System Settings
+        </h1>
+        <p class="section-subtitle">Configure camera, analysis, and system parameters</p>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-3 col-md-4 settings-categories">
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <i class="fas fa-layer-group"></i>
+                    Category Visibility
+                    <button class="btn btn-sm btn-outline-light ms-auto d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#settingsCategories" aria-expanded="false" aria-controls="settingsCategories">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
             <div class="collapse d-lg-block" id="settingsCategories">
-                <div class="card-body p-3">
+                <div class="modern-card-body p-3">
                     <div class="form-group mb-3">
                         <label class="form-label small text-muted mb-2">Select categories to show:</label>
                         <div class="form-check">
@@ -267,18 +405,20 @@
         <div class="tab-content">
             <!-- Camera Settings -->
             <div class="tab-pane fade show active" id="camera-settings">
-                <div class="card settings-card">
-                    <div class="card-header">
-                        <i class="fas fa-video me-2"></i>Camera Type Selection
+                <div class="modern-card">
+                    <div class="modern-card-header">
+                        <i class="fas fa-video"></i>Camera Type Selection
+                        <small class="text-muted ms-2" id="current-camera-status">Loading configuration...</small>
                     </div>
-                    <div class="card-body">
+                    <div class="modern-card-body">
                         <form id="camera-type-form">
                             <div class="form-group">
-                                <label for="camera-type" class="form-label">Camera Type:</label>
-                                <select class="form-select" id="camera-type" name="camera_type">
+                                                        <label for="camera-type" class="form-label">Camera Type:</label>
+                        <select class="form-select" id="camera-type" name="camera_type">
                                     <option value="video_file">Video File</option>
                                     <option value="usb">USB Camera</option>
                                     <option value="rtsp">RTSP Camera</option>
+                                    <option value="rtmp">RTMP Stream</option>
                                     <option value="rtsps">RTSP Secure Camera</option>
                                     <option value="onvif">ONVIF Camera (with PTZ)</option>
                                 </select>
@@ -326,6 +466,16 @@
                                 </div>
                             </div>
                             
+                            <!-- RTMP Stream Configuration -->
+                            <div id="rtmp-config" class="camera-config" style="display: none;">
+                                <h6>RTMP Stream Configuration</h6>
+                                <div class="form-group">
+                                    <label for="rtmp-url">RTMP URL:</label>
+                                    <input type="text" class="form-control" id="rtmp-url" name="url" placeholder="rtmp://192.168.1.100:1935/live/stream">
+                                    <small class="form-text text-muted">Example: rtmp://server.com:1935/live/streamkey</small>
+                                </div>
+                            </div>
+                            
                             <!-- RTSPS Camera Configuration -->
                             <div id="rtsps-config" class="camera-config" style="display: none;">
                                 <h6>RTSP Secure Camera Configuration</h6>
@@ -344,6 +494,34 @@
                                         <div class="form-group">
                                             <label for="onvif-host">Camera IP Address:</label>
                                             <input type="text" class="form-control" id="onvif-host" name="host" placeholder="192.168.1.100">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="onvif-port">ONVIF Port:</label>
+                                            <input type="number" class="form-control" id="onvif-port" name="port" placeholder="80" value="80">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="onvif-username">Username:</label>
+                                            <input type="text" class="form-control" id="onvif-username" name="username" placeholder="admin">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="onvif-password">Password:</label>
+                                            <input type="password" class="form-control" id="onvif-password" name="password" placeholder="password">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="onvif-rtsp-port">RTSP Port:</label>
+                                            <input type="number" class="form-control" id="onvif-rtsp-port" name="rtsp_port" placeholder="554" value="554">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -392,9 +570,9 @@
                     </div>
                 </div>
                 
-                <div class="card settings-card">
-                    <div class="card-header">Camera Feed Options</div>
-                    <div class="card-body">
+                <div class="modern-card" id="video-options-card" style="display: none;">
+                    <div class="modern-card-header">Video File Options</div>
+                    <div class="modern-card-body">
                         <form id="camera-options-form">
                             <div class="form-group">
                                 <label for="camera-loop">Loop Video:</label>
@@ -414,7 +592,7 @@
                             </div>
                             
                             <div class="form-group mt-3">
-                                <button type="submit" class="btn btn-primary">Save Camera Options</button>
+                                <button type="submit" class="btn btn-primary">Save Video Options</button>
                                 <button type="button" class="btn btn-warning" id="stop-camera">Stop Current Camera</button>
                             </div>
                         </form>
@@ -422,12 +600,12 @@
                 </div>
                 
                 <!-- PTZ Controls for ONVIF Cameras -->
-                <div class="card settings-card" id="ptz-controls" style="display: none;">
-                    <div class="card-header">
+                <div class="modern-card" id="ptz-controls" style="display: none;">
+                    <div class="modern-card-header">
                         <i class="fas fa-video"></i> PTZ (Pan Tilt Zoom) Controls
                         <span id="ptz-status" class="badge bg-secondary ms-2">Not Connected</span>
                     </div>
-                    <div class="card-body">
+                    <div class="modern-card-body">
                         <!-- PTZ Status -->
                         <div class="row mb-3">
                             <div class="col-md-12">
@@ -549,9 +727,9 @@
             
             <!-- Detection Settings Tab -->
             <div class="tab-pane fade" id="detection-settings">
-                <div class="card settings-card">
-                    <div class="card-header">Detection Model Settings</div>
-                    <div class="card-body">
+                <div class="modern-card">
+                    <div class="modern-card-header">Detection Model Settings</div>
+                    <div class="modern-card-body">
                         <form id="detection-form">
                             <div class="form-group">
                                 <label for="detection-model">Detection Model:</label>
@@ -601,9 +779,9 @@
             
             <!-- Tracking Settings Tab -->
             <div class="tab-pane fade" id="tracking-settings">
-                <div class="card settings-card">
-                    <div class="card-header">Person Tracking Settings</div>
-                    <div class="card-body">
+                <div class="modern-card">
+                    <div class="modern-card-header">Person Tracking Settings</div>
+                    <div class="modern-card-body">
                         <form id="tracking-form">
                             <div class="form-group">
                                 <label for="max-age">Max Age (frames):</label>
@@ -641,9 +819,9 @@
             
             <!-- Analysis Settings Tab -->
             <div class="tab-pane fade" id="analysis-settings">
-                <div class="card settings-card">
-                    <div class="card-header">Demographics Analysis</div>
-                    <div class="card-body">
+                <div class="modern-card">
+                    <div class="modern-card-header">Demographics Analysis</div>
+                    <div class="modern-card-body">
                         <form id="demographics-form">
                             <div class="form-group">
                                 <div class="form-check form-switch">
@@ -685,40 +863,97 @@
                     </div>
                 </div>
                 
-                <div class="card settings-card">
-                    <div class="card-header">Path Analysis</div>
-                    <div class="card-body">
-                        <form id="path-form">
-                            <div class="form-group">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="path-enabled" checked>
-                                    <label class="form-check-label" for="path-enabled">
-                                        Enable Path Analysis
-                                    </label>
+                <!-- Customer Data Management (Admin Only) -->
+                <div class="card settings-card data-management-card" id="data-management-card" style="display: none;">
+                    <div class="card-header bg-gradient-info text-white">
+                        <i class="fas fa-database me-2"></i>Customer Data Management
+                        <span class="badge bg-danger ms-2">
+                            <i class="fas fa-shield-alt me-1"></i>Admin Only
+                        </span>
+                    </div>
+                    <div class="modern-card-body">
+                        <div class="alert alert-warning border-0 shadow-sm" role="alert">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-exclamation-triangle me-3 mt-1" style="font-size: 1.2rem; color: #f39c12;"></i>
+                                <div>
+                                    <strong>Important:</strong> These actions will permanently modify your database. 
+                                    <br>Please ensure you have a backup before proceeding.
                                 </div>
                             </div>
-                            
-                            <div class="form-group">
-                                <label for="smoothing-window">Smoothing Window:</label>
-                                <input type="number" class="form-control" id="smoothing-window" min="1" max="20" value="5">
-                                <small class="form-text text-muted">Number of points for path smoothing</small>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="zone-detection-threshold">Zone Detection Threshold:</label>
-                                <input type="range" class="form-range" min="0.1" max="1.0" step="0.05" value="0.7" id="zone-detection-threshold">
-                                <div class="text-center">
-                                    <span id="zone-detection-value">0.7</span>
+                        </div>
+                        
+                        <!-- Sample Data Section -->
+                        <div class="data-action-section mb-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="action-icon-wrapper bg-success bg-opacity-10 me-3">
+                                    <i class="fas fa-plus-circle text-success"></i>
                                 </div>
-                                <small class="form-text text-muted">Confidence threshold for zone entry/exit detection</small>
+                                <div>
+                                    <h6 class="mb-1 fw-bold">Add Sample Data</h6>
+                                    <p class="text-muted small mb-0">Populate database with demonstration data</p>
+                                </div>
                             </div>
-                        </form>
+                            <p class="text-muted mb-3">
+                                Creates 7 days of realistic sample customer data including demographics, traffic patterns, 
+                                and detection records for testing and demonstration purposes.
+                            </p>
+                            <button type="button" class="btn btn-success btn-lg shadow-sm" id="populate-sample-data-btn">
+                                <i class="fas fa-plus-circle me-2"></i>
+                                <span>Add Sample Data</span>
+                                <i class="fas fa-chevron-right ms-2"></i>
+                            </button>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <!-- Clear Data Section -->
+                        <div class="data-action-section">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="action-icon-wrapper bg-danger bg-opacity-10 me-3">
+                                    <i class="fas fa-trash-alt text-danger"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1 fw-bold text-danger">Clear Customer Data</h6>
+                                    <p class="text-muted small mb-0">Remove all demographic information</p>
+                                </div>
+                            </div>
+                            <p class="text-muted mb-3">
+                                Permanently removes all stored customer demographic information including age, gender, 
+                                race, and emotion data. Detection records and system logs will remain intact.
+                            </p>
+                            <button type="button" class="btn btn-danger btn-lg shadow-sm" id="clear-demographics-btn">
+                                <i class="fas fa-trash-alt me-2"></i>
+                                <span>Clear All Customer Data</span>
+                                <i class="fas fa-exclamation-triangle ms-2"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="card settings-card">
-                    <div class="card-header">Dwell Time Analysis</div>
-                    <div class="card-body">
+                <!-- Non-Admin User Notice -->
+                <div class="modern-card" id="data-management-notice" style="display: none;">
+                    <div class="card-header bg-light">
+                        <i class="fas fa-info-circle me-2 text-info"></i>Data Management
+                    </div>
+                    <div class="card-body text-center py-5">
+                        <div class="mb-4">
+                            <i class="fas fa-shield-alt text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5 class="text-muted mb-3">Administrative Access Required</h5>
+                        <p class="text-muted mb-4">
+                            Data management features (add sample data, clear database) are only available to administrators.
+                            <br>Contact your system administrator for access to these features.
+                        </p>
+                        <div class="alert alert-info border-0 bg-info bg-opacity-10">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            <strong>Need Admin Access?</strong> Contact your system administrator to request elevated permissions.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modern-card">
+                    <div class="modern-card-header">Dwell Time Analysis</div>
+                    <div class="modern-card-body">
                         <form id="dwell-form">
                             <div class="form-group">
                                 <div class="form-check form-switch">
@@ -735,42 +970,12 @@
                                 <small class="form-text text-muted">Minimum time to consider as dwelling</small>
                             </div>
                             
-                            <div class="form-group">
-                                <label for="zone-radius">Zone Radius (meters):</label>
-                                <input type="number" class="form-control" id="zone-radius" min="0.1" max="10" step="0.1" value="1.0">
-                                <small class="form-text text-muted">Radius around points of interest</small>
-                            </div>
+
                         </form>
                     </div>
                 </div>
                 
-                <div class="card settings-card">
-                    <div class="card-header">Correlation Analysis</div>
-                    <div class="card-body">
-                        <form id="correlation-form">
-                            <div class="form-group">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="correlation-enabled" checked>
-                                    <label class="form-check-label" for="correlation-enabled">
-                                        Enable Correlation Analysis
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="time-bins">Time Bins (hours):</label>
-                                <input type="number" class="form-control" id="time-bins" min="1" max="168" value="24">
-                                <small class="form-text text-muted">Number of time periods for analysis</small>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="min-samples">Minimum Samples:</label>
-                                <input type="number" class="form-control" id="min-samples" min="1" max="100" value="10">
-                                <small class="form-text text-muted">Minimum data points required for correlation</small>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+
                 
                 <div class="form-group mt-3">
                     <button type="button" class="btn btn-primary" id="save-analysis-settings">Save All Analysis Settings</button>
@@ -782,17 +987,16 @@
             
             <!-- Database Settings Tab -->
             <div class="tab-pane fade" id="database-settings">
-                <div class="card settings-card">
-                    <div class="card-header">Database Configuration</div>
-                    <div class="card-body">
+                <div class="modern-card">
+                    <div class="modern-card-header">Database Configuration</div>
+                    <div class="modern-card-body">
                         <form id="database-form">
                             <div class="form-group">
                                 <label for="database-type">Database Type:</label>
                                 <select class="form-select" id="database-type">
                                     <option value="sqlite">SQLite (Local file database)</option>
-                                    <option value="mongodb">MongoDB (Document database)</option>
                                 </select>
-                                <small class="form-text text-muted">SQLite is recommended for most use cases</small>
+                                <small class="form-text text-muted">SQLite is the only supported database type</small>
                             </div>
                             
                             <div class="form-group" id="sqlite-settings">
@@ -801,16 +1005,7 @@
                                 <small class="form-text text-muted">Path to SQLite database file</small>
                             </div>
                             
-                            <div class="form-group" id="mongodb-settings" style="display: none;">
-                                <label for="mongodb-host">MongoDB Host:</label>
-                                <input type="text" class="form-control" id="mongodb-host" value="localhost">
-                                
-                                <label for="mongodb-port" class="mt-2">Port:</label>
-                                <input type="number" class="form-control" id="mongodb-port" value="27017" min="1" max="65535">
-                                
-                                <label for="mongodb-database" class="mt-2">Database Name:</label>
-                                <input type="text" class="form-control" id="mongodb-database" value="reviision">
-                            </div>
+
                             
                             <div class="form-group mt-3">
                                 <button type="submit" class="btn btn-primary">Save Database Settings</button>
@@ -823,9 +1018,9 @@
             
             <!-- Web Settings Tab -->
             <div class="tab-pane fade" id="web-settings">
-                <div class="card settings-card">
-                    <div class="card-header">Web Server Configuration</div>
-                    <div class="card-body">
+                <div class="modern-card">
+                    <div class="modern-card-header">Web Server Configuration</div>
+                    <div class="modern-card-body">
                         <form id="web-form">
                             <div class="form-group">
                                 <label for="web-host">Host Address:</label>
@@ -856,70 +1051,14 @@
                         </form>
                     </div>
                 </div>
-                
-                <div class="card settings-card">
-                    <div class="card-header">Camera Configuration</div>
-                    <div class="card-body">
-                        <form id="camera-config-form">
-                            <div class="form-group">
-                                <label for="camera-type">Camera Type:</label>
-                                <select class="form-select" id="camera-type">
-                                    <option value="video_file">Video File</option>
-                                    <option value="usb">USB Camera</option>
-                                    <option value="rtsp">RTSP Camera</option>
-                                    <option value="rtmp">RTMP Stream</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group" id="video-file-settings">
-                                <label for="camera-file-path">Video File Path:</label>
-                                <input type="text" class="form-control" id="camera-file-path" value="testData/asianstoremulti.mp4">
-                                
-                                <div class="mt-2">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="camera-loop" checked>
-                                        <label class="form-check-label" for="camera-loop">Loop Video</label>
-                                    </div>
-                                </div>
-                                
-                                <label for="camera-playback-speed" class="mt-2">Playback Speed:</label>
-                                <select class="form-select" id="camera-playback-speed">
-                                    <option value="0.5">0.5x (Slow)</option>
-                                    <option value="1.0" selected>1.0x (Normal)</option>
-                                    <option value="1.5">1.5x (Fast)</option>
-                                    <option value="2.0">2.0x (Very Fast)</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="camera-fps">FPS:</label>
-                                <input type="number" class="form-control" id="camera-fps" value="30" min="1" max="120">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="camera-resolution">Resolution:</label>
-                                <select class="form-select" id="camera-resolution">
-                                    <option value="640,480">640x480 (VGA)</option>
-                                    <option value="1280,720" selected>1280x720 (HD)</option>
-                                    <option value="1920,1080">1920x1080 (Full HD)</option>
-                                    <option value="3840,2160">3840x2160 (4K)</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group mt-3">
-                                <button type="submit" class="btn btn-primary">Save Camera Settings</button>
-                                <button type="button" class="btn btn-outline-secondary" id="reset-camera">Reset to Defaults</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+
             </div>
             
             <!-- Backup & Restore Tab -->
             <div class="tab-pane fade" id="backup-restore">
-                <div class="card settings-card">
-                    <div class="card-header">Backup and Restore</div>
-                    <div class="card-body">
+                <div class="modern-card">
+                    <div class="modern-card-header">Backup and Restore</div>
+                    <div class="modern-card-body">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <button class="btn btn-outline-primary w-100" id="backup-btn">
@@ -942,7 +1081,7 @@
             </div>
         </div>
     </div>
-</div>
+</div> <!-- Close page-container -->
 {% endblock %}
 
 {% block scripts %}
@@ -950,6 +1089,45 @@
     // Global configuration storage
     let videoConfig = null;
     let mainConfig = null;
+
+    // Camera settings toggle function
+    function toggleCameraSettings() {
+        const cameraType = document.getElementById('camera-type').value;
+        const allConfigs = document.querySelectorAll('.camera-config');
+        
+        // Hide all camera-specific configurations
+        allConfigs.forEach(config => {
+            config.style.display = 'none';
+        });
+        
+        // Hide video options and PTZ controls by default
+        document.getElementById('video-options-card').style.display = 'none';
+        document.getElementById('ptz-controls').style.display = 'none';
+        
+        // Show the relevant configuration for selected camera type
+        switch(cameraType) {
+            case 'video_file':
+                document.getElementById('video-file-config').style.display = 'block';
+                document.getElementById('video-options-card').style.display = 'block';
+                break;
+            case 'usb':
+                document.getElementById('usb-config').style.display = 'block';
+                break;
+            case 'rtsp':
+                document.getElementById('rtsp-config').style.display = 'block';
+                break;
+            case 'rtmp':
+                document.getElementById('rtmp-config').style.display = 'block';
+                break;
+            case 'rtsps':
+                document.getElementById('rtsps-config').style.display = 'block';
+                break;
+            case 'onvif':
+                document.getElementById('onvif-config').style.display = 'block';
+                document.getElementById('ptz-controls').style.display = 'block';
+                break;
+        }
+    }
     
     // Load all configurations on page load
     document.addEventListener('DOMContentLoaded', function() {
@@ -957,6 +1135,13 @@
         loadMainConfig();
         initializeEventHandlers();
         loadColorMapConfig();
+        checkUserRoleAndShowAdminFeatures();
+        
+        // Initialize camera settings and event handlers after configurations load
+        setTimeout(() => {
+            setupCameraTypeSelection();
+            toggleCameraSettings();
+        }, 600);
     });
     
     // Category visibility functions
@@ -1010,6 +1195,13 @@
         } catch (error) {
             console.error('Error loading main configuration:', error);
             showAlert('error', 'Failed to load main configuration');
+            
+            // Update status indicator to show error
+            const statusElement = document.getElementById('current-camera-status');
+            if (statusElement) {
+                statusElement.textContent = 'Configuration load failed';
+                statusElement.className = 'text-danger ms-2';
+            }
         }
     }
     
@@ -1051,27 +1243,16 @@
                 document.getElementById('attr-emotion').checked = attributes.includes('emotion');
             }
             
-            // Path analysis
-            if (analysis.path) {
-                document.getElementById('path-enabled').checked = analysis.path.enabled !== false;
-                document.getElementById('smoothing-window').value = analysis.path.smoothing_window || 5;
-                document.getElementById('zone-detection-threshold').value = analysis.path.zone_detection_threshold || 0.7;
-                document.getElementById('zone-detection-value').textContent = analysis.path.zone_detection_threshold || 0.7;
-            }
+
             
             // Dwell time
             if (analysis.dwell_time) {
                 document.getElementById('dwell-enabled').checked = analysis.dwell_time.enabled !== false;
                 document.getElementById('min-duration').value = analysis.dwell_time.min_duration || 5;
-                document.getElementById('zone-radius').value = analysis.dwell_time.zone_radius || 1.0;
+
             }
             
-            // Correlation
-            if (analysis.correlation) {
-                document.getElementById('correlation-enabled').checked = analysis.correlation.enabled !== false;
-                document.getElementById('time-bins').value = analysis.correlation.time_bins || 24;
-                document.getElementById('min-samples').value = analysis.correlation.min_samples || 10;
-            }
+
         }
         
         // Database settings
@@ -1079,12 +1260,6 @@
             const database = mainConfig.database;
             document.getElementById('database-type').value = database.type || 'sqlite';
             document.getElementById('database-path').value = database.path || 'retail_analytics.db';
-            
-            if (database.host) document.getElementById('mongodb-host').value = database.host;
-            if (database.port) document.getElementById('mongodb-port').value = database.port;
-            if (database.database) document.getElementById('mongodb-database').value = database.database;
-            
-            toggleDatabaseSettings();
         }
         
         // Web settings
@@ -1098,15 +1273,94 @@
         // Camera settings
         if (mainConfig.camera) {
             const camera = mainConfig.camera;
-            document.getElementById('camera-type').value = camera.type || 'video_file';
-            document.getElementById('camera-file-path').value = camera.file_path || '';
-            document.getElementById('camera-loop').checked = camera.loop !== false;
-            document.getElementById('camera-playback-speed').value = camera.playback_speed || 1.0;
+            const cameraTypeSelect = document.getElementById('camera-type');
+            
+            // Set camera type and trigger UI update
+            if (cameraTypeSelect) {
+                cameraTypeSelect.value = camera.type || 'video_file';
+                console.log('Setting camera type to:', camera.type || 'video_file');
+                
+                // Update status indicator
+                const statusElement = document.getElementById('current-camera-status');
+                if (statusElement) {
+                    const cameraTypeDisplay = {
+                        'video_file': 'Video File',
+                        'usb': 'USB Camera',
+                        'rtsp': 'RTSP Camera',
+                        'rtsps': 'RTSP Secure Camera',
+                        'onvif': 'ONVIF Camera',
+                        'rtmp': 'RTMP Stream'
+                    };
+                    statusElement.textContent = `Current: ${cameraTypeDisplay[camera.type] || camera.type || 'Unknown'}`;
+                    statusElement.className = 'text-success ms-2';
+                }
+            }
+            
             document.getElementById('camera-fps').value = camera.fps || 30;
             
             if (camera.resolution && Array.isArray(camera.resolution)) {
                 document.getElementById('camera-resolution').value = camera.resolution.join(',');
             }
+            
+            // Type-specific settings
+            switch(camera.type) {
+                case 'video_file':
+                    if (document.getElementById('camera-file-path')) {
+                        document.getElementById('camera-file-path').value = camera.file_path || '';
+                    }
+                    if (document.getElementById('camera-loop')) {
+                        document.getElementById('camera-loop').checked = camera.loop !== false;
+                    }
+                    if (document.getElementById('camera-playback-speed')) {
+                        document.getElementById('camera-playback-speed').value = camera.playback_speed || 1.0;
+                    }
+                    break;
+                    
+                case 'usb':
+                    if (document.getElementById('usb-device')) {
+                        document.getElementById('usb-device').value = camera.device !== undefined ? camera.device : 0;
+                    }
+                    break;
+                    
+                case 'rtsp':
+                    if (document.getElementById('rtsp-url')) {
+                        document.getElementById('rtsp-url').value = camera.url || '';
+                    }
+                    break;
+                    
+                case 'rtsps':
+                    if (document.getElementById('rtsps-url')) {
+                        document.getElementById('rtsps-url').value = camera.url || '';
+                    }
+                    break;
+                    
+                case 'onvif':
+                    if (document.getElementById('onvif-host')) {
+                        document.getElementById('onvif-host').value = camera.host || '';
+                    }
+                    if (document.getElementById('onvif-port')) {
+                        document.getElementById('onvif-port').value = camera.port || 80;
+                    }
+                    if (document.getElementById('onvif-username')) {
+                        document.getElementById('onvif-username').value = camera.username || '';
+                    }
+                    if (document.getElementById('onvif-password')) {
+                        document.getElementById('onvif-password').value = camera.password || '';
+                    }
+                    if (document.getElementById('onvif-rtsp-port')) {
+                        document.getElementById('onvif-rtsp-port').value = camera.rtsp_port || 554;
+                    }
+                    break;
+            }
+            
+            // Trigger camera type change to show/hide appropriate configuration sections
+            setTimeout(() => {
+                if (cameraTypeSelect) {
+                    toggleCameraSettings();
+                    cameraTypeSelect.dispatchEvent(new Event('change'));
+                    console.log('Triggered camera type change for:', cameraTypeSelect.value);
+                }
+            }, 100);
         }
     }
     
@@ -1212,7 +1466,7 @@
         setupResetButtons();
         
         // Database type toggle
-        document.getElementById('database-type').addEventListener('change', toggleDatabaseSettings);
+
         
         // Backup and restore
         setupBackupRestore();
@@ -1224,7 +1478,7 @@
             { input: 'confidence-threshold', output: 'confidence-value' },
             { input: 'iou-threshold', output: 'iou-value' },
             { input: 'tracking-iou-threshold', output: 'tracking-iou-value' },
-            { input: 'zone-detection-threshold', output: 'zone-detection-value' }
+
         ];
         
         rangeInputs.forEach(({input, output}) => {
@@ -1273,6 +1527,12 @@
             e.preventDefault();
             await saveCameraSettings();
         });
+        
+        // Clear demographics data button
+        document.getElementById('clear-demographics-btn')?.addEventListener('click', clearDemographicsData);
+        
+        // Populate sample data button
+        document.getElementById('populate-sample-data-btn')?.addEventListener('click', populateSampleData);
     }
     
     function setupResetButtons() {
@@ -1300,19 +1560,7 @@
         document.body.appendChild(fileInput);
     }
     
-    function toggleDatabaseSettings() {
-        const dbType = document.getElementById('database-type').value;
-        const sqliteSettings = document.getElementById('sqlite-settings');
-        const mongoSettings = document.getElementById('mongodb-settings');
-        
-        if (dbType === 'sqlite') {
-            sqliteSettings.style.display = 'block';
-            mongoSettings.style.display = 'none';
-        } else {
-            sqliteSettings.style.display = 'none';
-            mongoSettings.style.display = 'block';
-        }
-    }
+
     
     // Save functions
     async function saveDetectionSettings() {
@@ -1353,20 +1601,10 @@
                     model: document.getElementById('demographics-model').value,
                     attributes: attributes
                 },
-                path: {
-                    enabled: document.getElementById('path-enabled').checked,
-                    smoothing_window: parseInt(document.getElementById('smoothing-window').value),
-                    zone_detection_threshold: parseFloat(document.getElementById('zone-detection-threshold').value)
-                },
+
                 dwell_time: {
                     enabled: document.getElementById('dwell-enabled').checked,
-                    min_duration: parseInt(document.getElementById('min-duration').value),
-                    zone_radius: parseFloat(document.getElementById('zone-radius').value)
-                },
-                correlation: {
-                    enabled: document.getElementById('correlation-enabled').checked,
-                    time_bins: parseInt(document.getElementById('time-bins').value),
-                    min_samples: parseInt(document.getElementById('min-samples').value)
+                    min_duration: parseInt(document.getElementById('min-duration').value)
                 }
             }
         };
@@ -1382,13 +1620,7 @@
             }
         };
         
-        if (dbType === 'sqlite') {
-            data.database.path = document.getElementById('database-path').value;
-        } else {
-            data.database.host = document.getElementById('mongodb-host').value;
-            data.database.port = parseInt(document.getElementById('mongodb-port').value);
-            data.database.database = document.getElementById('mongodb-database').value;
-        }
+        data.database.path = document.getElementById('database-path').value;
         
         await saveConfiguration(data, 'Database settings saved successfully');
     }
@@ -1406,20 +1638,92 @@
     }
     
     async function saveCameraSettings() {
+        const cameraType = document.getElementById('camera-type').value;
         const resolution = document.getElementById('camera-resolution').value.split(',').map(Number);
         
+        // Base camera configuration
+        const cameraConfig = {
+            type: cameraType,
+            fps: parseInt(document.getElementById('camera-fps').value),
+            resolution: resolution
+        };
+        
+        // Add type-specific configuration
+        switch(cameraType) {
+            case 'video_file':
+                cameraConfig.file_path = document.getElementById('camera-file-path').value;
+                cameraConfig.loop = document.getElementById('camera-loop').checked;
+                cameraConfig.playback_speed = parseFloat(document.getElementById('camera-playback-speed').value);
+                break;
+                
+            case 'usb':
+                const usbDevice = document.getElementById('usb-device').value;
+                // Try to parse as integer if it's a number, otherwise keep as string
+                cameraConfig.device = isNaN(usbDevice) ? usbDevice : parseInt(usbDevice);
+                cameraConfig.retry_interval = 5.0;
+                cameraConfig.max_retries = -1;
+                break;
+                
+            case 'rtsp':
+                cameraConfig.url = document.getElementById('rtsp-url').value;
+                cameraConfig.buffer_size = 3;
+                cameraConfig.timeout = 10.0;
+                cameraConfig.retry_interval = 5.0;
+                cameraConfig.max_retries = -1;
+                break;
+                
+            case 'rtmp':
+                cameraConfig.url = document.getElementById('rtmp-url').value;
+                cameraConfig.buffer_size = 3;
+                cameraConfig.timeout = 10.0;
+                cameraConfig.retry_interval = 5.0;
+                cameraConfig.max_retries = -1;
+                break;
+                
+            case 'rtsps':
+                cameraConfig.url = document.getElementById('rtsps-url').value;
+                cameraConfig.verify_ssl = false;
+                cameraConfig.timeout = 10.0;
+                cameraConfig.retry_interval = 5.0;
+                break;
+                
+            case 'onvif':
+                cameraConfig.host = document.getElementById('onvif-host').value;
+                cameraConfig.port = parseInt(document.getElementById('onvif-port').value) || 80;
+                cameraConfig.username = document.getElementById('onvif-username').value;
+                cameraConfig.password = document.getElementById('onvif-password').value;
+                cameraConfig.rtsp_port = parseInt(document.getElementById('onvif-rtsp-port').value) || 554;
+                cameraConfig.profile_index = 0;
+                cameraConfig.use_https = false;
+                cameraConfig.ptz_timeout = 5.0;
+                break;
+        }
+        
         const data = {
-            camera: {
-                type: document.getElementById('camera-type').value,
-                file_path: document.getElementById('camera-file-path').value,
-                loop: document.getElementById('camera-loop').checked,
-                playback_speed: parseFloat(document.getElementById('camera-playback-speed').value),
-                fps: parseInt(document.getElementById('camera-fps').value),
-                resolution: resolution
-            }
+            camera: cameraConfig
         };
         
         await saveConfiguration(data, 'Camera settings saved successfully');
+        
+        // Restart camera with new configuration
+        try {
+            const restartResponse = await fetch('/api/camera/restart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const restartResult = await restartResponse.json();
+            if (restartResult.status === 'success') {
+                showAlert('info', 'Camera restarted with new configuration');
+            } else {
+                showAlert('warning', 'Configuration saved but camera restart failed: ' + restartResult.message);
+            }
+        } catch (restartError) {
+            console.error('Camera restart error:', restartError);
+            showAlert('warning', 'Configuration saved but camera restart failed');
+        }
     }
     
     async function saveConfiguration(data, successMessage) {
@@ -1532,22 +1836,17 @@
         document.getElementById('attr-gender').checked = true;
         document.getElementById('attr-race').checked = true;
         document.getElementById('attr-emotion').checked = true;
-        document.getElementById('path-enabled').checked = true;
-        document.getElementById('smoothing-window').value = 5;
-        document.getElementById('zone-detection-threshold').value = 0.7;
-        document.getElementById('zone-detection-value').textContent = '0.7';
+
         document.getElementById('dwell-enabled').checked = true;
         document.getElementById('min-duration').value = 5;
-        document.getElementById('zone-radius').value = 1.0;
-        document.getElementById('correlation-enabled').checked = true;
-        document.getElementById('time-bins').value = 24;
-        document.getElementById('min-samples').value = 10;
+
+
     }
     
     function resetDatabaseSettings() {
         document.getElementById('database-type').value = 'sqlite';
         document.getElementById('database-path').value = 'reviision.db';
-        toggleDatabaseSettings();
+
     }
     
     function resetWebSettings() {
@@ -1563,6 +1862,191 @@
         document.getElementById('camera-playback-speed').value = '1.0';
         document.getElementById('camera-fps').value = 30;
         document.getElementById('camera-resolution').value = '1280,720';
+    }
+    
+    // Clear demographics data with confirmation
+    async function clearDemographicsData() {
+        // Check if user is admin
+        try {
+            const userResponse = await fetch('/api/auth/me');
+            const userData = await userResponse.json();
+            
+            if (!userData.success || userData.user.role !== 'admin') {
+                showAlert('error', 'Access denied. Only administrators can clear customer data.');
+                return;
+            }
+        } catch (error) {
+            console.error('Error checking user role:', error);
+            showAlert('error', 'Unable to verify user permissions.');
+            return;
+        }
+        
+        // Show confirmation dialog
+        const confirmed = confirm(
+            'Are you sure you want to clear ALL customer demographic data?\n\n' +
+            'This action will permanently delete:\n' +
+            '• All age, gender, race, and emotion data\n' +
+            '• Customer demographic analytics\n' +
+            '• Historical demographic trends\n\n' +
+            'This action CANNOT be undone!\n\n' +
+            'Detection records and system logs will remain intact.'
+        );
+        
+        if (!confirmed) {
+            return;
+        }
+        
+        // Second confirmation for safety
+        const doubleConfirmed = confirm(
+            'FINAL CONFIRMATION:\n\n' +
+            'You are about to permanently delete all customer demographic data.\n' +
+            'Are you absolutely sure you want to proceed?'
+        );
+        
+        if (!doubleConfirmed) {
+            return;
+        }
+        
+        try {
+            // Show loading state
+            const button = document.getElementById('clear-demographics-btn');
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Clearing Data...';
+            button.disabled = true;
+            
+            // Make API call to clear data
+            const response = await fetch('/api/clear-demographics', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert('success', result.message);
+                console.log(`Cleared ${result.records_deleted} demographic records`);
+            } else {
+                showAlert('error', result.message || 'Failed to clear demographic data');
+            }
+        } catch (error) {
+            console.error('Error clearing demographics data:', error);
+            showAlert('error', 'Failed to clear demographic data: ' + error.message);
+        } finally {
+            // Restore button state
+            const button = document.getElementById('clear-demographics-btn');
+            button.innerHTML = '<i class="fas fa-trash-alt me-2"></i>Clear All Customer Data';
+            button.disabled = false;
+        }
+    }
+    
+    // Populate sample data for demonstration
+    async function populateSampleData() {
+        // Check if user is admin
+        try {
+            const userResponse = await fetch('/api/auth/me');
+            const userData = await userResponse.json();
+            
+            if (!userData.success || userData.user.role !== 'admin') {
+                showAlert('error', 'Access denied. Only administrators can populate sample data.');
+                return;
+            }
+        } catch (error) {
+            console.error('Error checking user role:', error);
+            showAlert('error', 'Unable to verify user permissions.');
+            return;
+        }
+        
+        // Show confirmation dialog
+        const confirmed = confirm(
+            'This will populate the database with 7 days of realistic sample data.\n\n' +
+            'This action will:\n' +
+            '• Create sample customer detection records\n' +
+            '• Generate demographic analysis data\n' +
+            '• Populate traffic patterns and analytics\n' +
+            '• Clear any existing data first\n\n' +
+            'This is useful for demonstrating the analytics functionality.\n' +
+            'Do you want to proceed?'
+        );
+        
+        if (!confirmed) {
+            return;
+        }
+        
+        try {
+            // Show loading state
+            const button = document.getElementById('populate-sample-data-btn');
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Sample Data...';
+            button.disabled = true;
+            
+            // Make API call to populate data
+            const response = await fetch('/api/populate-sample-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert('success', result.message);
+                console.log(`Created ${result.detection_records} detection records and ${result.demographic_records} demographic records`);
+            } else {
+                showAlert('error', result.message || 'Failed to populate sample data');
+            }
+        } catch (error) {
+            console.error('Error populating sample data:', error);
+            showAlert('error', 'Failed to populate sample data: ' + error.message);
+        } finally {
+            // Restore button state
+            const button = document.getElementById('populate-sample-data-btn');
+            button.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Add Sample Data';
+            button.disabled = false;
+        }
+    }
+    
+    // Check user role and show admin-only features
+    async function checkUserRoleAndShowAdminFeatures() {
+        try {
+            const response = await fetch('/api/auth/me');
+            const result = await response.json();
+            
+            const dataManagementCard = document.getElementById('data-management-card');
+            const dataManagementNotice = document.getElementById('data-management-notice');
+            
+            if (result.success && result.user.role === 'admin') {
+                // Show admin-only features
+                if (dataManagementCard) {
+                    dataManagementCard.style.display = 'block';
+                }
+                if (dataManagementNotice) {
+                    dataManagementNotice.style.display = 'none';
+                }
+            } else {
+                // Show notice for non-admin users
+                if (dataManagementCard) {
+                    dataManagementCard.style.display = 'none';
+                }
+                if (dataManagementNotice) {
+                    dataManagementNotice.style.display = 'block';
+                }
+            }
+        } catch (error) {
+            console.error('Error checking user role:', error);
+            // Show notice by default if there's an error
+            const dataManagementCard = document.getElementById('data-management-card');
+            const dataManagementNotice = document.getElementById('data-management-notice');
+            
+            if (dataManagementCard) {
+                dataManagementCard.style.display = 'none';
+            }
+            if (dataManagementNotice) {
+                dataManagementNotice.style.display = 'block';
+            }
+        }
     }
     
     function collectVideoConfig() {
@@ -1861,9 +2345,7 @@
                 document.getElementById('dwell-intensity').value = 0.75;
                 document.getElementById('dwell-intensity-value').textContent = '0.75';
                 
-                document.getElementById('zone-colormap').value = 'viridis';
-                document.getElementById('zone-intensity').value = 0.7;
-                document.getElementById('zone-intensity-value').textContent = '0.7';
+                
                 
                 document.getElementById('comparison-colormap').value = 'coolwarm';
                 document.getElementById('comparison-intensity').value = 0.85;
@@ -1938,25 +2420,6 @@
         setupPTZControls();
     });
     
-    // Helper function to show alerts
-    function showAlert(type, message) {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-        alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        
-        const container = document.querySelector('.container');
-        container.insertBefore(alertDiv, container.firstChild);
-        
-        // Auto-dismiss after 5 seconds
-        setTimeout(() => {
-            alertDiv.classList.remove('show');
-            setTimeout(() => alertDiv.remove(), 300);
-        }, 5000);
-    }
-    
     // Utility function to show alerts
     function showAlert(type, message) {
         // Remove existing alerts
@@ -2008,90 +2471,158 @@
         const cameraTypeSelect = document.getElementById('camera-type');
         const cameraConfigs = document.querySelectorAll('.camera-config');
         
-        cameraTypeSelect.addEventListener('change', function() {
+        if (!cameraTypeSelect) {
+            console.error('Camera type select element not found');
+            return;
+        }
+        
+        // Remove any existing event listeners to prevent duplicates
+        const newSelect = cameraTypeSelect.cloneNode(true);
+        cameraTypeSelect.parentNode.replaceChild(newSelect, cameraTypeSelect);
+        
+        newSelect.addEventListener('change', function() {
             const selectedType = this.value;
+            console.log('Camera type changed to:', selectedType);
             
-            // Hide all camera config sections
-            cameraConfigs.forEach(config => {
-                config.style.display = 'none';
-            });
-            
-            // Show relevant config section
-            const configId = selectedType.replace('_', '-') + '-config';
-            const configSection = document.getElementById(configId);
-            if (configSection) {
-                configSection.style.display = 'block';
-            }
+            // Use the unified toggle function
+            toggleCameraSettings();
             
             // Show/hide PTZ controls based on camera type
             const ptzControls = document.getElementById('ptz-controls');
-            if (selectedType === 'onvif') {
-                ptzControls.style.display = 'block';
-                loadPTZStatus();
-            } else {
-                ptzControls.style.display = 'none';
+            if (ptzControls) {
+                if (selectedType === 'onvif') {
+                    ptzControls.style.display = 'block';
+                    loadPTZStatus();
+                } else {
+                    ptzControls.style.display = 'none';
+                }
             }
         });
         
         // Camera type form submission
-        document.getElementById('camera-type-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            await saveCameraConfiguration();
-        });
+        const cameraTypeForm = document.getElementById('camera-type-form');
+        if (cameraTypeForm) {
+            cameraTypeForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await saveCameraConfiguration();
+            });
+        }
         
         // Initialize with current selection
-        cameraTypeSelect.dispatchEvent(new Event('change'));
+        setTimeout(() => {
+            toggleCameraSettings();
+            newSelect.dispatchEvent(new Event('change'));
+        }, 200);
     }
     
     async function saveCameraConfiguration() {
         try {
             const cameraType = document.getElementById('camera-type').value;
-            const config = { type: cameraType };
+            const config = { 
+                type: cameraType,
+                fps: 30,
+                resolution: [1280, 720]
+            };
             
             // Collect type-specific configuration
             switch (cameraType) {
-                case 'usb':
-                    config.device = document.getElementById('usb-device').value;
-                    break;
-                case 'rtsp':
-                    config.url = document.getElementById('rtsp-url').value;
-                    break;
-                case 'rtsps':
-                    config.url = document.getElementById('rtsps-url').value;
-                    break;
-                case 'onvif':
-                    config.host = document.getElementById('onvif-host').value;
-                    config.port = parseInt(document.getElementById('onvif-port').value);
-                    config.username = document.getElementById('onvif-username').value;
-                    config.password = document.getElementById('onvif-password').value;
-                    config.rtsp_port = parseInt(document.getElementById('onvif-rtsp-port').value);
-                    config.profile_index = parseInt(document.getElementById('onvif-profile').value);
-                    break;
                 case 'video_file':
                     // Use existing video file configuration
                     const videoConfig = collectVideoConfig();
-                    Object.assign(config, videoConfig);
+                    if (videoConfig.default && videoConfig.videos[videoConfig.default]) {
+                        config.file_path = videoConfig.videos[videoConfig.default];
+                    }
+                    config.loop = document.getElementById('camera-loop').checked;
+                    config.playback_speed = parseFloat(document.getElementById('playback-speed').value);
+                    break;
+                    
+                case 'usb':
+                    const usbDevice = document.getElementById('usb-device').value;
+                    config.device = isNaN(usbDevice) ? usbDevice : parseInt(usbDevice);
+                    config.retry_interval = 5.0;
+                    config.max_retries = -1;
+                    break;
+                    
+                case 'rtsp':
+                    config.url = document.getElementById('rtsp-url').value;
+                    config.buffer_size = 3;
+                    config.timeout = 10.0;
+                    config.retry_interval = 5.0;
+                    config.max_retries = -1;
+                    break;
+                    
+                case 'rtmp':
+                    config.url = document.getElementById('rtmp-url').value;
+                    config.buffer_size = 3;
+                    config.timeout = 10.0;
+                    config.retry_interval = 5.0;
+                    config.max_retries = -1;
+                    break;
+                    
+                case 'rtsps':
+                    config.url = document.getElementById('rtsps-url').value;
+                    config.verify_ssl = false;
+                    config.timeout = 10.0;
+                    config.retry_interval = 5.0;
+                    config.max_retries = -1;
+                    break;
+                    
+                case 'onvif':
+                    config.host = document.getElementById('onvif-host').value;
+                    config.port = parseInt(document.getElementById('onvif-port').value) || 80;
+                    config.username = document.getElementById('onvif-username').value;
+                    config.password = document.getElementById('onvif-password').value;
+                    config.rtsp_port = parseInt(document.getElementById('onvif-rtsp-port').value) || 554;
+                    config.profile_index = parseInt(document.getElementById('onvif-profile').value) || 0;
+                    config.use_https = false;
+                    config.ptz_timeout = 5.0;
                     break;
             }
             
-            // Save camera configuration
-            const response = await fetch('/api/config/camera', {
+            // Save camera configuration to main config
+            const data = { camera: config };
+            
+            const response = await fetch('/api/config', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({camera: config})
+                body: JSON.stringify(data)
             });
             
-            if (!response.ok) {
-                throw new Error(`Failed to save camera configuration: ${response.status}`);
-            }
-            
-            showAlert('success', 'Camera configuration saved successfully');
-            
-            // If ONVIF camera, load PTZ status
-            if (cameraType === 'onvif') {
-                setTimeout(() => loadPTZStatus(), 1000);
+            const result = await response.json();
+            if (result.status === 'success') {
+                showAlert('success', 'Camera configuration saved successfully');
+                
+                // Restart camera with new configuration
+                try {
+                    const restartResponse = await fetch('/api/camera/restart', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    const restartResult = await restartResponse.json();
+                    if (restartResult.status === 'success') {
+                        showAlert('info', 'Camera restarted with new configuration');
+                    } else {
+                        showAlert('warning', 'Configuration saved but camera restart failed: ' + restartResult.message);
+                    }
+                } catch (restartError) {
+                    console.error('Camera restart error:', restartError);
+                    showAlert('warning', 'Configuration saved but camera restart failed');
+                }
+                
+                // Reload configuration to reflect changes
+                await loadMainConfig();
+                
+                // If ONVIF camera, load PTZ status
+                if (cameraType === 'onvif') {
+                    setTimeout(() => loadPTZStatus(), 1000);
+                }
+            } else {
+                showAlert('error', result.message || 'Failed to save camera configuration');
             }
             
         } catch (error) {

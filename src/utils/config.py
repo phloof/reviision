@@ -67,7 +67,7 @@ class ConfigManager:
                 },
                 'dwell_time': {
                     'min_dwell_time': 3.0,
-                    'zones': {}
+            
                 },
                 'heatmap': {
                     'resolution': [640, 480],

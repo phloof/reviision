@@ -1,10 +1,9 @@
 """
 Database module for Retail Analytics System
-Provides database interfaces for different storage backends
+Provides database interfaces for SQLite storage backend
 """
 
 from .sqlite_db import SQLiteDatabase
-from .mongodb import MongoDBDatabase
 
 def get_database(config):
     """
@@ -14,16 +13,14 @@ def get_database(config):
         config (dict): Database configuration dictionary
         
     Returns:
-        Database: Database instance based on the specified type
+        SQLiteDatabase: SQLite database instance
         
     Raises:
-        ValueError: If database type is not supported
+        ValueError: If database type is not sqlite or not specified
     """
     db_type = config.get('type', '').lower()
     
-    if db_type == 'sqlite':
+    if db_type == 'sqlite' or db_type == '':
         return SQLiteDatabase(config)
-    elif db_type == 'mongodb':
-        return MongoDBDatabase(config)
     else:
-        raise ValueError(f"Unsupported database type: {db_type}") 
+        raise ValueError(f"Unsupported database type: {db_type}. Only SQLite is supported.") 

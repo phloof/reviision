@@ -59,8 +59,9 @@ class CredentialManager:
         env_key = os.environ.get(self.key_env_var)
         if env_key:
             try:
-                # Try to decode the key
-                return base64.urlsafe_b64decode(env_key)
+                # Validate the key by trying to create Fernet instance
+                Fernet(env_key.encode() if isinstance(env_key, str) else env_key)
+                return env_key.encode() if isinstance(env_key, str) else env_key
             except Exception as e:
                 logger.error(f"Invalid encryption key in environment variable: {e}")
         

@@ -11,11 +11,6 @@
       "description": "Purple-orange scale ideal for dwell time visualization",
       "intensity_scale": 0.75
     },
-    "zone": {
-      "name": "viridis",
-      "description": "Blue-green-yellow scale for zone activity analysis",
-      "intensity_scale": 0.7
-    },
     "comparison": {
       "name": "coolwarm",
       "description": "Blue-red diverging scale for comparing multiple metrics",
@@ -84,4 +79,4 @@
       "description": "Blue-green colormap"
     }
   ]
-} 
+}

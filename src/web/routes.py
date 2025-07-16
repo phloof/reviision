@@ -26,22 +26,9 @@ from camera import get_camera, stop_camera
 from .services import analysis_service
 from utils.config import ConfigManager
 
-# Import the path analyzer if available
-try:
-    from src.analysis.path import PathAnalyzer
-except ImportError:
-    logger.warning("PathAnalyzer not available, using mock interface")
-    class PathAnalyzer:
-        """Mock path analyzer for testing"""
-        def __init__(self, config):
-            pass
-        
-        def generate_mock_data(self):
-            return {"message": "Path analyzer not available"}
-
 # Import the dwell time analyzer if available
 try:
-    from src.analysis.dwell import DwellTimeAnalyzer
+    from analysis.dwell import DwellTimeAnalyzer
 except ImportError:
     logger.warning("DwellTimeAnalyzer not available, using mock interface")
     class DwellTimeAnalyzer:
@@ -52,11 +39,40 @@ except ImportError:
         def generate_mock_data(self):
             return {"message": "Dwell time analyzer not available"}
 
+# Import the heatmap generator if available
+try:
+    from analysis.heatmap import HeatmapGenerator
+except ImportError:
+    logger.warning("HeatmapGenerator not available, using mock interface")
+    class HeatmapGenerator:
+        """Mock heatmap generator for testing"""
+        def __init__(self, config=None):
+            pass
+        
+        def get_available_colormaps(self):
+            return [
+                {"name": "jet", "category": "sequential"},
+                {"name": "viridis", "category": "perceptual"},
+                {"name": "plasma", "category": "perceptual"},
+                {"name": "hot", "category": "sequential"}
+            ]
+
 # Import authentication
 from .auth import require_auth, require_admin, require_manager
 
 # Create a Blueprint for web routes
 web_bp = Blueprint('web', __name__, template_folder='templates')
+
+def get_config_manager():
+    """
+    Get a properly configured ConfigManager instance
+    
+    Returns:
+        ConfigManager: Configured instance pointing to the correct config.yaml
+    """
+    from utils.config import ConfigManager
+    config_path = Path(__file__).parent.parent / 'config.yaml'
+    return ConfigManager(config_dir=str(config_path.parent))
 
 # ============================================================================
 # Authentication Routes
@@ -323,52 +339,67 @@ def camera_feed():
         logger.error(f"Error fetching camera feed: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
-@web_bp.route('/api/facial_analysis', methods=['POST'])
-def facial_analysis():
-    """Process image and return facial analysis data"""
-    try:
-        data = request.get_json()
-        
-        # Mock facial analysis data
-        return jsonify({
-            'status': 'success',
-            'demographics': {
-                'age_range': '25-35',
-                'gender': 'unknown',
-                'emotion': 'neutral'
-            },
-            'confidence': 0.75
-        })
-    except Exception as e:
-        logger.error(f"Error in facial analysis: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-@web_bp.route('/api/traffic_patterns', methods=['GET'])
-def get_traffic_patterns():
-    """Get traffic pattern analysis data"""
-    try:
-        # Mock traffic pattern data
-        patterns = {
-            'hourly_traffic': [10, 15, 25, 45, 60, 80, 90, 85, 70, 55, 40, 30],
-            'common_paths': [
-                {'path': 'entrance->electronics->checkout', 'frequency': 45},
-                {'path': 'entrance->clothing->fitting_room->checkout', 'frequency': 30},
-                {'path': 'entrance->grocery->checkout', 'frequency': 25}
-            ],
-            'avg_dwell_time': {'electronics': 180, 'clothing': 240, 'grocery': 120}
-        }
-        
-        return jsonify({
-            'status': 'success',
-            'data': patterns
-        })
-    except Exception as e:
-        logger.error(f"Error getting traffic patterns: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+# Legacy mock endpoints - replaced with real analytics endpoints
+# @web_bp.route('/api/facial_analysis', methods=['POST'])
+# @web_bp.route('/api/traffic_patterns', methods=['GET'])
+# These endpoints have been replaced with:
+# - /api/analytics/summary
+# - /api/analytics/traffic
+# - /api/populate-sample-data
 
 # ============================================================================
 # Video and Camera Configuration Routes
 # ============================================================================
+
+@web_bp.route('/camera_stream')
+def camera_stream():
+    """Stream video from the configured camera (uses main config.yaml settings)"""
+    try:
+        # Load main configuration to get camera settings
+        config_manager = get_config_manager()
+        config_path = Path(__file__).parent.parent / 'config.yaml'
+        config = config_manager.load_config(str(config_path))
+        
+        camera_config = config.get('camera', {})
+        
+        # Add credential manager to camera config for secure access
+        camera_config['credential_manager'] = config_manager.get_credential_manager()
+        
+        logger.info(f"Starting camera stream with config: {camera_config.get('type', 'unknown')} camera")
+        
+        # Create camera instance using main configuration
+        camera = get_camera(camera_config)
+        
+        if not camera.is_running:
+            camera.start()
+        
+        def generate():
+            """Generate video frames from the configured camera"""
+            while True:
+                try:
+                    frame = camera.get_frame()
+                    if frame is not None:
+                        # Encode frame as JPEG
+                        ret, buffer = cv2.imencode('.jpg', frame)
+                        if ret:
+                            frame_bytes = buffer.tobytes()
+                            yield (b'--frame\r\n'
+                                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                        else:
+                            logger.warning("Failed to encode frame")
+                    else:
+                        logger.warning("No frame received from camera")
+                        time.sleep(0.1)  # Small delay to prevent busy loop
+                except Exception as e:
+                    logger.error(f"Error in camera stream: {e}")
+                    time.sleep(0.1)
+                    break
+        
+        return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+        
+    except Exception as e:
+        logger.error(f"Error starting camera stream: {e}")
+        return f"Camera stream error: {e}", 500
 
 @web_bp.route('/get_video_config')
 def get_video_config():
@@ -512,6 +543,39 @@ def get_camera_options():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@web_bp.route('/api/camera/restart', methods=['POST'])
+@require_auth('manager')
+def restart_camera():
+    """Restart camera with current configuration"""
+    try:
+        # Stop current camera
+        stop_camera()
+        
+        # Small delay to ensure cleanup
+        time.sleep(1)
+        
+        # Load fresh configuration
+        config_manager = get_config_manager()
+        config_path = Path(__file__).parent.parent / 'config.yaml'
+        config = config_manager.load_config(str(config_path))
+        
+        camera_config = config.get('camera', {})
+        camera_config['credential_manager'] = config_manager.get_credential_manager()
+        
+        # Start camera with new configuration
+        camera = get_camera(camera_config)
+        if not camera.is_running:
+            camera.start()
+        
+        return jsonify({
+            'status': 'success', 
+            'message': f'Camera restarted with {camera_config.get("type", "unknown")} configuration'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error restarting camera: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 @web_bp.route('/stop_camera', methods=['POST'])
 def stop_camera_route():
     """Stop the current camera instance"""
@@ -566,7 +630,15 @@ def available_colormaps():
     """Get list of available colormaps"""
     try:
         # Initialize heatmap generator to get colormaps
-        heatmap_gen = HeatmapGenerator()
+        # Use a basic config for colormap retrieval
+        config = {
+            'resolution': (640, 480),
+            'alpha': 0.6,
+            'blur_radius': 15,
+            'point_decay': 0.99,
+            'max_accumulate_frames': 300
+        }
+        heatmap_gen = HeatmapGenerator(config)
         colormaps = heatmap_gen.get_available_colormaps()
         
         return jsonify({
@@ -596,9 +668,10 @@ def available_colormaps():
 def get_main_config():
     """Get main configuration from config.yaml"""
     try:
-        from utils.config import ConfigManager
-        config_manager = ConfigManager()
-        config = config_manager.load_config()
+        # Load configuration using helper function
+        config_manager = get_config_manager()
+        config_path = Path(__file__).parent.parent / 'config.yaml'
+        config = config_manager.load_config(str(config_path))
         
         # Return safe config (without sensitive data)
         safe_config = config_manager.get_safe_config()
@@ -624,6 +697,11 @@ def update_main_config():
         
         # Load current config
         config_path = Path(__file__).parent.parent / 'config.yaml'
+        
+        # Verify config file exists
+        if not config_path.exists():
+            return jsonify({'status': 'error', 'message': f'Configuration file not found: {config_path}'}), 404
+            
         with open(config_path, 'r') as f:
             current_config = yaml.safe_load(f)
         
@@ -659,9 +737,9 @@ def update_main_config():
 def get_detection_config():
     """Get detection configuration"""
     try:
-        from utils.config import ConfigManager
-        config_manager = ConfigManager()
-        config = config_manager.load_config()
+        config_manager = get_config_manager()
+        config_path = Path(__file__).parent.parent / 'config.yaml'
+        config = config_manager.load_config(str(config_path))
         return jsonify({
             'status': 'success',
             'config': config.get('detection', {})
@@ -674,9 +752,9 @@ def get_detection_config():
 def get_tracking_config():
     """Get tracking configuration"""
     try:
-        from utils.config import ConfigManager
-        config_manager = ConfigManager()
-        config = config_manager.load_config()
+        config_manager = get_config_manager()
+        config_path = Path(__file__).parent.parent / 'config.yaml'
+        config = config_manager.load_config(str(config_path))
         return jsonify({
             'status': 'success',
             'config': config.get('tracking', {})
@@ -689,9 +767,9 @@ def get_tracking_config():
 def get_analysis_config():
     """Get analysis configuration"""
     try:
-        from utils.config import ConfigManager
-        config_manager = ConfigManager()
-        config = config_manager.load_config()
+        config_manager = get_config_manager()
+        config_path = Path(__file__).parent.parent / 'config.yaml'
+        config = config_manager.load_config(str(config_path))
         return jsonify({
             'status': 'success',
             'config': config.get('analysis', {})
@@ -704,12 +782,12 @@ def get_analysis_config():
 def backup_config():
     """Create a backup of the current configuration"""
     try:
-        from utils.config import ConfigManager
         import json
         from datetime import datetime
         
-        config_manager = ConfigManager()
-        config = config_manager.load_config()
+        config_manager = get_config_manager()
+        config_path = Path(__file__).parent.parent / 'config.yaml'
+        config = config_manager.load_config(str(config_path))
         
         # Create backup with timestamp
         backup_data = {
@@ -749,6 +827,186 @@ def restore_config():
         logger.error(f"Error restoring config: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@web_bp.route('/api/clear-demographics', methods=['POST'])
+@require_admin
+def clear_demographics_data():
+    """Clear all customer demographic data - Admin only"""
+    try:
+        db = current_app.db
+        
+        # Check if the database has the clear method
+        if not hasattr(db, 'clear_demographics_data'):
+            return jsonify({
+                'success': False, 
+                'message': 'Clear demographics operation not supported by current database type'
+            }), 400
+        
+        # Clear the demographic data
+        result = db.clear_demographics_data()
+        
+        if result['success']:
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        logger.error(f"Error clearing demographics data: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to clear demographic data: {str(e)}',
+            'records_deleted': 0
+        }), 500
+
+@web_bp.route('/api/populate-sample-data', methods=['POST'])
+@require_admin
+def populate_sample_data():
+    """Populate database with sample data for demonstration - Admin only"""
+    try:
+        db = current_app.db
+        
+        # Check if the database has the populate method
+        if not hasattr(db, 'populate_sample_data'):
+            return jsonify({
+                'success': False, 
+                'message': 'Populate sample data operation not supported by current database type'
+            }), 400
+        
+        # Populate the sample data
+        result = db.populate_sample_data()
+        
+        if result['success']:
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        logger.error(f"Error populating sample data: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to populate sample data: {str(e)}',
+            'detection_records': 0,
+            'demographic_records': 0
+        }), 500
+
+@web_bp.route('/api/analytics/summary', methods=['GET'])
+def get_analytics_summary():
+    """Get analytics summary data"""
+    try:
+        # Get hours parameter (default to 24)
+        hours = request.args.get('hours', 24, type=int)
+        
+        db = current_app.db
+        
+        # Check if the database has the analytics method
+        if not hasattr(db, 'get_analytics_summary'):
+            return jsonify({
+                'success': False, 
+                'message': 'Analytics not supported by current database type'
+            }), 400
+        
+        # Get the analytics data
+        result = db.get_analytics_summary(hours)
+        
+        if result.get('success'):
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        logger.error(f"Error getting analytics summary: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to get analytics summary: {str(e)}'
+        }), 500
+
+@web_bp.route('/api/analytics/traffic', methods=['GET'])
+def get_traffic_data():
+    """Get hourly traffic data"""
+    try:
+        # Get hours parameter (default to 24)
+        hours = request.args.get('hours', 24, type=int)
+        
+        db = current_app.db
+        
+        # Check if the database has the traffic method
+        if not hasattr(db, 'get_hourly_traffic'):
+            return jsonify({
+                'success': False, 
+                'message': 'Traffic analytics not supported by current database type'
+            }), 400
+        
+        # Get the traffic data
+        result = db.get_hourly_traffic(hours)
+        
+        if result.get('success'):
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        logger.error(f"Error getting traffic data: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to get traffic data: {str(e)}'
+        }), 500
+
+@web_bp.route('/api/analytics/demographics')
+@require_auth()
+def get_demographic_records():
+    """Get paginated demographic records"""
+    try:
+        # Get pagination parameters
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+        search = request.args.get('search', '').strip()
+        sort_by = request.args.get('sort_by', 'timestamp')
+        sort_order = request.args.get('sort_order', 'desc')
+        hours = int(request.args.get('hours', 24))
+        
+        # Validate parameters
+        per_page = min(max(per_page, 5), 100)  # Between 5 and 100
+        page = max(page, 1)
+        
+        # Get database instance
+        db = current_app.db
+        records = db.get_demographic_records_paginated(
+            page=page, 
+            per_page=per_page, 
+            search=search,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            hours=hours
+        )
+        
+        return jsonify({
+            'success': True,
+            'data': records['records'],
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total_records': records['total'],
+                'total_pages': records['pages'],
+                'has_next': page < records['pages'],
+                'has_prev': page > 1
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting demographic records: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to fetch demographic records',
+            'data': [],
+            'pagination': {
+                'page': 1,
+                'per_page': 10,
+                'total_records': 0,
+                'total_pages': 0,
+                'has_next': False,
+                'has_prev': False
+            }
+        }), 500
+
 # ============================================================================
 # ONVIF PTZ Control Routes
 # ============================================================================
@@ -770,6 +1028,76 @@ def update_camera_config():
     except Exception as e:
         logger.error(f"Camera config update error: {e}")
         return jsonify({"success": False, "message": f"Failed to update camera configuration: {str(e)}"}), 500
+
+# ============================================================================
+# User Settings Compatibility Endpoints
+# ============================================================================
+
+@web_bp.route('/api/user_info', methods=['GET'])
+@require_auth()
+def get_user_info():
+    """Get current user information (compatibility endpoint for user settings page)"""
+    try:
+        user_info = request.current_user
+        return jsonify({
+            "success": True,
+            "username": user_info['username'],
+            "role": user_info['role']
+        })
+    except Exception as e:
+        logger.error(f"Get user info error: {e}")
+        return jsonify({"success": False, "message": "User service error"}), 500
+
+@web_bp.route('/api/check_default_password', methods=['GET'])
+@require_auth()
+def check_default_password():
+    """Check if user is using default password (compatibility endpoint)"""
+    try:
+        user_info = request.current_user
+        auth_service = current_app.auth_service
+        is_default = auth_service.is_using_default_password(user_info['username'])
+        
+        return jsonify({
+            "success": True,
+            "is_default": is_default
+        })
+    except Exception as e:
+        logger.error(f"Check default password error: {e}")
+        return jsonify({"success": False, "message": "Service error"}), 500
+
+@web_bp.route('/change_password', methods=['POST'])
+@require_auth()
+def change_password():
+    """Change user password (compatibility endpoint for user settings page)"""
+    try:
+        # Handle both JSON and form data
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form.to_dict()
+        
+        if not data:
+            return jsonify({"success": False, "message": "No data provided"}), 400
+        
+        current_password = data.get('current_password', '')
+        new_password = data.get('new_password', '')
+        
+        if not current_password or not new_password:
+            return jsonify({"success": False, "message": "Both current and new passwords required"}), 400
+        
+        user_info = request.current_user
+        auth_service = current_app.auth_service
+        result = auth_service.change_password(user_info['user_id'], current_password, new_password)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Change password error: {e}")
+        return jsonify({"success": False, "message": "Password change service error"}), 500
+
+# ============================================================================
+# PTZ Control Routes
+# ============================================================================
 
 @web_bp.route('/api/ptz/status', methods=['GET'])
 @require_auth()

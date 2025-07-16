@@ -7,8 +7,7 @@ find better footage (find 1 hour real store footage for actual analysis)
 add onboard camera to settings option
 put heatmap opacity in to config.yaml
 make settings page actually update settings
-fix header sizing
-fix page horiontal scrollable
+
 exaggerate heatmap based on video length
 add an x to sidebar when on mobile
 
