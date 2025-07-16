@@ -270,8 +270,6 @@ def index():
     """Render the dashboard homepage"""
     return render_template('index.html')
 
-
-
 @web_bp.route('/analysis')
 @require_auth()
 def analysis():
@@ -827,184 +825,154 @@ def restore_config():
         logger.error(f"Error restoring config: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
-@web_bp.route('/api/clear-demographics', methods=['POST'])
-@require_admin
-def clear_demographics_data():
-    """Clear all customer demographic data - Admin only"""
-    try:
-        db = current_app.db
-        
-        # Check if the database has the clear method
-        if not hasattr(db, 'clear_demographics_data'):
-            return jsonify({
-                'success': False, 
-                'message': 'Clear demographics operation not supported by current database type'
-            }), 400
-        
-        # Clear the demographic data
-        result = db.clear_demographics_data()
-        
-        if result['success']:
-            return jsonify(result), 200
-        else:
-            return jsonify(result), 500
-            
-    except Exception as e:
-        logger.error(f"Error clearing demographics data: {e}")
-        return jsonify({
-            'success': False,
-            'message': f'Failed to clear demographic data: {str(e)}',
-            'records_deleted': 0
-        }), 500
-
-@web_bp.route('/api/populate-sample-data', methods=['POST'])
+@web_bp.route('/api/data/populate-sample', methods=['POST'])
 @require_admin
 def populate_sample_data():
-    """Populate database with sample data for demonstration - Admin only"""
+    """Populate database with sample data for testing/demo purposes"""
     try:
+        from datetime import datetime, timedelta
+        import random
+
         db = current_app.db
         
-        # Check if the database has the populate method
-        if not hasattr(db, 'populate_sample_data'):
-            return jsonify({
-                'success': False, 
-                'message': 'Populate sample data operation not supported by current database type'
-            }), 400
-        
-        # Populate the sample data
-        result = db.populate_sample_data()
-        
-        if result['success']:
-            return jsonify(result), 200
-        else:
-            return jsonify(result), 500
-            
+        # Generate sample data for the last 7 days
+        sample_data = []
+        current_time = datetime.now()
+
+        # Sample demographics data
+        age_groups = [
+            {'min': 13, 'max': 17, 'group': 'Teen'},
+            {'min': 18, 'max': 25, 'group': 'Young Adult'},
+            {'min': 26, 'max': 35, 'group': 'Adult'},
+            {'min': 36, 'max': 50, 'group': 'Middle Age'},
+            {'min': 51, 'max': 65, 'group': 'Senior'},
+            {'min': 66, 'max': 80, 'group': 'Elderly'}
+        ]
+
+        genders = ['Male', 'Female']
+        emotions = ['Happy', 'Neutral', 'Sad', 'Angry', 'Surprised', 'Fear']
+        races = ['Asian', 'Black', 'White', 'Hispanic', 'Indian', 'Middle Eastern']
+
+        # Generate 100-200 sample records over 7 days
+        total_records = random.randint(100, 200)
+
+        for i in range(total_records):
+            # Random timestamp within last 7 days
+            days_ago = random.randint(0, 6)
+            hours_ago = random.randint(0, 23)
+            minutes_ago = random.randint(0, 59)
+
+            timestamp = current_time - timedelta(days=days_ago, hours=hours_ago, minutes=minutes_ago)
+
+            # Random demographics
+            age_group = random.choice(age_groups)
+            age = random.randint(age_group['min'], age_group['max'])
+            gender = random.choice(genders)
+            emotion = random.choice(emotions)
+            race = random.choice(races)
+
+            # Random bounding box (simulated detection)
+            x1 = random.randint(50, 300)
+            y1 = random.randint(50, 200)
+            x2 = x1 + random.randint(50, 150)
+            y2 = y1 + random.randint(100, 200)
+
+            confidence = random.uniform(0.7, 0.95)
+
+            # Store in database
+            try:
+                # Insert person record
+                person_id = db.store_person_detection(
+                    timestamp=timestamp,
+                    bbox=[x1, y1, x2, y2],
+                    confidence=confidence,
+                    demographics={
+                        'age': age,
+                        'gender': gender,
+                        'race': race,
+                        'emotion': emotion,
+                        'confidence': confidence
+                    }
+                )
+
+                if person_id:
+                    sample_data.append({
+                        'person_id': person_id,
+                        'timestamp': timestamp.isoformat(),
+                        'age': age,
+                        'gender': gender,
+                        'race': race,
+                        'emotion': emotion
+                    })
+
+            except Exception as e:
+                logger.warning(f"Failed to insert sample record {i}: {e}")
+                continue
+
+        logger.info(f"Successfully populated {len(sample_data)} sample records")
+
+        return jsonify({
+            'success': True,
+            'message': f'Successfully added {len(sample_data)} sample records',
+            'records_created': len(sample_data)
+        })
+
     except Exception as e:
         logger.error(f"Error populating sample data: {e}")
         return jsonify({
             'success': False,
-            'message': f'Failed to populate sample data: {str(e)}',
-            'detection_records': 0,
-            'demographic_records': 0
+            'message': f'Failed to populate sample data: {str(e)}'
         }), 500
 
-@web_bp.route('/api/analytics/summary', methods=['GET'])
-def get_analytics_summary():
-    """Get analytics summary data"""
+@web_bp.route('/api/data/clear-demographics', methods=['POST'])
+@require_admin
+def clear_demographics_data():
+    """Clear all demographic data from database"""
     try:
-        # Get hours parameter (default to 24)
-        hours = request.args.get('hours', 24, type=int)
-        
         db = current_app.db
-        
-        # Check if the database has the analytics method
-        if not hasattr(db, 'get_analytics_summary'):
-            return jsonify({
-                'success': False, 
-                'message': 'Analytics not supported by current database type'
-            }), 400
-        
-        # Get the analytics data
-        result = db.get_analytics_summary(hours)
-        
-        if result.get('success'):
-            return jsonify(result), 200
-        else:
-            return jsonify(result), 500
-            
-    except Exception as e:
-        logger.error(f"Error getting analytics summary: {e}")
-        return jsonify({
-            'success': False,
-            'message': f'Failed to get analytics summary: {str(e)}'
-        }), 500
 
-@web_bp.route('/api/analytics/traffic', methods=['GET'])
-def get_traffic_data():
-    """Get hourly traffic data"""
-    try:
-        # Get hours parameter (default to 24)
-        hours = request.args.get('hours', 24, type=int)
-        
-        db = current_app.db
-        
-        # Check if the database has the traffic method
-        if not hasattr(db, 'get_hourly_traffic'):
-            return jsonify({
-                'success': False, 
-                'message': 'Traffic analytics not supported by current database type'
-            }), 400
-        
-        # Get the traffic data
-        result = db.get_hourly_traffic(hours)
-        
-        if result.get('success'):
-            return jsonify(result), 200
-        else:
-            return jsonify(result), 500
-            
-    except Exception as e:
-        logger.error(f"Error getting traffic data: {e}")
-        return jsonify({
-            'success': False,
-            'message': f'Failed to get traffic data: {str(e)}'
-        }), 500
+        # Get count before clearing
+        conn = db._get_connection()
+        cursor = conn.cursor()
 
-@web_bp.route('/api/analytics/demographics')
-@require_auth()
-def get_demographic_records():
-    """Get paginated demographic records"""
-    try:
-        # Get pagination parameters
-        page = int(request.args.get('page', 1))
-        per_page = int(request.args.get('per_page', 10))
-        search = request.args.get('search', '').strip()
-        sort_by = request.args.get('sort_by', 'timestamp')
-        sort_order = request.args.get('sort_order', 'desc')
-        hours = int(request.args.get('hours', 24))
-        
-        # Validate parameters
-        per_page = min(max(per_page, 5), 100)  # Between 5 and 100
-        page = max(page, 1)
-        
-        # Get database instance
-        db = current_app.db
-        records = db.get_demographic_records_paginated(
-            page=page, 
-            per_page=per_page, 
-            search=search,
-            sort_by=sort_by,
-            sort_order=sort_order,
-            hours=hours
-        )
-        
+        # Count existing records
+        cursor.execute("SELECT COUNT(*) FROM demographics")
+        demo_count = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM persons")
+        person_count = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM detections")
+        detection_count = cursor.fetchone()[0]
+
+        # Clear demographic data
+        cursor.execute("DELETE FROM demographics")
+        cursor.execute("DELETE FROM dwell_times")
+        cursor.execute("DELETE FROM detections")
+        cursor.execute("DELETE FROM persons")
+
+        # Reset auto-increment counters
+        cursor.execute("DELETE FROM sqlite_sequence WHERE name IN ('demographics', 'persons', 'detections', 'dwell_times')")
+
+        conn.commit()
+
+        logger.info(f"Cleared {demo_count} demographic records, {person_count} person records, {detection_count} detection records")
+
         return jsonify({
             'success': True,
-            'data': records['records'],
-            'pagination': {
-                'page': page,
-                'per_page': per_page,
-                'total_records': records['total'],
-                'total_pages': records['pages'],
-                'has_next': page < records['pages'],
-                'has_prev': page > 1
+            'message': 'Successfully cleared all customer data',
+            'records_cleared': {
+                'demographics': demo_count,
+                'persons': person_count,
+                'detections': detection_count
             }
         })
         
     except Exception as e:
-        logger.error(f"Error getting demographic records: {e}")
+        logger.error(f"Error clearing demographics data: {e}")
         return jsonify({
             'success': False,
-            'error': 'Failed to fetch demographic records',
-            'data': [],
-            'pagination': {
-                'page': 1,
-                'per_page': 10,
-                'total_records': 0,
-                'total_pages': 0,
-                'has_next': False,
-                'has_prev': False
-            }
+            'message': f'Failed to clear demographics data: {str(e)}'
         }), 500
 
 # ============================================================================
@@ -1028,6 +996,44 @@ def update_camera_config():
     except Exception as e:
         logger.error(f"Camera config update error: {e}")
         return jsonify({"success": False, "message": f"Failed to update camera configuration: {str(e)}"}), 500
+
+@web_bp.route('/api/insert_initial_data', methods=['POST'])
+@require_auth('admin')
+def insert_initial_data():
+    """Insert initial data: default users and sample data"""
+    try:
+        db = current_app.db
+        db._create_default_users()
+        sample_result = db.populate_sample_data()
+        return jsonify({
+            'status': 'success',
+            'message': 'Initial data inserted successfully',
+            'details': sample_result
+        })
+    except Exception as e:
+        logger.error(f"Error inserting initial data: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@web_bp.route('/api/clear_all_data', methods=['POST'])
+@require_auth('admin')
+def clear_all_data():
+    """Clear all analytics and user data (except admin)"""
+    try:
+        db = current_app.db
+        # Delete all data from main tables except admin user
+        conn = db._get_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM dwell_times")
+        cursor.execute("DELETE FROM demographics")
+        cursor.execute("DELETE FROM detections")
+        cursor.execute("DELETE FROM persons")
+        cursor.execute("DELETE FROM users WHERE username != 'admin'")
+        conn.commit()
+        db._create_default_users()  # Re-create default users (except admin, which is preserved)
+        return jsonify({'status': 'success', 'message': 'All data cleared. Default users restored (admin, manager, viewer, manager2, viewer2).'})
+    except Exception as e:
+        logger.error(f"Error clearing all data: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 # ============================================================================
 # User Settings Compatibility Endpoints
@@ -1332,4 +1338,5 @@ def ptz_delete_preset():
     
     except Exception as e:
         logger.error(f"PTZ delete preset error: {e}")
-        return jsonify({"success": False, "message": f"Failed to delete preset: {str(e)}"}), 500 
+        return jsonify({"success": False, "message": f"Failed to delete preset: {str(e)}"}), 500
+

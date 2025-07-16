@@ -6,16 +6,25 @@ import time
 import logging
 import cv2
 import urllib.parse
+import threading
+import queue
 from .base import BaseCamera
 
 logger = logging.getLogger(__name__)
+
+try:
+    import av
+    PYAV_AVAILABLE = True
+except ImportError:
+    PYAV_AVAILABLE = False
 
 class RTSPCamera(BaseCamera):
     """
     RTSP Camera implementation for IP cameras
     
     This class handles video capture from IP cameras via RTSP protocol
-    using OpenCV's VideoCapture interface with secure credential handling.
+    using OpenCV's VideoCapture interface with secure credential handling
+    and H.264 error resilience.
     """
     
     def __init__(self, config):
@@ -37,6 +46,9 @@ class RTSPCamera(BaseCamera):
             raise ValueError("RTSP URL or credential_ref must be provided in the configuration")
         
         self.cap = None
+        self.frame_queue = queue.Queue(maxsize=1)
+        self.grabber_thread = None
+        self.grabber_running = False
         
         # Additional RTSP camera specific settings
         self.retry_interval = config.get('retry_interval', 5.0)  # seconds between reconnection attempts
@@ -47,11 +59,46 @@ class RTSPCamera(BaseCamera):
         # Set RTSP transport method
         self.rtsp_transport = config.get('rtsp_transport', 'tcp')  # tcp or udp
         
-        # Base cap options (always available)
-            self.cap_options = [
-                cv2.CAP_PROP_BUFFERSIZE, self.buffer_size,
-            cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'H264')
+        # H.264 error handling settings
+        self.h264_error_threshold = config.get('h264_error_threshold', 20)  # Max consecutive H.264 errors
+        self.frame_skip_on_error = config.get('frame_skip_on_error', True)  # Skip corrupted frames
+        self.recovery_frame_count = config.get('recovery_frame_count', 5)  # Frames to read for recovery
+
+        # Frame validation settings
+        self.min_frame_size = config.get('min_frame_size', 100)  # Minimum frame size in pixels
+        self.max_decode_errors = config.get('max_decode_errors', 50)  # Max decode errors before reconnect
+
+        # Tracking variables for H.264 errors
+        self.h264_error_count = 0
+        self.last_good_frame = None
+        self.frame_lock = threading.Lock()
+
+        # Base cap options (always available) - optimized for H.264 stability
+        self.cap_options = [
+            cv2.CAP_PROP_BUFFERSIZE, self.buffer_size,
+            cv2.CAP_PROP_FPS, config.get('fps', 15),  # Reduced FPS for stability
         ]
+
+        # Add H.264 fourcc if available
+        try:
+            fourcc = cv2.VideoWriter_fourcc(*'H264')
+            self.cap_options.extend([cv2.CAP_PROP_FOURCC, fourcc])
+        except AttributeError:
+            # Fallback if VideoWriter_fourcc is not available
+            logger.debug("VideoWriter_fourcc not available, using default codec")
+
+        # Add H.264 specific options for better error handling
+        self.cap_options.extend([
+            cv2.CAP_PROP_CONVERT_RGB, 1,  # Ensure RGB conversion
+        ])
+
+        # Add resolution settings if specified
+        if 'resolution' in config:
+            width, height = config['resolution']
+            self.cap_options.extend([
+                cv2.CAP_PROP_FRAME_WIDTH, width,
+                cv2.CAP_PROP_FRAME_HEIGHT, height
+            ])
         
         # Add RTSP transport option if available (compatibility check)
         if hasattr(cv2, 'CAP_PROP_RTSP_TRANSPORT'):
@@ -69,6 +116,70 @@ class RTSPCamera(BaseCamera):
         if extra_options and isinstance(extra_options, list) and len(extra_options) % 2 == 0:
             self.cap_options.extend(extra_options)
     
+    def _validate_frame(self, frame):
+        """
+        Validate frame quality and detect H.264 corruption
+
+        Args:
+            frame: OpenCV frame to validate
+
+        Returns:
+            bool: True if frame is valid, False otherwise
+        """
+        if frame is None:
+            return False
+
+        # Check frame size
+        if frame.size == 0:
+            return False
+
+        # Check frame dimensions
+        if len(frame.shape) < 2 or frame.shape[0] < self.min_frame_size or frame.shape[1] < self.min_frame_size:
+            return False
+
+        # Check for completely black or white frames (common H.264 corruption)
+        if frame.mean() < 1 or frame.mean() > 254:
+            return False
+
+        # Check for frame with no variation (frozen frame indicator)
+        if frame.std() < 1:
+            return False
+
+        return True
+
+    def _handle_h264_error(self):
+        """
+        Handle H.264 decoding errors by implementing recovery strategies
+
+        Returns:
+            bool: True if recovery was attempted, False if reconnection needed
+        """
+        self.h264_error_count += 1
+
+        if self.h264_error_count > self.h264_error_threshold:
+            logger.warning(f"H.264 error threshold reached ({self.h264_error_count} errors), reconnecting")
+            return False
+
+        # Try to recover by skipping frames
+        if self.frame_skip_on_error and self.cap is not None:
+            logger.debug(f"H.264 error #{self.h264_error_count}, attempting frame skip recovery")
+
+            # Skip several frames to get past corrupted section
+            for _ in range(self.recovery_frame_count):
+                if self.cap.isOpened():
+                    try:
+                        self.cap.grab()  # Fast frame skip without decoding
+                    except:
+                        break
+
+            return True
+
+        return False
+
+    def _reset_error_counters(self):
+        """Reset H.264 error counters after successful frame"""
+        self.h264_error_count = 0
+
     def _get_url_with_auth(self):
         """
         Get the RTSP URL with authentication credentials if available
@@ -154,8 +265,8 @@ class RTSPCamera(BaseCamera):
     
     def _open_camera(self):
         """
-        Open the RTSP camera
-        
+        Open the RTSP camera with H.264 error handling
+
         Returns:
             bool: True if camera was opened successfully, False otherwise
         """
@@ -167,13 +278,16 @@ class RTSPCamera(BaseCamera):
             safe_url = self._get_safe_url(url)
             logger.info(f"Connecting to RTSP stream: {safe_url}")
             
-            # Create capture with specific options for RTSP
+            # Create capture with specific options for RTSP and H.264 stability
             self.cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
             
-            # Set capture options
+            # Set capture options for H.264 stability
             for i in range(0, len(self.cap_options), 2):
-                self.cap.set(self.cap_options[i], self.cap_options[i+1])
-            
+                prop = self.cap_options[i]
+                value = self.cap_options[i+1]
+                if not self.cap.set(prop, value):
+                    logger.debug(f"Failed to set property {prop} to {value}")
+
             # Wait for the connection to establish
             start_time = time.time()
             while not self.cap.isOpened():
@@ -184,6 +298,9 @@ class RTSPCamera(BaseCamera):
                     return False
                 time.sleep(0.1)
             
+            # Reset error counters on successful connection
+            self._reset_error_counters()
+
             # Log actual camera properties
             actual_width = self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
             actual_height = self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
@@ -235,73 +352,155 @@ class RTSPCamera(BaseCamera):
             # If parsing fails, return original URL
             return url
     
-    def _close_camera(self):
-        """Close the camera and release resources"""
-        if self.cap is not None:
-            self.cap.release()
-            self.cap = None
-            logger.info("RTSP stream closed")
-    
+    def _start_grabber(self):
+        if self.grabber_thread and self.grabber_thread.is_alive():
+            return
+        self.grabber_running = True
+        backend = self.config.get('backend', 'opencv')
+        if backend == 'pyav' and PYAV_AVAILABLE:
+            self.grabber_thread = threading.Thread(target=self._grabber_loop_pyav, daemon=True)
+        else:
+            self.grabber_thread = threading.Thread(target=self._grabber_loop, daemon=True)
+        self.grabber_thread.start()
+
+    def _stop_grabber(self):
+        self.grabber_running = False
+        if self.grabber_thread:
+            self.grabber_thread.join(timeout=2)
+        self.grabber_thread = None
+
+    def _grabber_loop(self):
+        while self.grabber_running and self.cap and self.cap.isOpened():
+            ret, frame = self.cap.read()
+            if not ret or frame is None:
+                time.sleep(0.05)
+                continue
+            # Always keep only the latest frame
+            try:
+                if self.frame_queue.full():
+                    self.frame_queue.get_nowait()
+                self.frame_queue.put_nowait(frame)
+            except queue.Full:
+                pass
+            except Exception as e:
+                logger.error(f"Grabber thread error: {e}")
+                break
+
+    def _grabber_loop_pyav(self):
+        url = self._get_url_with_auth()
+        options = {
+            'rtsp_transport': self.config.get('rtsp_transport', 'tcp'),
+            'stimeout': str(int(self.config.get('connection_timeout', 10.0) * 1000000)),
+        }
+        try:
+            container = av.open(url, options=options)
+            stream = next(s for s in container.streams if s.type == 'video')
+            for frame in container.decode(stream):
+                if not self.grabber_running:
+                    break
+                img = frame.to_ndarray(format='bgr24')
+                try:
+                    if self.frame_queue.full():
+                        self.frame_queue.get_nowait()
+                    self.frame_queue.put_nowait(img)
+                except queue.Full:
+                    pass
+                except Exception as e:
+                    logger.error(f"PyAV grabber thread error: {e}")
+                    break
+        except Exception as e:
+            logger.error(f"PyAV failed to open RTSP stream: {e}")
+
     def _capture_loop(self):
-        """
-        Main capture loop for RTSP camera
-        
-        This method continuously reads frames from the RTSP stream and updates the frame buffer.
-        It handles reconnection attempts if the stream disconnects.
-        """
         retries = 0
         consecutive_failures = 0
-        
+        decode_errors = 0
+        process_latest_only = self.config.get('process_latest_only', True)
+        last_frame_time = time.time()
+        watchdog_timeout = self.config.get('watchdog_timeout', 10.0)
+
         while self.is_running:
-            # Check if camera is open, try to open if not
             if self.cap is None or not self.cap.isOpened():
                 if self.max_retries >= 0 and retries >= self.max_retries:
                     logger.error(f"Max retries ({self.max_retries}) reached, giving up on RTSP stream")
                     break
-                
                 logger.info(f"Trying to open RTSP stream (attempt {retries + 1})")
                 if self._open_camera():
-                    retries = 0  # Reset retry counter on successful connection
+                    retries = 0
                     consecutive_failures = 0
+                    decode_errors = 0
+                    self._start_grabber()
                 else:
                     retries += 1
                     time.sleep(self.retry_interval)
                     continue
-            
-            # Read frame from stream
+
             try:
-                ret, frame = self.cap.read()
-                
-                if not ret or frame is None:
-                    consecutive_failures += 1
-                    if consecutive_failures > 5:  # If we fail to get frames multiple times, reconnect
-                        logger.warning(f"Failed to get frame from RTSP stream ({consecutive_failures} consecutive failures)")
-                        self._close_camera()
-                    time.sleep(0.1)
+                # Watchdog: if no frame for too long, force reconnect
+                if time.time() - last_frame_time > watchdog_timeout:
+                    logger.warning("No frame received for watchdog timeout, reconnecting RTSP stream")
+                    self._close_camera()
+                    self._stop_grabber()
                     continue
-                
-                # Reset consecutive failures on successful frame capture
+
+                # Get the latest frame from the queue
+                try:
+                    frame = self.frame_queue.get(timeout=1)
+                    last_frame_time = time.time()
+                except queue.Empty:
+                    consecutive_failures += 1
+                    time.sleep(0.05)
+                    continue
+
+                if not self._validate_frame(frame):
+                    consecutive_failures += 1
+                    if consecutive_failures > 5:
+                        if self._handle_h264_error():
+                            time.sleep(0.01)
+                            continue
+                    if consecutive_failures > 20:
+                        logger.warning(f"Received corrupted frames ({consecutive_failures} times), reconnecting")
+                        self._close_camera()
+                        self._stop_grabber()
+                    if self.last_good_frame is not None and self.frame_skip_on_error:
+                        with self.frame_lock:
+                            processed_frame = self._preprocess_frame(self.last_good_frame)
+                            if processed_frame is not None:
+                                self._set_frame(processed_frame)
+                    time.sleep(0.02)
+                    continue
+
                 consecutive_failures = 0
-                
-                # Preprocess frame
+                self._reset_error_counters()
+                with self.frame_lock:
+                    self.last_good_frame = frame.copy()
                 processed_frame = self._preprocess_frame(frame)
                 if processed_frame is not None:
                     self._set_frame(processed_frame)
-                
-                # Control frame rate (less aggressive for network streams)
-                time.sleep(0.001)
-                
+                time.sleep(0.01)
+
             except Exception as e:
                 logger.error(f"Error capturing frame from RTSP stream: {e}")
                 consecutive_failures += 1
-                if consecutive_failures > 5:
+                if "h264" in str(e).lower() or "decode" in str(e).lower():
+                    if not self._handle_h264_error():
+                        self._close_camera()
+                        self._stop_grabber()
+                elif consecutive_failures > 5:
                     self._close_camera()
+                    self._stop_grabber()
                 time.sleep(0.1)
-        
-        # Clean up when loop exits
         self._close_camera()
-    
+        self._stop_grabber()
+
+    def _close_camera(self):
+        if self.cap is not None:
+            self.cap.release()
+            self.cap = None
+            logger.info("RTSP stream closed")
+        self._stop_grabber()
+
     def stop(self):
-        """Stop the camera capture thread and release resources"""
         super().stop()
-        self._close_camera() 
+        self._close_camera()
+        self._stop_grabber()

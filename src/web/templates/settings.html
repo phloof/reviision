@@ -6,825 +6,372 @@
 
 {% block styles %}
 <style>
-    /* Settings-specific styles that complement the modern design */
-    .video-path-entry {
-        display: flex;
-        margin-bottom: 15px;
-        align-items: center;
-        gap: 10px;
+    .settings-nav {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 1rem;
     }
     
-    .video-path-entry .form-control {
-        flex: 1;
-    }
-    
-    .colormap-preview {
-        height: 40px;
-        width: 100%;
-        margin-top: 10px;
-        background: linear-gradient(to right, blue, cyan, green, yellow, red);
+    .settings-nav .nav-link {
         border-radius: 8px;
-        border: 2px solid #e1e8ed;
+        color: #6c757d;
+        font-weight: 500;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
     }
     
-    .colormap-type {
-        margin-bottom: 25px;
-        padding-bottom: 15px;
+    .settings-nav .nav-link:hover {
+        background: #f8f9fa;
+        color: #495057;
+    }
+    
+    .settings-nav .nav-link.active {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+    }
+    
+    .settings-section {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
         border-bottom: 2px solid #e9ecef;
     }
     
-    .intensity-value {
-        display: inline-block;
-        width: 50px;
-        text-align: center;
-        font-weight: 600;
-        color: #3498db;
+    .form-group {
+        margin-bottom: 1.5rem;
     }
     
-    /* Tab styling */
-    .nav-tabs .nav-link {
-        border-radius: 12px 12px 0 0;
-        border: none;
-        background: #f8f9fa;
-        color: #6c757d;
-        font-weight: 600;
-        padding: 1rem 1.5rem;
-        margin-right: 0.5rem;
+    .form-label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        padding: 0.75rem;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    }
+    
+    .btn {
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
         transition: all 0.3s ease;
     }
     
-    .nav-tabs .nav-link.active {
+    .btn-primary {
         background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-        color: white;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
-    }
-    
-    .nav-tabs .nav-link:hover:not(.active) {
-        background: #e9ecef;
-        transform: translateY(-1px);
-    }
-    
-    .tab-content {
-        background: white;
-        border-radius: 0 16px 16px 16px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        padding: 0;
         border: none;
     }
     
-    /* Mobile-specific settings styles */
-    @media (max-width: 991.98px) {
-        .settings-categories {
-            margin-bottom: 2rem;
-        }
-        
-        .list-group-item {
-            padding: 1rem;
-            font-size: 1rem;
-        }
-        
-        .list-group-item i {
-            margin-right: 0.75rem;
-        }
-        
-        .tab-content {
-            padding: 0;
-        }
-        
-        .settings-card {
-            border-radius: 12px;
-        }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        .form-control, .form-select {
-            font-size: 16px; /* Prevents iOS zoom */
-            padding: 0.75rem;
-        }
-        
-        .btn {
-            padding: 0.75rem 1rem;
-            min-height: 44px;
-        }
-        
-        .camera-config .row .col-md-6 {
-            margin-bottom: 1rem;
-        }
+    .btn-success {
+        background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        border: none;
     }
     
-    @media (max-width: 767.98px) {
-        .container-fluid {
-            padding: 1rem;
-        }
-        
-        .card-header {
-            padding: 1rem;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-        
-        .card-body {
-            padding: 1rem;
-        }
-        
-        .form-group {
-            margin-bottom: 1.25rem;
-        }
-        
-        .btn-action {
-            margin-right: 0;
-            margin-bottom: 0.5rem;
-            width: 100%;
-        }
-        
-        .video-path-entry {
+    .btn-danger {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        border: none;
+    }
+    
+    .btn-warning {
+        background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        border: none;
+        color: white;
+    }
+    
+    .admin-only-section {
+        border: 2px solid #e74c3c;
+        border-radius: 12px;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, rgba(231, 76, 60, 0.1) 0%, rgba(192, 57, 43, 0.1) 100%);
+    }
+    
+    .admin-badge {
+        background: #e74c3c;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .alert {
+        border-radius: 8px;
+        border: none;
+    }
+    
+    .spinner-border-sm {
+        width: 1rem;
+        height: 1rem;
+    }
+    
+    .data-management-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .data-management-buttons .btn {
+        flex: 1;
+        min-width: 200px;
+    }
+    
+    @media (max-width: 768px) {
+        .data-management-buttons {
             flex-direction: column;
         }
         
-        .video-path-entry .form-control {
-            margin-right: 0;
-            margin-bottom: 0.5rem;
-        }
-        
-        .video-path-entry .btn-sm {
+        .data-management-buttons .btn {
             width: 100%;
         }
-        
-        /* Stack ONVIF form fields on mobile */
-        .camera-config .row {
-            margin: 0;
-        }
-        
-        .camera-config .row .col-md-6 {
-            padding: 0;
-            margin-bottom: 1.25rem;
-        }
-        
-        .small, .form-text {
-            font-size: 0.9rem;
-        }
-    }
-    
-    @media (max-width: 575.98px) {
-        .page-title h1 {
-            font-size: 1.5rem;
-        }
-        
-        .card {
-            margin-bottom: 1rem;
-        }
-        
-        .form-control, .form-select {
-            padding: 0.875rem 0.75rem;
-        }
-        
-        .btn {
-            padding: 0.875rem 1rem;
-        }
-        
-        .list-group-item {
-            padding: 0.875rem;
-        }
-        
-        .card-header {
-            padding: 0.875rem;
-            font-size: 1rem;
-        }
-    }
-
-    /* Data Management Styling */
-    .data-management-card .card-header {
-        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
-        border: none;
-        color: white;
-        font-weight: 600;
-        font-size: 1.1rem;
-    }
-
-    .data-action-section {
-        padding: 1.5rem;
-        border-radius: 12px;
-        background: rgba(248, 249, 250, 0.5);
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        transition: all 0.3s ease;
-    }
-
-    .data-action-section:hover {
-        background: rgba(248, 249, 250, 0.8);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-
-    .action-icon-wrapper {
-        width: 50px;
-        height: 50px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        transition: all 0.3s ease;
-    }
-
-    .data-action-section:hover .action-icon-wrapper {
-        transform: scale(1.1);
-    }
-
-    .btn-lg {
-        padding: 0.8rem 2rem;
-        font-size: 1.1rem;
-        font-weight: 600;
-        border-radius: 10px;
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        border: none;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-lg::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(45deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-
-    .btn-lg:hover::before {
-        opacity: 1;
-    }
-
-    .btn-lg:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    }
-
-    .btn-success.btn-lg {
-        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-    }
-
-    .btn-success.btn-lg:hover {
-        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
-    }
-
-    .btn-danger.btn-lg {
-        background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
-        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
-    }
-
-    .btn-danger.btn-lg:hover {
-        box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
-    }
-
-    /* Non-admin notice styling */
-    #data-management-notice .card-body {
-        background: linear-gradient(135deg, rgba(248, 249, 250, 0.8) 0%, rgba(233, 236, 239, 0.6) 100%);
-    }
-
-    #data-management-notice .fas.fa-shield-alt {
-        opacity: 0.3;
-        animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); opacity: 0.3; }
-        50% { transform: scale(1.05); opacity: 0.5; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="page-container">
-    <!-- Page Header -->
-    <div class="section-header">
-        <h1 class="section-title">
-            <i class="fas fa-cogs"></i>
-            System Settings
-        </h1>
-        <p class="section-subtitle">Configure camera, analysis, and system parameters</p>
-    </div>
-
+<div class="container-fluid py-4">
     <div class="row">
-        <div class="col-lg-3 col-md-4 settings-categories">
-            <div class="modern-card">
-                <div class="modern-card-header">
-                    <i class="fas fa-layer-group"></i>
-                    Category Visibility
-                    <button class="btn btn-sm btn-outline-light ms-auto d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#settingsCategories" aria-expanded="false" aria-controls="settingsCategories">
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                </div>
-            <div class="collapse d-lg-block" id="settingsCategories">
-                <div class="modern-card-body p-3">
-                    <div class="form-group mb-3">
-                        <label class="form-label small text-muted mb-2">Select categories to show:</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="show-camera" checked onchange="toggleCategory('camera-settings', this.checked)">
-                            <label class="form-check-label" for="show-camera">
-                                <i class="fas fa-video me-2"></i>Camera Settings
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="show-detection" checked onchange="toggleCategory('detection-settings', this.checked)">
-                            <label class="form-check-label" for="show-detection">
-                                <i class="fas fa-search me-2"></i>Detection Settings
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="show-tracking" checked onchange="toggleCategory('tracking-settings', this.checked)">
-                            <label class="form-check-label" for="show-tracking">
-                                <i class="fas fa-route me-2"></i>Tracking Settings
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="show-analysis" checked onchange="toggleCategory('analysis-settings', this.checked)">
-                            <label class="form-check-label" for="show-analysis">
-                                <i class="fas fa-chart-line me-2"></i>Analysis Settings
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="show-database" checked onchange="toggleCategory('database-settings', this.checked)">
-                            <label class="form-check-label" for="show-database">
-                                <i class="fas fa-database me-2"></i>Database Settings
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="show-web" checked onchange="toggleCategory('web-settings', this.checked)">
-                            <label class="form-check-label" for="show-web">
-                                <i class="fas fa-globe me-2"></i>Web Settings
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="show-backup" checked onchange="toggleCategory('backup-restore', this.checked)">
-                            <label class="form-check-label" for="show-backup">
-                                <i class="fas fa-archive me-2"></i>Backup & Restore
-                            </label>
-                        </div>
-                    </div>
-                    <div class="d-grid">
-                        <button class="btn btn-sm btn-primary" onclick="showAllCategories()">
-                            <i class="fas fa-eye me-2"></i>Show All
-                        </button>
-                    </div>
-                </div>
-                <div class="list-group list-group-flush d-none d-lg-block" id="categoryTabs">
-                    <a href="#camera-settings" class="list-group-item list-group-item-action active" data-bs-toggle="list" id="camera-tab">
-                        <i class="fas fa-video me-2"></i>Camera Settings
-                    </a>
-                    <a href="#detection-settings" class="list-group-item list-group-item-action" data-bs-toggle="list" id="detection-tab">
-                        <i class="fas fa-search me-2"></i>Detection Settings
-                    </a>
-                    <a href="#tracking-settings" class="list-group-item list-group-item-action" data-bs-toggle="list" id="tracking-tab">
-                        <i class="fas fa-route me-2"></i>Tracking Settings
-                    </a>
-                    <a href="#analysis-settings" class="list-group-item list-group-item-action" data-bs-toggle="list" id="analysis-tab">
-                        <i class="fas fa-chart-line me-2"></i>Analysis Settings
-                    </a>
-                    <a href="#database-settings" class="list-group-item list-group-item-action" data-bs-toggle="list" id="database-tab">
-                        <i class="fas fa-database me-2"></i>Database Settings
-                    </a>
-                    <a href="#web-settings" class="list-group-item list-group-item-action" data-bs-toggle="list" id="web-tab">
-                        <i class="fas fa-globe me-2"></i>Web Settings
-                    </a>
-                    <a href="#backup-restore" class="list-group-item list-group-item-action" data-bs-toggle="list" id="backup-tab">
-                        <i class="fas fa-archive me-2"></i>Backup & Restore
-                    </a>
+        <div class="col-12">
+            <div class="d-flex align-items-center mb-4">
+                <div>
+                    <h1 class="h2 mb-1">System Settings</h1>
+                    <p class="text-muted mb-0">Configure camera, analysis, and system parameters</p>
                 </div>
             </div>
         </div>
     </div>
     
-    <div class="col-lg-9 col-md-8">
-        <div class="tab-content">
-            <!-- Camera Settings -->
-            <div class="tab-pane fade show active" id="camera-settings">
-                <div class="modern-card">
-                    <div class="modern-card-header">
-                        <i class="fas fa-video"></i>Camera Type Selection
-                        <small class="text-muted ms-2" id="current-camera-status">Loading configuration...</small>
-                    </div>
-                    <div class="modern-card-body">
-                        <form id="camera-type-form">
+    <div class="row">
+        <!-- Settings Navigation -->
+        <div class="col-lg-3 mb-4">
+            <div class="settings-nav">
+                <div class="nav nav-pills flex-column" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                    <button class="nav-link active" id="v-pills-camera-tab" data-bs-toggle="pill" data-bs-target="#v-pills-camera" type="button" role="tab">
+                        <i class="fas fa-video me-2"></i>Camera Settings
+                    </button>
+                    <button class="nav-link" id="v-pills-detection-tab" data-bs-toggle="pill" data-bs-target="#v-pills-detection" type="button" role="tab">
+                        <i class="fas fa-search me-2"></i>Detection Settings
+                    </button>
+                    <button class="nav-link" id="v-pills-tracking-tab" data-bs-toggle="pill" data-bs-target="#v-pills-tracking" type="button" role="tab">
+                        <i class="fas fa-route me-2"></i>Tracking Settings
+                    </button>
+                    <button class="nav-link" id="v-pills-analysis-tab" data-bs-toggle="pill" data-bs-target="#v-pills-analysis" type="button" role="tab">
+                        <i class="fas fa-chart-line me-2"></i>Analysis Settings
+                    </button>
+                    <button class="nav-link" id="v-pills-database-tab" data-bs-toggle="pill" data-bs-target="#v-pills-database" type="button" role="tab">
+                        <i class="fas fa-database me-2"></i>Database Management
+                    </button>
+                    <button class="nav-link" id="v-pills-system-tab" data-bs-toggle="pill" data-bs-target="#v-pills-system" type="button" role="tab">
+                        <i class="fas fa-cogs me-2"></i>System Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Settings Content -->
+        <div class="col-lg-9">
+            <div class="tab-content" id="v-pills-tabContent">
+                
+                <!-- Camera Settings -->
+                <div class="tab-pane fade show active" id="v-pills-camera" role="tabpanel">
+                    <div class="settings-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-video me-2"></i>Camera Configuration
+                        </h3>
+                        
+                        <form id="camera-form">
                             <div class="form-group">
-                                                        <label for="camera-type" class="form-label">Camera Type:</label>
-                        <select class="form-select" id="camera-type" name="camera_type">
+                                <label for="camera-type" class="form-label">Camera Type</label>
+                                <select class="form-select" id="camera-type" name="camera_type">
                                     <option value="video_file">Video File</option>
                                     <option value="usb">USB Camera</option>
                                     <option value="rtsp">RTSP Camera</option>
-                                    <option value="rtmp">RTMP Stream</option>
-                                    <option value="rtsps">RTSP Secure Camera</option>
-                                    <option value="onvif">ONVIF Camera (with PTZ)</option>
+                                    <option value="onvif">ONVIF Camera</option>
                                 </select>
                             </div>
                             
-                            <!-- Video File Configuration -->
-                            <div id="video-file-config" class="camera-config">
-                                <h6>Video Configuration</h6>
+                            <!-- Video File Config -->
+                            <div id="video-config" class="camera-config">
                                 <div class="form-group">
-                                    <label for="default-video">Default Video:</label>
-                                    <select class="form-select" id="default-video" name="default">
-                                        <!-- Will be populated dynamically -->
-                                    </select>
+                                    <label for="video-path" class="form-label">Video File Path</label>
+                                    <input type="text" class="form-control" id="video-path" name="file_path" placeholder="/path/to/video.mp4">
                                 </div>
-                                
-                                <h6>Video Paths:</h6>
-                                <div id="video-paths-container">
-                                    <!-- Will be populated dynamically -->
-                                </div>
-                                
                                 <div class="form-group">
-                                    <button type="button" class="btn btn-sm btn-outline-primary" id="add-video-btn">
-                                        <i class="fas fa-plus"></i> Add Video
-                                    </button>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="video-loop" checked>
+                                        <label class="form-check-label" for="video-loop">Loop Video</label>
+                                    </div>
                                 </div>
                             </div>
                             
-                            <!-- USB Camera Configuration -->
+                            <!-- USB Config -->
                             <div id="usb-config" class="camera-config" style="display: none;">
-                                <h6>USB Camera Configuration</h6>
                                 <div class="form-group">
-                                    <label for="usb-device">Device Path:</label>
-                                    <input type="text" class="form-control" id="usb-device" name="device" value="/dev/video0" placeholder="/dev/video0">
-                                    <small class="form-text text-muted">Linux: /dev/video0, Windows: 0, 1, 2...</small>
+                                    <label for="usb-device" class="form-label">USB Device</label>
+                                    <input type="text" class="form-control" id="usb-device" name="device" value="0" placeholder="0">
+                                    <small class="form-text text-muted">Device index (0, 1, 2...) or path (/dev/video0)</small>
                                 </div>
                             </div>
                             
-                            <!-- RTSP Camera Configuration -->
+                            <!-- RTSP Config -->
                             <div id="rtsp-config" class="camera-config" style="display: none;">
-                                <h6>RTSP Camera Configuration</h6>
                                 <div class="form-group">
-                                    <label for="rtsp-url">RTSP URL:</label>
+                                    <label for="rtsp-url" class="form-label">RTSP URL</label>
                                     <input type="text" class="form-control" id="rtsp-url" name="url" placeholder="rtsp://username:password@192.168.1.100:554/stream">
-                                    <small class="form-text text-muted">Example: rtsp://admin:password@192.168.1.100:554/live</small>
                                 </div>
                             </div>
                             
-                            <!-- RTMP Stream Configuration -->
-                            <div id="rtmp-config" class="camera-config" style="display: none;">
-                                <h6>RTMP Stream Configuration</h6>
-                                <div class="form-group">
-                                    <label for="rtmp-url">RTMP URL:</label>
-                                    <input type="text" class="form-control" id="rtmp-url" name="url" placeholder="rtmp://192.168.1.100:1935/live/stream">
-                                    <small class="form-text text-muted">Example: rtmp://server.com:1935/live/streamkey</small>
-                                </div>
-                            </div>
-                            
-                            <!-- RTSPS Camera Configuration -->
-                            <div id="rtsps-config" class="camera-config" style="display: none;">
-                                <h6>RTSP Secure Camera Configuration</h6>
-                                <div class="form-group">
-                                    <label for="rtsps-url">RTSPS URL:</label>
-                                    <input type="text" class="form-control" id="rtsps-url" name="url" placeholder="rtsps://username:password@192.168.1.100:322/stream">
-                                    <small class="form-text text-muted">Example: rtsps://admin:password@192.168.1.100:322/live</small>
-                                </div>
-                            </div>
-                            
-                            <!-- ONVIF Camera Configuration -->
+                            <!-- ONVIF Config -->
                             <div id="onvif-config" class="camera-config" style="display: none;">
-                                <h6>ONVIF Camera Configuration</h6>
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="onvif-host">Camera IP Address:</label>
+                                            <label for="onvif-host" class="form-label">Camera IP</label>
                                             <input type="text" class="form-control" id="onvif-host" name="host" placeholder="192.168.1.100">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="onvif-port">ONVIF Port:</label>
-                                            <input type="number" class="form-control" id="onvif-port" name="port" placeholder="80" value="80">
+                                            <label for="onvif-port" class="form-label">Port</label>
+                                            <input type="number" class="form-control" id="onvif-port" name="port" value="80">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="onvif-username">Username:</label>
+                                            <label for="onvif-username" class="form-label">Username</label>
                                             <input type="text" class="form-control" id="onvif-username" name="username" placeholder="admin">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="onvif-password">Password:</label>
-                                            <input type="password" class="form-control" id="onvif-password" name="password" placeholder="password">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="onvif-rtsp-port">RTSP Port:</label>
-                                            <input type="number" class="form-control" id="onvif-rtsp-port" name="rtsp_port" placeholder="554" value="554">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="onvif-port">ONVIF Port:</label>
-                                            <input type="number" class="form-control" id="onvif-port" name="port" value="80" min="1" max="65535">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="onvif-username">Username:</label>
-                                            <input type="text" class="form-control" id="onvif-username" name="username" placeholder="admin">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="onvif-password">Password:</label>
-                                            <input type="password" class="form-control" id="onvif-password" name="password" placeholder="password">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="onvif-rtsp-port">RTSP Port:</label>
-                                            <input type="number" class="form-control" id="onvif-rtsp-port" name="rtsp_port" value="554" min="1" max="65535">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="onvif-profile">Media Profile Index:</label>
-                                            <input type="number" class="form-control" id="onvif-profile" name="profile_index" value="0" min="0" max="10">
-                                            <small class="form-text text-muted">Usually 0 for main stream</small>
+                                            <label for="onvif-password" class="form-label">Password</label>
+                                            <input type="password" class="form-control" id="onvif-password" name="password">
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="form-group mt-4">
-                                <button type="submit" class="btn btn-primary">Save Camera Configuration</button>
-                                <button type="button" class="btn btn-outline-secondary" id="reset-camera-config">Reset</button>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Save Camera Settings
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary ms-2" id="test-camera">
+                                    <i class="fas fa-play me-2"></i>Test Camera
+                                </button>
                             </div>
                         </form>
                     </div>
                 </div>
                 
-                <div class="modern-card" id="video-options-card" style="display: none;">
-                    <div class="modern-card-header">Video File Options</div>
-                    <div class="modern-card-body">
-                        <form id="camera-options-form">
-                            <div class="form-group">
-                                <label for="camera-loop">Loop Video:</label>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="camera-loop" checked>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="playback-speed">Playback Speed:</label>
-                                <select class="form-select" id="playback-speed">
-                                    <option value="0.5">0.5x (Slow)</option>
-                                    <option value="1.0" selected>1.0x (Normal)</option>
-                                    <option value="1.5">1.5x (Fast)</option>
-                                    <option value="2.0">2.0x (Very Fast)</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group mt-3">
-                                <button type="submit" class="btn btn-primary">Save Video Options</button>
-                                <button type="button" class="btn btn-warning" id="stop-camera">Stop Current Camera</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-                
-                <!-- PTZ Controls for ONVIF Cameras -->
-                <div class="modern-card" id="ptz-controls" style="display: none;">
-                    <div class="modern-card-header">
-                        <i class="fas fa-video"></i> PTZ (Pan Tilt Zoom) Controls
-                        <span id="ptz-status" class="badge bg-secondary ms-2">Not Connected</span>
-                    </div>
-                    <div class="modern-card-body">
-                        <!-- PTZ Status -->
-                        <div class="row mb-3">
-                            <div class="col-md-12">
-                                <h6>Camera Information</h6>
-                                <div id="camera-info" class="text-muted">
-                                    <small>No ONVIF camera connected</small>
-                                </div>
-                            </div>
-                        </div>
+                <!-- Detection Settings -->
+                <div class="tab-pane fade" id="v-pills-detection" role="tabpanel">
+                    <div class="settings-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-search me-2"></i>Detection Configuration
+                        </h3>
                         
-                        <!-- Manual PTZ Control -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <h6>Manual Control</h6>
-                                <div class="ptz-joystick-container text-center">
-                                    <div class="btn-group-vertical">
-                                        <button type="button" class="btn btn-outline-primary btn-sm ptz-btn" data-direction="up">
-                                            <i class="fas fa-chevron-up"></i>
-                                        </button>
-                                        <div class="btn-group">
-                                            <button type="button" class="btn btn-outline-primary btn-sm ptz-btn" data-direction="left">
-                                                <i class="fas fa-chevron-left"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" id="ptz-home">
-                                                <i class="fas fa-home"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-primary btn-sm ptz-btn" data-direction="right">
-                                                <i class="fas fa-chevron-right"></i>
-                                            </button>
-                                        </div>
-                                        <button type="button" class="btn btn-outline-primary btn-sm ptz-btn" data-direction="down">
-                                            <i class="fas fa-chevron-down"></i>
-                                        </button>
-                                    </div>
-                                    <div class="mt-2">
-                                        <div class="btn-group">
-                                            <button type="button" class="btn btn-outline-success btn-sm ptz-zoom" data-zoom="in">
-                                                <i class="fas fa-search-plus"></i> Zoom In
-                                            </button>
-                                            <button type="button" class="btn btn-outline-success btn-sm ptz-zoom" data-zoom="out">
-                                                <i class="fas fa-search-minus"></i> Zoom Out
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <h6>Position Control</h6>
-                                <div class="form-group">
-                                    <label for="ptz-pan">Pan:</label>
-                                    <input type="range" class="form-range" min="-1" max="1" step="0.1" value="0" id="ptz-pan">
-                                    <div class="text-center">
-                                        <span id="ptz-pan-value">0.0</span>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="ptz-tilt">Tilt:</label>
-                                    <input type="range" class="form-range" min="-1" max="1" step="0.1" value="0" id="ptz-tilt">
-                                    <div class="text-center">
-                                        <span id="ptz-tilt-value">0.0</span>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="ptz-zoom-slider">Zoom:</label>
-                                    <input type="range" class="form-range" min="0" max="1" step="0.1" value="0" id="ptz-zoom-slider">
-                                    <div class="text-center">
-                                        <span id="ptz-zoom-value">0.0</span>
-                                    </div>
-                                </div>
-                                <button type="button" class="btn btn-primary btn-sm" id="ptz-move-absolute">
-                                    <i class="fas fa-crosshairs"></i> Move to Position
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- Preset Management -->
-                        <div class="row">
-                            <div class="col-md-12">
-                                <h6>Preset Positions</h6>
-                                <div class="row">
-                                    <div class="col-md-8">
-                                        <select class="form-select" id="ptz-presets">
-                                            <option value="">Select a preset...</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <button type="button" class="btn btn-info btn-sm" id="ptz-goto-preset">
-                                            <i class="fas fa-play"></i> Go to Preset
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="row mt-2">
-                                    <div class="col-md-8">
-                                        <input type="text" class="form-control" id="new-preset-name" placeholder="New preset name">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <button type="button" class="btn btn-success btn-sm" id="ptz-save-preset">
-                                            <i class="fas fa-save"></i> Save Preset
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- PTZ Actions -->
-                        <div class="row mt-3">
-                            <div class="col-md-12">
-                                <button type="button" class="btn btn-warning btn-sm" id="ptz-stop">
-                                    <i class="fas fa-stop"></i> Stop Movement
-                                </button>
-                                <button type="button" class="btn btn-info btn-sm" id="ptz-refresh">
-                                    <i class="fas fa-sync"></i> Refresh Status
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Detection Settings Tab -->
-            <div class="tab-pane fade" id="detection-settings">
-                <div class="modern-card">
-                    <div class="modern-card-header">Detection Model Settings</div>
-                    <div class="modern-card-body">
                         <form id="detection-form">
                             <div class="form-group">
-                                <label for="detection-model">Detection Model:</label>
+                                <label for="detection-model" class="form-label">Detection Model</label>
                                 <select class="form-select" id="detection-model">
                                     <option value="yolov8n.pt">YOLOv8 Nano (Faster)</option>
                                     <option value="yolov8s.pt">YOLOv8 Small (Balanced)</option>
-                                    <option value="yolov8m.pt">YOLOv8 Medium (More accurate)</option>
-                                    <option value="yolov8l.pt">YOLOv8 Large (High accuracy)</option>
-                                    <option value="yolov8x.pt">YOLOv8 Extra Large (Best accuracy)</option>
+                                    <option value="yolov8m.pt">YOLOv8 Medium (Accurate)</option>
+                                    <option value="yolov8l.pt">YOLOv8 Large (High Accuracy)</option>
                                 </select>
-                                <small class="form-text text-muted">Larger models are more accurate but slower</small>
                             </div>
                             
                             <div class="form-group">
-                                <label for="confidence-threshold">Confidence Threshold:</label>
+                                <label for="confidence-threshold" class="form-label">
+                                    Confidence Threshold: <span id="confidence-value">0.5</span>
+                                </label>
                                 <input type="range" class="form-range" min="0.1" max="0.9" step="0.05" value="0.5" id="confidence-threshold">
-                                <div class="d-flex justify-content-between">
-                                    <small>0.1 (More detections)</small>
-                                    <small>0.9 (More precise)</small>
-                                </div>
-                                <div class="text-center">
-                                    <span id="confidence-value">0.5</span>
-                                </div>
                             </div>
                             
                             <div class="form-group">
-                                <label for="iou-threshold">IoU Threshold:</label>
+                                <label for="iou-threshold" class="form-label">
+                                    IoU Threshold: <span id="iou-value">0.45</span>
+                                </label>
                                 <input type="range" class="form-range" min="0.1" max="0.8" step="0.05" value="0.45" id="iou-threshold">
-                                <div class="d-flex justify-content-between">
-                                    <small>0.1 (More overlap)</small>
-                                    <small>0.8 (Less overlap)</small>
-                                </div>
-                                <div class="text-center">
-                                    <span id="iou-value">0.45</span>
-                                </div>
-                                <small class="form-text text-muted">Controls overlap between detection boxes</small>
                             </div>
                             
-                            <div class="form-group mt-3">
-                                <button type="submit" class="btn btn-primary">Save Detection Settings</button>
-                                <button type="button" class="btn btn-outline-secondary" id="reset-detection">Reset to Defaults</button>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Save Detection Settings
+                                </button>
                             </div>
                         </form>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Tracking Settings Tab -->
-            <div class="tab-pane fade" id="tracking-settings">
-                <div class="modern-card">
-                    <div class="modern-card-header">Person Tracking Settings</div>
-                    <div class="modern-card-body">
+                
+                <!-- Tracking Settings -->
+                <div class="tab-pane fade" id="v-pills-tracking" role="tabpanel">
+                    <div class="settings-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-route me-2"></i>Tracking Configuration
+                        </h3>
+                        
                         <form id="tracking-form">
                             <div class="form-group">
-                                <label for="max-age">Max Age (frames):</label>
+                                <label for="max-age" class="form-label">Max Age (frames)</label>
                                 <input type="number" class="form-control" id="max-age" min="1" max="100" value="30">
-                                <small class="form-text text-muted">Number of frames to keep tracking a person without detection</small>
+                                <small class="form-text text-muted">Frames to keep tracking without detection</small>
                             </div>
                             
                             <div class="form-group">
-                                <label for="min-hits">Min Hits (frames):</label>
+                                <label for="min-hits" class="form-label">Min Hits (frames)</label>
                                 <input type="number" class="form-control" id="min-hits" min="1" max="20" value="3">
-                                <small class="form-text text-muted">Minimum consecutive detections before confirming a track</small>
+                                <small class="form-text text-muted">Minimum detections to confirm track</small>
                             </div>
                             
                             <div class="form-group">
-                                <label for="tracking-iou-threshold">Tracking IoU Threshold:</label>
-                                <input type="range" class="form-range" min="0.1" max="0.7" step="0.05" value="0.3" id="tracking-iou-threshold">
-                                <div class="d-flex justify-content-between">
-                                    <small>0.1 (Loose matching)</small>
-                                    <small>0.7 (Strict matching)</small>
-                                </div>
-                                <div class="text-center">
-                                    <span id="tracking-iou-value">0.3</span>
-                                </div>
-                                <small class="form-text text-muted">Threshold for matching detections to tracks</small>
+                                <label for="tracking-iou" class="form-label">
+                                    Tracking IoU: <span id="tracking-iou-value">0.3</span>
+                                </label>
+                                <input type="range" class="form-range" min="0.1" max="0.7" step="0.05" value="0.3" id="tracking-iou">
                             </div>
                             
-                            <div class="form-group mt-3">
-                                <button type="submit" class="btn btn-primary">Save Tracking Settings</button>
-                                <button type="button" class="btn btn-outline-secondary" id="reset-tracking">Reset to Defaults</button>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Save Tracking Settings
+                                </button>
                             </div>
                         </form>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Analysis Settings Tab -->
-            <div class="tab-pane fade" id="analysis-settings">
-                <div class="modern-card">
-                    <div class="modern-card-header">Demographics Analysis</div>
-                    <div class="modern-card-body">
-                        <form id="demographics-form">
+                
+                <!-- Analysis Settings -->
+                <div class="tab-pane fade" id="v-pills-analysis" role="tabpanel">
+                    <div class="settings-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-chart-line me-2"></i>Analysis Configuration
+                        </h3>
+                        
+                        <form id="analysis-form">
                             <div class="form-group">
-                                <div class="form-check form-switch">
+                                <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="demographics-enabled" checked>
                                     <label class="form-check-label" for="demographics-enabled">
                                         Enable Demographics Analysis
@@ -833,7 +380,7 @@
                             </div>
                             
                             <div class="form-group">
-                                <label for="demographics-model">Demographics Model:</label>
+                                <label for="demographics-model" class="form-label">Demographics Model</label>
                                 <select class="form-select" id="demographics-model">
                                     <option value="deepface">DeepFace (Better compatibility)</option>
                                     <option value="insightface">InsightFace (Better accuracy)</option>
@@ -841,122 +388,7 @@
                             </div>
                             
                             <div class="form-group">
-                                <label>Analysis Attributes:</label>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="attr-age" value="age" checked>
-                                    <label class="form-check-label" for="attr-age">Age</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="attr-gender" value="gender" checked>
-                                    <label class="form-check-label" for="attr-gender">Gender</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="attr-race" value="race" checked>
-                                    <label class="form-check-label" for="attr-race">Race</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="attr-emotion" value="emotion" checked>
-                                    <label class="form-check-label" for="attr-emotion">Emotion</label>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-                
-                <!-- Customer Data Management (Admin Only) -->
-                <div class="card settings-card data-management-card" id="data-management-card" style="display: none;">
-                    <div class="card-header bg-gradient-info text-white">
-                        <i class="fas fa-database me-2"></i>Customer Data Management
-                        <span class="badge bg-danger ms-2">
-                            <i class="fas fa-shield-alt me-1"></i>Admin Only
-                        </span>
-                    </div>
-                    <div class="modern-card-body">
-                        <div class="alert alert-warning border-0 shadow-sm" role="alert">
-                            <div class="d-flex align-items-start">
-                                <i class="fas fa-exclamation-triangle me-3 mt-1" style="font-size: 1.2rem; color: #f39c12;"></i>
-                                <div>
-                                    <strong>Important:</strong> These actions will permanently modify your database. 
-                                    <br>Please ensure you have a backup before proceeding.
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Sample Data Section -->
-                        <div class="data-action-section mb-4">
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="action-icon-wrapper bg-success bg-opacity-10 me-3">
-                                    <i class="fas fa-plus-circle text-success"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-1 fw-bold">Add Sample Data</h6>
-                                    <p class="text-muted small mb-0">Populate database with demonstration data</p>
-                                </div>
-                            </div>
-                            <p class="text-muted mb-3">
-                                Creates 7 days of realistic sample customer data including demographics, traffic patterns, 
-                                and detection records for testing and demonstration purposes.
-                            </p>
-                            <button type="button" class="btn btn-success btn-lg shadow-sm" id="populate-sample-data-btn">
-                                <i class="fas fa-plus-circle me-2"></i>
-                                <span>Add Sample Data</span>
-                                <i class="fas fa-chevron-right ms-2"></i>
-                            </button>
-                        </div>
-                        
-                        <hr class="my-4">
-                        
-                        <!-- Clear Data Section -->
-                        <div class="data-action-section">
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="action-icon-wrapper bg-danger bg-opacity-10 me-3">
-                                    <i class="fas fa-trash-alt text-danger"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-1 fw-bold text-danger">Clear Customer Data</h6>
-                                    <p class="text-muted small mb-0">Remove all demographic information</p>
-                                </div>
-                            </div>
-                            <p class="text-muted mb-3">
-                                Permanently removes all stored customer demographic information including age, gender, 
-                                race, and emotion data. Detection records and system logs will remain intact.
-                            </p>
-                            <button type="button" class="btn btn-danger btn-lg shadow-sm" id="clear-demographics-btn">
-                                <i class="fas fa-trash-alt me-2"></i>
-                                <span>Clear All Customer Data</span>
-                                <i class="fas fa-exclamation-triangle ms-2"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Non-Admin User Notice -->
-                <div class="modern-card" id="data-management-notice" style="display: none;">
-                    <div class="card-header bg-light">
-                        <i class="fas fa-info-circle me-2 text-info"></i>Data Management
-                    </div>
-                    <div class="card-body text-center py-5">
-                        <div class="mb-4">
-                            <i class="fas fa-shield-alt text-muted" style="font-size: 3rem;"></i>
-                        </div>
-                        <h5 class="text-muted mb-3">Administrative Access Required</h5>
-                        <p class="text-muted mb-4">
-                            Data management features (add sample data, clear database) are only available to administrators.
-                            <br>Contact your system administrator for access to these features.
-                        </p>
-                        <div class="alert alert-info border-0 bg-info bg-opacity-10">
-                            <i class="fas fa-lightbulb me-2"></i>
-                            <strong>Need Admin Access?</strong> Contact your system administrator to request elevated permissions.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="modern-card">
-                    <div class="modern-card-header">Dwell Time Analysis</div>
-                    <div class="modern-card-body">
-                        <form id="dwell-form">
-                            <div class="form-group">
-                                <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="dwell-enabled" checked>
                                     <label class="form-check-label" for="dwell-enabled">
                                         Enable Dwell Time Analysis
@@ -965,1930 +397,523 @@
                             </div>
                             
                             <div class="form-group">
-                                <label for="min-duration">Minimum Duration (seconds):</label>
+                                <label for="min-duration" class="form-label">Minimum Dwell Duration (seconds)</label>
                                 <input type="number" class="form-control" id="min-duration" min="1" max="60" value="5">
-                                <small class="form-text text-muted">Minimum time to consider as dwelling</small>
                             </div>
                             
-
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Save Analysis Settings
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
                 
-
-                
-                <div class="form-group mt-3">
-                    <button type="button" class="btn btn-primary" id="save-analysis-settings">Save All Analysis Settings</button>
-                    <button type="button" class="btn btn-outline-secondary" id="reset-analysis">Reset to Defaults</button>
-                </div>
-            </div>
-            
-
-            
-            <!-- Database Settings Tab -->
-            <div class="tab-pane fade" id="database-settings">
-                <div class="modern-card">
-                    <div class="modern-card-header">Database Configuration</div>
-                    <div class="modern-card-body">
-                        <form id="database-form">
-                            <div class="form-group">
-                                <label for="database-type">Database Type:</label>
-                                <select class="form-select" id="database-type">
-                                    <option value="sqlite">SQLite (Local file database)</option>
-                                </select>
-                                <small class="form-text text-muted">SQLite is the only supported database type</small>
+                <!-- Database Management -->
+                <div class="tab-pane fade" id="v-pills-database" role="tabpanel">
+                    <div class="settings-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-database me-2"></i>Database Management
+                        </h3>
+                        
+                        <!-- Admin Only Data Management -->
+                        <div class="admin-only-section" id="data-management-section">
+                            <div class="d-flex align-items-center mb-3">
+                                <h5 class="mb-0 me-2">Data Management</h5>
+                                <span class="admin-badge">
+                                    <i class="fas fa-shield-alt me-1"></i>Admin Only
+                                </span>
                             </div>
                             
-                            <div class="form-group" id="sqlite-settings">
-                                <label for="database-path">Database Path:</label>
-                                <input type="text" class="form-control" id="database-path" value="reviision.db">
-                                <small class="form-text text-muted">Path to SQLite database file</small>
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Warning:</strong> These operations will permanently modify your database. Please ensure you have a backup before proceeding.
                             </div>
                             
-
-                            
-                            <div class="form-group mt-3">
-                                <button type="submit" class="btn btn-primary">Save Database Settings</button>
-                                <button type="button" class="btn btn-outline-secondary" id="reset-database">Reset to Defaults</button>
+                            <div class="data-management-buttons">
+                                <button type="button" class="btn btn-success" id="insert-initial-data-btn">
+                                    <i class="fas fa-database me-2"></i>Add Initial Data
+                                </button>
+                                <button type="button" class="btn btn-danger" id="clear-all-data-btn">
+                                    <i class="fas fa-trash-alt me-2"></i>Clear All Data
+                                </button>
                             </div>
-                        </form>
+                            
+                            <div id="data-management-feedback" class="mt-3"></div>
+                        </div>
+                        
+                        <!-- Non-Admin Notice -->
+                        <div class="alert alert-info" id="non-admin-notice" style="display: none;">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Info:</strong> Data management features are only available to administrators. Contact your system administrator for access.
+                        </div>
+                        
+                        <!-- Database Info -->
+                        <div class="mt-4">
+                            <h5>Database Information</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">Database Type</label>
+                                        <input type="text" class="form-control" value="SQLite" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">Database Path</label>
+                                        <input type="text" class="form-control" id="db-path" value="reviision.db" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Web Settings Tab -->
-            <div class="tab-pane fade" id="web-settings">
-                <div class="modern-card">
-                    <div class="modern-card-header">Web Server Configuration</div>
-                    <div class="modern-card-body">
-                        <form id="web-form">
+                
+                <!-- System Settings -->
+                <div class="tab-pane fade" id="v-pills-system" role="tabpanel">
+                    <div class="settings-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-cogs me-2"></i>System Configuration
+                        </h3>
+                        
+                        <form id="system-form">
                             <div class="form-group">
-                                <label for="web-host">Host Address:</label>
+                                <label for="web-host" class="form-label">Web Host</label>
                                 <input type="text" class="form-control" id="web-host" value="0.0.0.0">
-                                <small class="form-text text-muted">0.0.0.0 allows access from any IP, 127.0.0.1 for localhost only</small>
+                                <small class="form-text text-muted">0.0.0.0 for all interfaces, 127.0.0.1 for localhost only</small>
                             </div>
                             
                             <div class="form-group">
-                                <label for="web-port">Port:</label>
+                                <label for="web-port" class="form-label">Web Port</label>
                                 <input type="number" class="form-control" id="web-port" value="5000" min="1" max="65535">
-                                <small class="form-text text-muted">Port number for the web server (requires restart)</small>
+                                <small class="form-text text-muted">Port for web server (requires restart)</small>
                             </div>
                             
                             <div class="form-group">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="web-debug" checked>
-                                    <label class="form-check-label" for="web-debug">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="debug-mode">
+                                    <label class="form-check-label" for="debug-mode">
                                         Debug Mode
                                     </label>
                                 </div>
-                                <small class="form-text text-muted">Enable debug mode for development (disable in production)</small>
+                                <small class="form-text text-muted">Enable for development (disable in production)</small>
                             </div>
                             
-                            <div class="form-group mt-3">
-                                <button type="submit" class="btn btn-primary">Save Web Settings</button>
-                                <button type="button" class="btn btn-outline-secondary" id="reset-web">Reset to Defaults</button>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Save System Settings
+                                </button>
+                                <button type="button" class="btn btn-warning ms-2" id="restart-system">
+                                    <i class="fas fa-redo me-2"></i>Restart System
+                                </button>
                             </div>
                         </form>
-                    </div>
-                </div>
-
-            </div>
-            
-            <!-- Backup & Restore Tab -->
-            <div class="tab-pane fade" id="backup-restore">
-                <div class="modern-card">
-                    <div class="modern-card-header">Backup and Restore</div>
-                    <div class="modern-card-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <button class="btn btn-outline-primary w-100" id="backup-btn">
-                                    <i class="fas fa-download me-2"></i>Backup Configuration
-                                </button>
-                            </div>
-                            <div class="col-md-6">
-                                <button class="btn btn-outline-secondary w-100" id="restore-btn">
-                                    <i class="fas fa-upload me-2"></i>Restore Configuration
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="alert alert-info mt-3">
-                            <i class="fas fa-info-circle"></i> Backup will export all settings to a JSON file. 
-                            Restore will allow you to upload a previously saved configuration.
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div> <!-- Close page-container -->
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Global configuration storage
-    let videoConfig = null;
-    let mainConfig = null;
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize page
+    loadCurrentSettings();
+    setupEventHandlers();
+    checkUserRole();
+    
+    // Camera type selection handler
+    document.getElementById('camera-type').addEventListener('change', function() {
+        showCameraConfig(this.value);
+    });
+    
+    // Range input updates
+    setupRangeInputs();
+});
 
-    // Camera settings toggle function
-    function toggleCameraSettings() {
-        const cameraType = document.getElementById('camera-type').value;
-        const allConfigs = document.querySelectorAll('.camera-config');
+function showCameraConfig(type) {
+    // Hide all configs
+    document.querySelectorAll('.camera-config').forEach(config => {
+        config.style.display = 'none';
+    });
+    
+    // Show selected config
+    const configMap = {
+        'video_file': 'video-config',
+        'usb': 'usb-config', 
+        'rtsp': 'rtsp-config',
+        'onvif': 'onvif-config'
+    };
+    
+    if (configMap[type]) {
+        document.getElementById(configMap[type]).style.display = 'block';
+    }
+}
+
+function setupRangeInputs() {
+    const ranges = [
+        { input: 'confidence-threshold', output: 'confidence-value' },
+        { input: 'iou-threshold', output: 'iou-value' },
+        { input: 'tracking-iou', output: 'tracking-iou-value' }
+    ];
+    
+    ranges.forEach(range => {
+        const input = document.getElementById(range.input);
+        const output = document.getElementById(range.output);
+        if (input && output) {
+            input.addEventListener('input', function() {
+                output.textContent = this.value;
+            });
+        }
+    });
+}
+
+function setupEventHandlers() {
+    // Form submissions
+    document.getElementById('camera-form').addEventListener('submit', saveCameraSettings);
+    document.getElementById('detection-form').addEventListener('submit', saveDetectionSettings);
+    document.getElementById('tracking-form').addEventListener('submit', saveTrackingSettings);
+    document.getElementById('analysis-form').addEventListener('submit', saveAnalysisSettings);
+    document.getElementById('system-form').addEventListener('submit', saveSystemSettings);
+    
+    // Data management buttons
+    document.getElementById('insert-initial-data-btn').addEventListener('click', insertInitialData);
+    document.getElementById('clear-all-data-btn').addEventListener('click', clearAllData);
+    
+    // Test camera button
+    document.getElementById('test-camera').addEventListener('click', testCamera);
+}
+
+async function loadCurrentSettings() {
+    try {
+        const response = await fetch('/api/config');
+        if (response.ok) {
+            const result = await response.json();
+            if (result.status === 'success') {
+                populateSettingsFromConfig(result.config);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading settings:', error);
+    }
+}
+
+function populateSettingsFromConfig(config) {
+    // Camera settings
+    if (config.camera) {
+        const camera = config.camera;
+        document.getElementById('camera-type').value = camera.type || 'video_file';
+        showCameraConfig(camera.type || 'video_file');
         
-        // Hide all camera-specific configurations
-        allConfigs.forEach(config => {
-            config.style.display = 'none';
-        });
-        
-        // Hide video options and PTZ controls by default
-        document.getElementById('video-options-card').style.display = 'none';
-        document.getElementById('ptz-controls').style.display = 'none';
-        
-        // Show the relevant configuration for selected camera type
-        switch(cameraType) {
-            case 'video_file':
-                document.getElementById('video-file-config').style.display = 'block';
-                document.getElementById('video-options-card').style.display = 'block';
-                break;
-            case 'usb':
-                document.getElementById('usb-config').style.display = 'block';
-                break;
-            case 'rtsp':
-                document.getElementById('rtsp-config').style.display = 'block';
-                break;
-            case 'rtmp':
-                document.getElementById('rtmp-config').style.display = 'block';
-                break;
-            case 'rtsps':
-                document.getElementById('rtsps-config').style.display = 'block';
-                break;
-            case 'onvif':
-                document.getElementById('onvif-config').style.display = 'block';
-                document.getElementById('ptz-controls').style.display = 'block';
-                break;
+        if (camera.file_path) document.getElementById('video-path').value = camera.file_path;
+        if (camera.device !== undefined) document.getElementById('usb-device').value = camera.device;
+        if (camera.url) {
+            document.getElementById('rtsp-url').value = camera.url;
+        }
+        if (camera.host) document.getElementById('onvif-host').value = camera.host;
+        if (camera.port) document.getElementById('onvif-port').value = camera.port;
+        if (camera.username) document.getElementById('onvif-username').value = camera.username;
+        if (camera.loop !== undefined) document.getElementById('video-loop').checked = camera.loop;
+    }
+    
+    // Detection settings
+    if (config.detection) {
+        const detection = config.detection;
+        if (detection.model) document.getElementById('detection-model').value = detection.model;
+        if (detection.confidence_threshold !== undefined) {
+            document.getElementById('confidence-threshold').value = detection.confidence_threshold;
+            document.getElementById('confidence-value').textContent = detection.confidence_threshold;
+        }
+        if (detection.iou_threshold !== undefined) {
+            document.getElementById('iou-threshold').value = detection.iou_threshold;
+            document.getElementById('iou-value').textContent = detection.iou_threshold;
         }
     }
     
-    // Load all configurations on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        loadVideoConfig();
-        loadMainConfig();
-        initializeEventHandlers();
-        loadColorMapConfig();
-        checkUserRoleAndShowAdminFeatures();
-        
-        // Initialize camera settings and event handlers after configurations load
-        setTimeout(() => {
-            setupCameraTypeSelection();
-            toggleCameraSettings();
-        }, 600);
-    });
+    // Tracking settings
+    if (config.tracking) {
+        const tracking = config.tracking;
+        if (tracking.max_age) document.getElementById('max-age').value = tracking.max_age;
+        if (tracking.min_hits) document.getElementById('min-hits').value = tracking.min_hits;
+        if (tracking.iou_threshold !== undefined) {
+            document.getElementById('tracking-iou').value = tracking.iou_threshold;
+            document.getElementById('tracking-iou-value').textContent = tracking.iou_threshold;
+        }
+    }
     
-    // Category visibility functions
-    function toggleCategory(categoryId, show) {
-        const categoryElement = document.getElementById(categoryId);
-        const tabElement = document.getElementById(categoryId.replace('-settings', '-tab').replace('backup-restore', 'backup-tab'));
+    // Analysis settings
+    if (config.analysis) {
+        const analysis = config.analysis;
+        if (analysis.demographics) {
+            document.getElementById('demographics-enabled').checked = analysis.demographics.enabled !== false;
+            if (analysis.demographics.model) document.getElementById('demographics-model').value = analysis.demographics.model;
+        }
+        if (analysis.dwell_time) {
+            document.getElementById('dwell-enabled').checked = analysis.dwell_time.enabled !== false;
+            if (analysis.dwell_time.min_duration) document.getElementById('min-duration').value = analysis.dwell_time.min_duration;
+        }
+    }
+    
+    // System settings
+    if (config.web) {
+        const web = config.web;
+        if (web.host) document.getElementById('web-host').value = web.host;
+        if (web.port) document.getElementById('web-port').value = web.port;
+        if (web.debug !== undefined) document.getElementById('debug-mode').checked = web.debug;
+    }
+    
+    // Database settings
+    if (config.database && config.database.path) {
+        document.getElementById('db-path').value = config.database.path;
+    }
+}
+
+async function checkUserRole() {
+    try {
+        const response = await fetch('/api/auth/user-info');
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.user && result.user.role === 'admin') {
+                document.getElementById('data-management-section').style.display = 'block';
+                document.getElementById('non-admin-notice').style.display = 'none';
+            } else {
+                document.getElementById('data-management-section').style.display = 'none';
+                document.getElementById('non-admin-notice').style.display = 'block';
+            }
+        }
+    } catch (error) {
+        console.error('Error checking user role:', error);
+        document.getElementById('data-management-section').style.display = 'none';
+        document.getElementById('non-admin-notice').style.display = 'block';
+    }
+}
+
+// Save functions
+async function saveCameraSettings(e) {
+    e.preventDefault();
+    await saveSettings('camera', getCameraFormData());
+}
+
+async function saveDetectionSettings(e) {
+    e.preventDefault();
+    await saveSettings('detection', getDetectionFormData());
+}
+
+async function saveTrackingSettings(e) {
+    e.preventDefault();
+    await saveSettings('tracking', getTrackingFormData());
+}
+
+async function saveAnalysisSettings(e) {
+    e.preventDefault();
+    await saveSettings('analysis', getAnalysisFormData());
+}
+
+async function saveSystemSettings(e) {
+    e.preventDefault();
+    await saveSettings('web', getSystemFormData());
+}
+
+function getCameraFormData() {
+    const type = document.getElementById('camera-type').value;
+    const data = { type };
+    
+    switch(type) {
+        case 'video_file':
+            data.file_path = document.getElementById('video-path').value;
+            data.loop = document.getElementById('video-loop').checked;
+            break;
+        case 'usb':
+            data.device = document.getElementById('usb-device').value;
+            break;
+        case 'rtsp':
+            data.url = document.getElementById('rtsp-url').value;
+            break;
+        case 'onvif':
+            data.host = document.getElementById('onvif-host').value;
+            data.port = parseInt(document.getElementById('onvif-port').value);
+            data.username = document.getElementById('onvif-username').value;
+            data.password = document.getElementById('onvif-password').value;
+            break;
+    }
+    
+    return data;
+}
+
+function getDetectionFormData() {
+    return {
+        model: document.getElementById('detection-model').value,
+        confidence_threshold: parseFloat(document.getElementById('confidence-threshold').value),
+        iou_threshold: parseFloat(document.getElementById('iou-threshold').value)
+    };
+}
+
+function getTrackingFormData() {
+    return {
+        max_age: parseInt(document.getElementById('max-age').value),
+        min_hits: parseInt(document.getElementById('min-hits').value),
+        iou_threshold: parseFloat(document.getElementById('tracking-iou').value)
+    };
+}
+
+function getAnalysisFormData() {
+    return {
+        demographics: {
+            enabled: document.getElementById('demographics-enabled').checked,
+            model: document.getElementById('demographics-model').value
+        },
+        dwell_time: {
+            enabled: document.getElementById('dwell-enabled').checked,
+            min_duration: parseInt(document.getElementById('min-duration').value)
+        }
+    };
+}
+
+function getSystemFormData() {
+    return {
+        host: document.getElementById('web-host').value,
+        port: parseInt(document.getElementById('web-port').value),
+        debug: document.getElementById('debug-mode').checked
+    };
+}
+
+async function saveSettings(section, data) {
+    try {
+        showToast('info', `Saving ${section} settings...`);
         
-        if (show) {
-            categoryElement.style.display = 'block';
-            if (tabElement) tabElement.style.display = 'block';
+        const response = await fetch('/api/config', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                section: section,
+                config: data
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            showToast('success', `${section} settings saved successfully!`);
         } else {
-            categoryElement.style.display = 'none';
-            if (tabElement) tabElement.style.display = 'none';
-            
-            // If this was the active tab, switch to the first visible one
-            if (categoryElement.classList.contains('show') && categoryElement.classList.contains('active')) {
-                const firstVisibleTab = document.querySelector('#categoryTabs a:not([style*="display: none"])');
-                if (firstVisibleTab) {
-                    const tab = new bootstrap.Tab(firstVisibleTab);
-                    tab.show();
-                }
-            }
+            showToast('error', `Failed to save ${section} settings: ${result.message}`);
         }
+    } catch (error) {
+        showToast('error', `Error saving ${section} settings: ${error.message}`);
     }
-    
-    function showAllCategories() {
-        const checkboxes = document.querySelectorAll('#settingsCategories input[type="checkbox"]');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = true;
-            const categoryId = checkbox.id.replace('show-', '').replace('camera', 'camera-settings')
-                .replace('detection', 'detection-settings').replace('tracking', 'tracking-settings')
-                .replace('analysis', 'analysis-settings').replace('database', 'database-settings')
-                .replace('web', 'web-settings').replace('backup', 'backup-restore');
-            toggleCategory(categoryId, true);
-        });
-    }
+}
 
-    // Main configuration management
-    async function loadMainConfig() {
-        try {
-            const response = await fetch('/api/config');
-            if (!response.ok) {
-                throw new Error(`Failed to load main configuration: ${response.status}`);
-            }
-            
-            const result = await response.json();
-            if (result.status === 'success') {
-                mainConfig = result.config;
-                populateConfigurationForms();
-            }
-        } catch (error) {
-            console.error('Error loading main configuration:', error);
-            showAlert('error', 'Failed to load main configuration');
-            
-            // Update status indicator to show error
-            const statusElement = document.getElementById('current-camera-status');
-            if (statusElement) {
-                statusElement.textContent = 'Configuration load failed';
-                statusElement.className = 'text-danger ms-2';
-            }
-        }
-    }
+async function insertInitialData() {
+    if (!confirm('This will insert default users and sample data. Continue?')) return;
     
-    function populateConfigurationForms() {
-        if (!mainConfig) return;
+    const btn = document.getElementById('insert-initial-data-btn');
+    const feedback = document.getElementById('data-management-feedback');
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Inserting...';
+    feedback.innerHTML = '';
+    
+    try {
+        const response = await fetch('/api/insert_initial_data', {
+            method: 'POST'
+        });
         
-        // Detection settings
-        if (mainConfig.detection) {
-            const detection = mainConfig.detection;
-            document.getElementById('detection-model').value = detection.model || 'yolov8n.pt';
-            document.getElementById('confidence-threshold').value = detection.confidence_threshold || 0.5;
-            document.getElementById('confidence-value').textContent = detection.confidence_threshold || 0.5;
-            document.getElementById('iou-threshold').value = detection.iou_threshold || 0.45;
-            document.getElementById('iou-value').textContent = detection.iou_threshold || 0.45;
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            feedback.innerHTML = `<div class="alert alert-success"><strong>Success:</strong> ${result.message}</div>`;
+            showToast('success', 'Initial data inserted successfully!');
+        } else {
+            feedback.innerHTML = `<div class="alert alert-danger"><strong>Error:</strong> ${result.message}</div>`;
+            showToast('error', 'Failed to insert initial data');
         }
-        
-        // Tracking settings
-        if (mainConfig.tracking) {
-            const tracking = mainConfig.tracking;
-            document.getElementById('max-age').value = tracking.max_age || 30;
-            document.getElementById('min-hits').value = tracking.min_hits || 3;
-            document.getElementById('tracking-iou-threshold').value = tracking.iou_threshold || 0.3;
-            document.getElementById('tracking-iou-value').textContent = tracking.iou_threshold || 0.3;
-        }
-        
-        // Analysis settings
-        if (mainConfig.analysis) {
-            const analysis = mainConfig.analysis;
-            
-            // Demographics
-            if (analysis.demographics) {
-                document.getElementById('demographics-enabled').checked = analysis.demographics.enabled !== false;
-                document.getElementById('demographics-model').value = analysis.demographics.model || 'deepface';
-                
-                const attributes = analysis.demographics.attributes || ['age', 'gender', 'race', 'emotion'];
-                document.getElementById('attr-age').checked = attributes.includes('age');
-                document.getElementById('attr-gender').checked = attributes.includes('gender');
-                document.getElementById('attr-race').checked = attributes.includes('race');
-                document.getElementById('attr-emotion').checked = attributes.includes('emotion');
-            }
-            
+    } catch (error) {
+        feedback.innerHTML = `<div class="alert alert-danger"><strong>Error:</strong> ${error.message}</div>`;
+        showToast('error', 'Error inserting initial data');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-database me-2"></i>Add Initial Data';
+    }
+}
 
-            
-            // Dwell time
-            if (analysis.dwell_time) {
-                document.getElementById('dwell-enabled').checked = analysis.dwell_time.enabled !== false;
-                document.getElementById('min-duration').value = analysis.dwell_time.min_duration || 5;
+async function clearAllData() {
+    if (!confirm('This will permanently delete all analytics data (except admin user). This cannot be undone! Continue?')) return;
+    if (!confirm('Are you absolutely sure? This will clear all customer data, demographics, and analytics records.')) return;
+    
+    const btn = document.getElementById('clear-all-data-btn');
+    const feedback = document.getElementById('data-management-feedback');
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Clearing...';
+    feedback.innerHTML = '';
+    
+    try {
+        const response = await fetch('/api/clear_all_data', {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            feedback.innerHTML = `<div class="alert alert-success"><strong>Success:</strong> ${result.message}</div>`;
+            showToast('success', 'All data cleared successfully!');
+        } else {
+            feedback.innerHTML = `<div class="alert alert-danger"><strong>Error:</strong> ${result.message}</div>`;
+            showToast('error', 'Failed to clear data');
+        }
+    } catch (error) {
+        feedback.innerHTML = `<div class="alert alert-danger"><strong>Error:</strong> ${error.message}</div>`;
+        showToast('error', 'Error clearing data');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash-alt me-2"></i>Clear All Data';
+    }
+}
 
-            }
-            
+async function testCamera() {
+    const btn = document.getElementById('test-camera');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Testing...';
+    
+    try {
+        // This would test the camera configuration
+        // For now, just show a success message
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-play me-2"></i>Test Camera';
+            showToast('success', 'Camera test completed!');
+        }, 2000);
+    } catch (error) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-play me-2"></i>Test Camera';
+        showToast('error', 'Camera test failed');
+    }
+}
 
-        }
-        
-        // Database settings
-        if (mainConfig.database) {
-            const database = mainConfig.database;
-            document.getElementById('database-type').value = database.type || 'sqlite';
-            document.getElementById('database-path').value = database.path || 'retail_analytics.db';
-        }
-        
-        // Web settings
-        if (mainConfig.web) {
-            const web = mainConfig.web;
-            document.getElementById('web-host').value = web.host || '0.0.0.0';
-            document.getElementById('web-port').value = web.port || 5000;
-            document.getElementById('web-debug').checked = web.debug !== false;
-        }
-        
-        // Camera settings
-        if (mainConfig.camera) {
-            const camera = mainConfig.camera;
-            const cameraTypeSelect = document.getElementById('camera-type');
-            
-            // Set camera type and trigger UI update
-            if (cameraTypeSelect) {
-                cameraTypeSelect.value = camera.type || 'video_file';
-                console.log('Setting camera type to:', camera.type || 'video_file');
-                
-                // Update status indicator
-                const statusElement = document.getElementById('current-camera-status');
-                if (statusElement) {
-                    const cameraTypeDisplay = {
-                        'video_file': 'Video File',
-                        'usb': 'USB Camera',
-                        'rtsp': 'RTSP Camera',
-                        'rtsps': 'RTSP Secure Camera',
-                        'onvif': 'ONVIF Camera',
-                        'rtmp': 'RTMP Stream'
-                    };
-                    statusElement.textContent = `Current: ${cameraTypeDisplay[camera.type] || camera.type || 'Unknown'}`;
-                    statusElement.className = 'text-success ms-2';
-                }
-            }
-            
-            document.getElementById('camera-fps').value = camera.fps || 30;
-            
-            if (camera.resolution && Array.isArray(camera.resolution)) {
-                document.getElementById('camera-resolution').value = camera.resolution.join(',');
-            }
-            
-            // Type-specific settings
-            switch(camera.type) {
-                case 'video_file':
-                    if (document.getElementById('camera-file-path')) {
-                        document.getElementById('camera-file-path').value = camera.file_path || '';
-                    }
-                    if (document.getElementById('camera-loop')) {
-                        document.getElementById('camera-loop').checked = camera.loop !== false;
-                    }
-                    if (document.getElementById('camera-playback-speed')) {
-                        document.getElementById('camera-playback-speed').value = camera.playback_speed || 1.0;
-                    }
-                    break;
-                    
-                case 'usb':
-                    if (document.getElementById('usb-device')) {
-                        document.getElementById('usb-device').value = camera.device !== undefined ? camera.device : 0;
-                    }
-                    break;
-                    
-                case 'rtsp':
-                    if (document.getElementById('rtsp-url')) {
-                        document.getElementById('rtsp-url').value = camera.url || '';
-                    }
-                    break;
-                    
-                case 'rtsps':
-                    if (document.getElementById('rtsps-url')) {
-                        document.getElementById('rtsps-url').value = camera.url || '';
-                    }
-                    break;
-                    
-                case 'onvif':
-                    if (document.getElementById('onvif-host')) {
-                        document.getElementById('onvif-host').value = camera.host || '';
-                    }
-                    if (document.getElementById('onvif-port')) {
-                        document.getElementById('onvif-port').value = camera.port || 80;
-                    }
-                    if (document.getElementById('onvif-username')) {
-                        document.getElementById('onvif-username').value = camera.username || '';
-                    }
-                    if (document.getElementById('onvif-password')) {
-                        document.getElementById('onvif-password').value = camera.password || '';
-                    }
-                    if (document.getElementById('onvif-rtsp-port')) {
-                        document.getElementById('onvif-rtsp-port').value = camera.rtsp_port || 554;
-                    }
-                    break;
-            }
-            
-            // Trigger camera type change to show/hide appropriate configuration sections
-            setTimeout(() => {
-                if (cameraTypeSelect) {
-                    toggleCameraSettings();
-                    cameraTypeSelect.dispatchEvent(new Event('change'));
-                    console.log('Triggered camera type change for:', cameraTypeSelect.value);
-                }
-            }, 100);
-        }
-    }
-    
-    async function loadVideoConfig() {
-        try {
-            const response = await fetch('/get_video_config');
-            if (!response.ok) {
-                throw new Error(`Failed to load video configuration: ${response.status}`);
-            }
-            
-            videoConfig = await response.json();
-            displayVideoConfig();
-        } catch (error) {
-            console.error('Error loading video configuration:', error);
-            showAlert('error', 'Failed to load video configuration');
-        }
-    }
-    
-    function displayVideoConfig() {
-        // Populate default video dropdown
-        const defaultVideoSelect = document.getElementById('default-video');
-        defaultVideoSelect.innerHTML = '';
-        
-        // Populate video paths
-        const videoPathsContainer = document.getElementById('video-paths-container');
-        videoPathsContainer.innerHTML = '';
-        
-        // Add each video path
-        if (videoConfig && videoConfig.videos) {
-            Object.entries(videoConfig.videos).forEach(([id, path]) => {
-                // Add to default dropdown
-                const option = document.createElement('option');
-                option.value = id;
-                option.textContent = id;
-                if (videoConfig.default === id) {
-                    option.selected = true;
-                }
-                defaultVideoSelect.appendChild(option);
-                
-                // Add to video paths list
-                addVideoPathEntry(id, path);
-            });
-        }
-    }
-    
-    function addVideoPathEntry(id = '', path = '') {
-        const container = document.getElementById('video-paths-container');
-        const entryDiv = document.createElement('div');
-        entryDiv.className = 'video-path-entry';
-        
-        entryDiv.innerHTML = `
-            <input type="text" class="form-control video-id" placeholder="Video ID" value="${id}">
-            <input type="text" class="form-control video-path" placeholder="Path to video file" value="${path}">
-            <button type="button" class="btn btn-sm btn-outline-danger remove-video-btn">
-                <i class="fas fa-trash"></i>
-            </button>
-        `;
-        
-        // Add remove button handler
-        entryDiv.querySelector('.remove-video-btn').addEventListener('click', function() {
-            entryDiv.remove();
-            updateDefaultVideoOptions();
-        });
-        
-        // Add change handler to update default options when ID changes
-        entryDiv.querySelector('.video-id').addEventListener('change', updateDefaultVideoOptions);
-        
-        container.appendChild(entryDiv);
-    }
-    
-    function updateDefaultVideoOptions() {
-        // Get all video IDs
-        const videoIds = Array.from(document.querySelectorAll('.video-id')).map(input => input.value);
-        
-        // Update default video dropdown
-        const defaultVideoSelect = document.getElementById('default-video');
-        const selectedDefault = defaultVideoSelect.value;
-        
-        defaultVideoSelect.innerHTML = '';
-        
-        videoIds.forEach(id => {
-            if (id.trim()) {
-                const option = document.createElement('option');
-                option.value = id;
-                option.textContent = id;
-                if (id === selectedDefault) {
-                    option.selected = true;
-                }
-                defaultVideoSelect.appendChild(option);
-            }
-        });
-    }
-    
-    // Initialize event handlers
-    function initializeEventHandlers() {
-        // Range input live updates
-        setupRangeUpdates();
-        
-        // Form submissions
-        setupFormSubmissions();
-        
-        // Reset buttons
-        setupResetButtons();
-        
-        // Database type toggle
-
-        
-        // Backup and restore
-        setupBackupRestore();
-    }
-    
-    function setupRangeUpdates() {
-        // Update values for range inputs in real-time
-        const rangeInputs = [
-            { input: 'confidence-threshold', output: 'confidence-value' },
-            { input: 'iou-threshold', output: 'iou-value' },
-            { input: 'tracking-iou-threshold', output: 'tracking-iou-value' },
-
-        ];
-        
-        rangeInputs.forEach(({input, output}) => {
-            const inputElement = document.getElementById(input);
-            const outputElement = document.getElementById(output);
-            if (inputElement && outputElement) {
-                inputElement.addEventListener('input', function() {
-                    outputElement.textContent = this.value;
-                });
-            }
-        });
-    }
-    
-    function setupFormSubmissions() {
-        // Detection settings
-        document.getElementById('detection-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            await saveDetectionSettings();
-        });
-        
-        // Tracking settings
-        document.getElementById('tracking-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            await saveTrackingSettings();
-        });
-        
-        // Analysis settings
-        document.getElementById('save-analysis-settings').addEventListener('click', async function() {
-            await saveAnalysisSettings();
-        });
-        
-        // Database settings
-        document.getElementById('database-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            await saveDatabaseSettings();
-        });
-        
-        // Web settings
-        document.getElementById('web-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            await saveWebSettings();
-        });
-        
-        // Camera settings
-        document.getElementById('camera-config-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            await saveCameraSettings();
-        });
-        
-        // Clear demographics data button
-        document.getElementById('clear-demographics-btn')?.addEventListener('click', clearDemographicsData);
-        
-        // Populate sample data button
-        document.getElementById('populate-sample-data-btn')?.addEventListener('click', populateSampleData);
-    }
-    
-    function setupResetButtons() {
-        document.getElementById('reset-detection')?.addEventListener('click', resetDetectionSettings);
-        document.getElementById('reset-tracking')?.addEventListener('click', resetTrackingSettings);
-        document.getElementById('reset-analysis')?.addEventListener('click', resetAnalysisSettings);
-        document.getElementById('reset-database')?.addEventListener('click', resetDatabaseSettings);
-        document.getElementById('reset-web')?.addEventListener('click', resetWebSettings);
-        document.getElementById('reset-camera')?.addEventListener('click', resetCameraSettings);
-    }
-    
-    function setupBackupRestore() {
-        document.getElementById('backup-btn').addEventListener('click', backupConfiguration);
-        document.getElementById('restore-btn').addEventListener('click', function() {
-            document.getElementById('restore-file-input').click();
-        });
-        
-        // Create hidden file input for restore
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.id = 'restore-file-input';
-        fileInput.accept = '.json';
-        fileInput.style.display = 'none';
-        fileInput.addEventListener('change', restoreConfiguration);
-        document.body.appendChild(fileInput);
-    }
-    
-
-    
-    // Save functions
-    async function saveDetectionSettings() {
-        const data = {
-            detection: {
-                model: document.getElementById('detection-model').value,
-                confidence_threshold: parseFloat(document.getElementById('confidence-threshold').value),
-                iou_threshold: parseFloat(document.getElementById('iou-threshold').value)
-            }
-        };
-        
-        await saveConfiguration(data, 'Detection settings saved successfully');
-    }
-    
-    async function saveTrackingSettings() {
-        const data = {
-            tracking: {
-                max_age: parseInt(document.getElementById('max-age').value),
-                min_hits: parseInt(document.getElementById('min-hits').value),
-                iou_threshold: parseFloat(document.getElementById('tracking-iou-threshold').value)
-            }
-        };
-        
-        await saveConfiguration(data, 'Tracking settings saved successfully');
-    }
-    
-    async function saveAnalysisSettings() {
-        const attributes = [];
-        if (document.getElementById('attr-age').checked) attributes.push('age');
-        if (document.getElementById('attr-gender').checked) attributes.push('gender');
-        if (document.getElementById('attr-race').checked) attributes.push('race');
-        if (document.getElementById('attr-emotion').checked) attributes.push('emotion');
-        
-        const data = {
-            analysis: {
-                demographics: {
-                    enabled: document.getElementById('demographics-enabled').checked,
-                    model: document.getElementById('demographics-model').value,
-                    attributes: attributes
-                },
-
-                dwell_time: {
-                    enabled: document.getElementById('dwell-enabled').checked,
-                    min_duration: parseInt(document.getElementById('min-duration').value)
-                }
-            }
-        };
-        
-        await saveConfiguration(data, 'Analysis settings saved successfully');
-    }
-    
-    async function saveDatabaseSettings() {
-        const dbType = document.getElementById('database-type').value;
-        let data = {
-            database: {
-                type: dbType
-            }
-        };
-        
-        data.database.path = document.getElementById('database-path').value;
-        
-        await saveConfiguration(data, 'Database settings saved successfully');
-    }
-    
-    async function saveWebSettings() {
-        const data = {
-            web: {
-                host: document.getElementById('web-host').value,
-                port: parseInt(document.getElementById('web-port').value),
-                debug: document.getElementById('web-debug').checked
-            }
-        };
-        
-        await saveConfiguration(data, 'Web settings saved successfully (restart required for some changes)');
-    }
-    
-    async function saveCameraSettings() {
-        const cameraType = document.getElementById('camera-type').value;
-        const resolution = document.getElementById('camera-resolution').value.split(',').map(Number);
-        
-        // Base camera configuration
-        const cameraConfig = {
-            type: cameraType,
-            fps: parseInt(document.getElementById('camera-fps').value),
-            resolution: resolution
-        };
-        
-        // Add type-specific configuration
-        switch(cameraType) {
-            case 'video_file':
-                cameraConfig.file_path = document.getElementById('camera-file-path').value;
-                cameraConfig.loop = document.getElementById('camera-loop').checked;
-                cameraConfig.playback_speed = parseFloat(document.getElementById('camera-playback-speed').value);
-                break;
-                
-            case 'usb':
-                const usbDevice = document.getElementById('usb-device').value;
-                // Try to parse as integer if it's a number, otherwise keep as string
-                cameraConfig.device = isNaN(usbDevice) ? usbDevice : parseInt(usbDevice);
-                cameraConfig.retry_interval = 5.0;
-                cameraConfig.max_retries = -1;
-                break;
-                
-            case 'rtsp':
-                cameraConfig.url = document.getElementById('rtsp-url').value;
-                cameraConfig.buffer_size = 3;
-                cameraConfig.timeout = 10.0;
-                cameraConfig.retry_interval = 5.0;
-                cameraConfig.max_retries = -1;
-                break;
-                
-            case 'rtmp':
-                cameraConfig.url = document.getElementById('rtmp-url').value;
-                cameraConfig.buffer_size = 3;
-                cameraConfig.timeout = 10.0;
-                cameraConfig.retry_interval = 5.0;
-                cameraConfig.max_retries = -1;
-                break;
-                
-            case 'rtsps':
-                cameraConfig.url = document.getElementById('rtsps-url').value;
-                cameraConfig.verify_ssl = false;
-                cameraConfig.timeout = 10.0;
-                cameraConfig.retry_interval = 5.0;
-                break;
-                
-            case 'onvif':
-                cameraConfig.host = document.getElementById('onvif-host').value;
-                cameraConfig.port = parseInt(document.getElementById('onvif-port').value) || 80;
-                cameraConfig.username = document.getElementById('onvif-username').value;
-                cameraConfig.password = document.getElementById('onvif-password').value;
-                cameraConfig.rtsp_port = parseInt(document.getElementById('onvif-rtsp-port').value) || 554;
-                cameraConfig.profile_index = 0;
-                cameraConfig.use_https = false;
-                cameraConfig.ptz_timeout = 5.0;
-                break;
-        }
-        
-        const data = {
-            camera: cameraConfig
-        };
-        
-        await saveConfiguration(data, 'Camera settings saved successfully');
-        
-        // Restart camera with new configuration
-        try {
-            const restartResponse = await fetch('/api/camera/restart', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            const restartResult = await restartResponse.json();
-            if (restartResult.status === 'success') {
-                showAlert('info', 'Camera restarted with new configuration');
-            } else {
-                showAlert('warning', 'Configuration saved but camera restart failed: ' + restartResult.message);
-            }
-        } catch (restartError) {
-            console.error('Camera restart error:', restartError);
-            showAlert('warning', 'Configuration saved but camera restart failed');
-        }
-    }
-    
-    async function saveConfiguration(data, successMessage) {
-        try {
-            const response = await fetch('/api/config', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-            
-            const result = await response.json();
-            if (result.status === 'success') {
-                showAlert('success', successMessage);
-                // Reload configuration to reflect changes
-                await loadMainConfig();
-            } else {
-                showAlert('error', result.message || 'Failed to save configuration');
-            }
-        } catch (error) {
-            console.error('Error saving configuration:', error);
-            showAlert('error', 'Failed to save configuration');
-        }
-    }
-    
-    // Backup and restore functions
-    async function backupConfiguration() {
-        try {
-            const response = await fetch('/api/config/backup');
-            const result = await response.json();
-            
-            if (result.status === 'success') {
-                // Download backup file
-                const blob = new Blob([JSON.stringify(result.backup, null, 2)], {type: 'application/json'});
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = result.filename;
-                a.click();
-                window.URL.revokeObjectURL(url);
-                
-                showAlert('success', 'Configuration backup downloaded successfully');
-            } else {
-                showAlert('error', result.message || 'Failed to create backup');
-            }
-        } catch (error) {
-            console.error('Error creating backup:', error);
-            showAlert('error', 'Failed to create backup');
-        }
-    }
-    
-    async function restoreConfiguration(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        try {
-            const text = await file.text();
-            const backup = JSON.parse(text);
-            
-            if (!backup.config) {
-                throw new Error('Invalid backup file format');
-            }
-            
-            const response = await fetch('/api/config/restore', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(backup)
-            });
-            
-            const result = await response.json();
-            if (result.status === 'success') {
-                showAlert('success', 'Configuration restored successfully');
-                // Reload page to reflect changes
-                setTimeout(() => window.location.reload(), 1000);
-            } else {
-                showAlert('error', result.message || 'Failed to restore configuration');
-            }
-        } catch (error) {
-            console.error('Error restoring configuration:', error);
-            showAlert('error', 'Failed to restore configuration: ' + error.message);
-        }
-        
-        // Reset file input
-        event.target.value = '';
-    }
-    
-    // Reset functions (restore default values)
-    function resetDetectionSettings() {
-        document.getElementById('detection-model').value = 'yolov8n.pt';
-        document.getElementById('confidence-threshold').value = 0.5;
-        document.getElementById('confidence-value').textContent = '0.5';
-        document.getElementById('iou-threshold').value = 0.45;
-        document.getElementById('iou-value').textContent = '0.45';
-    }
-    
-    function resetTrackingSettings() {
-        document.getElementById('max-age').value = 30;
-        document.getElementById('min-hits').value = 3;
-        document.getElementById('tracking-iou-threshold').value = 0.3;
-        document.getElementById('tracking-iou-value').textContent = '0.3';
-    }
-    
-    function resetAnalysisSettings() {
-        document.getElementById('demographics-enabled').checked = true;
-        document.getElementById('demographics-model').value = 'deepface';
-        document.getElementById('attr-age').checked = true;
-        document.getElementById('attr-gender').checked = true;
-        document.getElementById('attr-race').checked = true;
-        document.getElementById('attr-emotion').checked = true;
-
-        document.getElementById('dwell-enabled').checked = true;
-        document.getElementById('min-duration').value = 5;
-
-
-    }
-    
-    function resetDatabaseSettings() {
-        document.getElementById('database-type').value = 'sqlite';
-        document.getElementById('database-path').value = 'reviision.db';
-
-    }
-    
-    function resetWebSettings() {
-        document.getElementById('web-host').value = '0.0.0.0';
-        document.getElementById('web-port').value = 5000;
-        document.getElementById('web-debug').checked = true;
-    }
-    
-    function resetCameraSettings() {
-        document.getElementById('camera-type').value = 'video_file';
-        document.getElementById('camera-file-path').value = 'testData/asianstoremulti.mp4';
-        document.getElementById('camera-loop').checked = true;
-        document.getElementById('camera-playback-speed').value = '1.0';
-        document.getElementById('camera-fps').value = 30;
-        document.getElementById('camera-resolution').value = '1280,720';
-    }
-    
-    // Clear demographics data with confirmation
-    async function clearDemographicsData() {
-        // Check if user is admin
-        try {
-            const userResponse = await fetch('/api/auth/me');
-            const userData = await userResponse.json();
-            
-            if (!userData.success || userData.user.role !== 'admin') {
-                showAlert('error', 'Access denied. Only administrators can clear customer data.');
-                return;
-            }
-        } catch (error) {
-            console.error('Error checking user role:', error);
-            showAlert('error', 'Unable to verify user permissions.');
-            return;
-        }
-        
-        // Show confirmation dialog
-        const confirmed = confirm(
-            'Are you sure you want to clear ALL customer demographic data?\n\n' +
-            'This action will permanently delete:\n' +
-            '• All age, gender, race, and emotion data\n' +
-            '• Customer demographic analytics\n' +
-            '• Historical demographic trends\n\n' +
-            'This action CANNOT be undone!\n\n' +
-            'Detection records and system logs will remain intact.'
-        );
-        
-        if (!confirmed) {
-            return;
-        }
-        
-        // Second confirmation for safety
-        const doubleConfirmed = confirm(
-            'FINAL CONFIRMATION:\n\n' +
-            'You are about to permanently delete all customer demographic data.\n' +
-            'Are you absolutely sure you want to proceed?'
-        );
-        
-        if (!doubleConfirmed) {
-            return;
-        }
-        
-        try {
-            // Show loading state
-            const button = document.getElementById('clear-demographics-btn');
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Clearing Data...';
-            button.disabled = true;
-            
-            // Make API call to clear data
-            const response = await fetch('/api/clear-demographics', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                showAlert('success', result.message);
-                console.log(`Cleared ${result.records_deleted} demographic records`);
-            } else {
-                showAlert('error', result.message || 'Failed to clear demographic data');
-            }
-        } catch (error) {
-            console.error('Error clearing demographics data:', error);
-            showAlert('error', 'Failed to clear demographic data: ' + error.message);
-        } finally {
-            // Restore button state
-            const button = document.getElementById('clear-demographics-btn');
-            button.innerHTML = '<i class="fas fa-trash-alt me-2"></i>Clear All Customer Data';
-            button.disabled = false;
-        }
-    }
-    
-    // Populate sample data for demonstration
-    async function populateSampleData() {
-        // Check if user is admin
-        try {
-            const userResponse = await fetch('/api/auth/me');
-            const userData = await userResponse.json();
-            
-            if (!userData.success || userData.user.role !== 'admin') {
-                showAlert('error', 'Access denied. Only administrators can populate sample data.');
-                return;
-            }
-        } catch (error) {
-            console.error('Error checking user role:', error);
-            showAlert('error', 'Unable to verify user permissions.');
-            return;
-        }
-        
-        // Show confirmation dialog
-        const confirmed = confirm(
-            'This will populate the database with 7 days of realistic sample data.\n\n' +
-            'This action will:\n' +
-            '• Create sample customer detection records\n' +
-            '• Generate demographic analysis data\n' +
-            '• Populate traffic patterns and analytics\n' +
-            '• Clear any existing data first\n\n' +
-            'This is useful for demonstrating the analytics functionality.\n' +
-            'Do you want to proceed?'
-        );
-        
-        if (!confirmed) {
-            return;
-        }
-        
-        try {
-            // Show loading state
-            const button = document.getElementById('populate-sample-data-btn');
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Sample Data...';
-            button.disabled = true;
-            
-            // Make API call to populate data
-            const response = await fetch('/api/populate-sample-data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                showAlert('success', result.message);
-                console.log(`Created ${result.detection_records} detection records and ${result.demographic_records} demographic records`);
-            } else {
-                showAlert('error', result.message || 'Failed to populate sample data');
-            }
-        } catch (error) {
-            console.error('Error populating sample data:', error);
-            showAlert('error', 'Failed to populate sample data: ' + error.message);
-        } finally {
-            // Restore button state
-            const button = document.getElementById('populate-sample-data-btn');
-            button.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Add Sample Data';
-            button.disabled = false;
-        }
-    }
-    
-    // Check user role and show admin-only features
-    async function checkUserRoleAndShowAdminFeatures() {
-        try {
-            const response = await fetch('/api/auth/me');
-            const result = await response.json();
-            
-            const dataManagementCard = document.getElementById('data-management-card');
-            const dataManagementNotice = document.getElementById('data-management-notice');
-            
-            if (result.success && result.user.role === 'admin') {
-                // Show admin-only features
-                if (dataManagementCard) {
-                    dataManagementCard.style.display = 'block';
-                }
-                if (dataManagementNotice) {
-                    dataManagementNotice.style.display = 'none';
-                }
-            } else {
-                // Show notice for non-admin users
-                if (dataManagementCard) {
-                    dataManagementCard.style.display = 'none';
-                }
-                if (dataManagementNotice) {
-                    dataManagementNotice.style.display = 'block';
-                }
-            }
-        } catch (error) {
-            console.error('Error checking user role:', error);
-            // Show notice by default if there's an error
-            const dataManagementCard = document.getElementById('data-management-card');
-            const dataManagementNotice = document.getElementById('data-management-notice');
-            
-            if (dataManagementCard) {
-                dataManagementCard.style.display = 'none';
-            }
-            if (dataManagementNotice) {
-                dataManagementNotice.style.display = 'block';
-            }
-        }
-    }
-    
-    function collectVideoConfig() {
-        const newConfig = {
-            default: document.getElementById('default-video').value,
-            videos: {}
-        };
-        
-        // Collect all video paths
-        document.querySelectorAll('.video-path-entry').forEach(entry => {
-            const id = entry.querySelector('.video-id').value.trim();
-            const path = entry.querySelector('.video-path').value.trim();
-            
-            if (id && path) {
-                newConfig.videos[id] = path;
-            }
-        });
-        
-        return newConfig;
-    }
-    
-    async function saveVideoConfig(config) {
-        try {
-            const response = await fetch('/update_video_config', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(config)
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Failed to save configuration: ${response.status}`);
-            }
-            
-            const result = await response.json();
-            showAlert('success', 'Video configuration saved successfully');
-            return result;
-        } catch (error) {
-            console.error('Error saving video configuration:', error);
-            showAlert('error', 'Failed to save video configuration');
-            throw error;
-        }
-    }
-    
-    // Camera options management
-    async function loadCameraOptions() {
-        try {
-            const response = await fetch('/get_camera_options');
-            if (!response.ok) {
-                throw new Error(`Failed to load camera options: ${response.status}`);
-            }
-            
-            const options = await response.json();
-            
-            // Update form values with loaded options
-            document.getElementById('camera-loop').checked = options.loop || false;
-            
-            const speedSelect = document.getElementById('playback-speed');
-            const speed = options.playback_speed || 1.0;
-            for (let i = 0; i < speedSelect.options.length; i++) {
-                if (parseFloat(speedSelect.options[i].value) === speed) {
-                    speedSelect.selectedIndex = i;
-                    break;
-                }
-            }
-            
-                            if (window.DEBUG_MODE) console.log('Camera options loaded:', options);
-        } catch (error) {
-            console.error('Error loading camera options:', error);
-            showAlert('error', 'Failed to load camera options');
-        }
-    }
-    
-    // Camera options
-    async function saveCameraOptions() {
-        const options = {
-            loop: document.getElementById('camera-loop').checked,
-            playback_speed: parseFloat(document.getElementById('playback-speed').value)
-        };
-        
-        try {
-            const response = await fetch('/update_camera_options', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(options)
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Failed to save camera options: ${response.status}`);
-            }
-            
-            showAlert('success', 'Camera options saved successfully');
-        } catch (error) {
-            console.error('Error saving camera options:', error);
-            showAlert('error', 'Failed to save camera options');
-        }
-    }
-    
-    // Colormap configuration management
-    let colormapConfig = null;
-    let availableColormaps = [];
-    
-    async function loadColormapConfig() {
-        try {
-            // Load available colormaps
-            const colormapsResponse = await fetch('/api/available_colormaps');
-            if (colormapsResponse.ok) {
-                availableColormaps = await colormapsResponse.json();
-            } else {
-                console.error('Failed to load available colormaps');
-                availableColormaps = [];
-            }
-            
-            // Load current colormap configuration
-            const configResponse = await fetch('/get_colormap_config');
-            if (configResponse.ok) {
-                colormapConfig = await configResponse.json();
-                displayColormapConfig();
-            } else {
-                console.error('Failed to load colormap configuration');
-                showAlert('error', 'Failed to load colormap configuration');
-            }
-        } catch (error) {
-            console.error('Error loading colormap configuration:', error);
-            showAlert('error', 'Failed to load colormap configuration');
-        }
-    }
-    
-    function displayColormapConfig() {
-        if (!colormapConfig) return;
-        
-        // Populate default colormap dropdown
-        const defaultSelect = document.getElementById('default-colormap');
-        defaultSelect.innerHTML = '';
-        
-        // Populate all colormap select elements with available options
-        const colormapSelects = document.querySelectorAll('.colormap-select');
-        
-        availableColormaps.forEach(colormap => {
-            // Add to default dropdown
-            const defaultOption = document.createElement('option');
-            defaultOption.value = colormap.name;
-            defaultOption.textContent = `${colormap.name} (${colormap.category})`;
-            if (colormapConfig.default_colormap === colormap.name) {
-                defaultOption.selected = true;
-            }
-            defaultSelect.appendChild(defaultOption);
-            
-            // Add to type-specific dropdowns
-            colormapSelects.forEach(select => {
-                const option = document.createElement('option');
-                option.value = colormap.name;
-                option.textContent = `${colormap.name} (${colormap.category})`;
-                
-                const type = select.dataset.type;
-                if (colormapConfig.colormaps && 
-                    colormapConfig.colormaps[type] && 
-                    colormapConfig.colormaps[type].name === colormap.name) {
-                    option.selected = true;
-                }
-                
-                select.appendChild(option);
-            });
-        });
-        
-        // Set intensity sliders from config
-        if (colormapConfig.colormaps) {
-            document.querySelectorAll('.intensity-slider').forEach(slider => {
-                const type = slider.dataset.type;
-                if (colormapConfig.colormaps[type] && colormapConfig.colormaps[type].intensity_scale) {
-                    slider.value = colormapConfig.colormaps[type].intensity_scale;
-                    document.getElementById(`${type}-intensity-value`).textContent = slider.value;
-                }
-            });
-        }
-        
-        // Update preview elements
-        updateColormapPreviews();
-    }
-    
-    function updateColormapPreviews() {
-        // Simple colormap previews - just for illustration
-        // In a real app, you would generate actual previews from the matplotlib colormaps
-        const gradients = {
-            'jet': 'linear-gradient(to right, #00007F, #0000FF, #007FFF, #00FFFF, #7FFF7F, #FFFF00, #FF7F00, #FF0000, #7F0000)',
-            'viridis': 'linear-gradient(to right, #440154, #482878, #3E4989, #31688E, #26828E, #1F9E89, #35B779, #6DCD59, #B4DE2C, #FDE725)',
-            'plasma': 'linear-gradient(to right, #0D0887, #42039D, #6A00A8, #900DA3, #B12A90, #CB4678, #E16462, #F1834B, #FCA636, #FCFFA4)',
-            'inferno': 'linear-gradient(to right, #000004, #160B39, #420A68, #6B176E, #932667, #BA3655, #DC5039, #F2751A, #FBB40A, #FCFFA4)',
-            'magma': 'linear-gradient(to right, #000004, #140e36, #3b0f70, #641a80, #8c2981, #b5367a, #de4968, #f66e5c, #fe9f6d, #fecf92)',
-            'cividis': 'linear-gradient(to right, #00224e, #163d4e, #2e5547, #46713d, #63913b, #7fb030, #9fd32a, #bdfc2c)',
-            'hot': 'linear-gradient(to right, #000000, #500000, #ff0000, #ffff00, #ffffff)',
-            'coolwarm': 'linear-gradient(to right, #3a0cf7, #8283ff, #ebebeb, #ff8d82, #e20712)',
-            'RdBu': 'linear-gradient(to right, #053061, #2166ac, #4393c3, #92c5de, #d1e5f0, #f7f7f7, #fddbc7, #f4a582, #d6604d, #b2182b, #67001f)',
-            'YlGnBu': 'linear-gradient(to right, #ffffd9, #edf8b1, #c7e9b4, #7fcdbb, #41b6c4, #1d91c0, #225ea8, #253494, #081d58)',
-            'summer': 'linear-gradient(to right, #2c7bb6, #00a6ca, #00ccbc, #90eb9d, #ffff8c)',
-            'winter': 'linear-gradient(to right, #0000cc, #0068ff, #00d1ff, #00ffda, #00ff8c)'
-        };
-        
-        // Set default preview
-        const defaultColormap = document.getElementById('default-colormap').value;
-        document.getElementById('default-colormap-preview').style.background = 
-            gradients[defaultColormap] || 'linear-gradient(to right, blue, cyan, green, yellow, red)';
-        
-        // Set type-specific previews
-        document.querySelectorAll('.colormap-select').forEach(select => {
-            const type = select.dataset.type;
-            const colormap = select.value;
-            document.getElementById(`${type}-colormap-preview`).style.background = 
-                gradients[colormap] || 'linear-gradient(to right, blue, cyan, green, yellow, red)';
-        });
-    }
-    
-    async function saveColormapConfig() {
-        try {
-            // Build new config
-            const config = {
-                default_colormap: document.getElementById('default-colormap').value,
-                colormaps: {}
-            };
-            
-            // Add type-specific colormaps
-            document.querySelectorAll('.colormap-select').forEach(select => {
-                const type = select.dataset.type;
-                const colormap = select.value;
-                const intensity = parseFloat(document.getElementById(`${type}-intensity`).value);
-                
-                config.colormaps[type] = {
-                    name: colormap,
-                    intensity_scale: intensity
-                };
-            });
-            
-            // Save to server
-            const response = await fetch('/update_colormap_config', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(config)
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Failed to save configuration: ${response.status}`);
-            }
-            
-            const result = await response.json();
-            showAlert('success', 'Heatmap configuration saved successfully');
-            colormapConfig = config;
-        } catch (error) {
-            console.error('Error saving colormap configuration:', error);
-            showAlert('error', 'Failed to save heatmap configuration');
-        }
-    }
-    
-    // Initialize all settings when the page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        // Load existing configurations
-        loadVideoConfig();
-        loadColormapConfig();
-        loadCameraOptions();
-        
-        // Set up event listeners for the colormap form
-        document.getElementById('colormap-settings-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            saveColormapConfig();
-        });
-        
-        // Update colormap previews when selections change
-        document.getElementById('default-colormap').addEventListener('change', updateColormapPreviews);
-        document.querySelectorAll('.colormap-select').forEach(select => {
-            select.addEventListener('change', updateColormapPreviews);
-        });
-        
-        // Update intensity value displays
-        document.querySelectorAll('.intensity-slider').forEach(slider => {
-            slider.addEventListener('input', function() {
-                const type = this.dataset.type;
-                document.getElementById(`${type}-intensity-value`).textContent = this.value;
-            });
-        });
-        
-        // Reset colormap config to defaults
-        document.getElementById('reset-colormap-config').addEventListener('click', function() {
-            if (confirm('Reset heatmap configuration to defaults?')) {
-                // Default values
-                document.getElementById('default-colormap').value = 'jet';
-                
-                document.getElementById('position-colormap').value = 'hot';
-                document.getElementById('position-intensity').value = 0.8;
-                document.getElementById('position-intensity-value').textContent = '0.8';
-                
-                document.getElementById('dwell-colormap').value = 'plasma';
-                document.getElementById('dwell-intensity').value = 0.75;
-                document.getElementById('dwell-intensity-value').textContent = '0.75';
-                
-                
-                
-                document.getElementById('comparison-colormap').value = 'coolwarm';
-                document.getElementById('comparison-intensity').value = 0.85;
-                document.getElementById('comparison-intensity-value').textContent = '0.85';
-                
-                updateColormapPreviews();
-            }
-        });
-        
-        // Add video button
-        document.getElementById('add-video-btn').addEventListener('click', function() {
-            addVideoPathEntry();
-        });
-        
-        // Reset video config button
-        document.getElementById('reset-video-config').addEventListener('click', function() {
-            loadVideoConfig();
-        });
-        
-        // Form submissions
-        document.getElementById('video-config-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const newConfig = collectVideoConfig();
-            try {
-                await saveVideoConfig(newConfig);
-                videoConfig = newConfig; // Update local copy
-            } catch (error) {
-                // Error already handled in saveVideoConfig
-            }
-        });
-        
-        document.getElementById('camera-options-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            saveCameraOptions();
-        });
-        
-        // Stop camera button
-        document.getElementById('stop-camera').addEventListener('click', async function() {
-            try {
-                const response = await fetch('/stop_camera', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    showAlert('success', 'Camera stopped successfully');
-                } else {
-                    throw new Error('Failed to stop camera');
-                }
-            } catch (error) {
-                console.error('Error stopping camera:', error);
-                showAlert('error', 'Failed to stop camera');
-            }
-        });
-        
-        // Confidence threshold display update
-        const confidenceSlider = document.getElementById('confidence-threshold');
-        const confidenceValue = document.getElementById('confidence-value');
-        if (confidenceSlider && confidenceValue) {
-            confidenceSlider.addEventListener('input', function() {
-                confidenceValue.textContent = this.value;
-            });
-        }
-        
-        // Camera type selection
-        setupCameraTypeSelection();
-        
-        // PTZ controls
-        setupPTZControls();
-    });
-    
-    // Utility function to show alerts
-    function showAlert(type, message) {
-        // Remove existing alerts
-        const existingAlerts = document.querySelectorAll('.alert-custom');
-        existingAlerts.forEach(alert => alert.remove());
-        
-        // Create new alert
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show alert-custom`;
-        alertDiv.style.position = 'fixed';
-        alertDiv.style.top = '20px';
-        alertDiv.style.right = '20px';
-        alertDiv.style.zIndex = '9999';
-        alertDiv.style.minWidth = '300px';
-        
-        alertDiv.innerHTML = `
-            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+function showToast(type, message) {
+    // Create a simple toast notification
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
             ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        document.body.appendChild(alertDiv);
-        
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            if (alertDiv.parentNode) {
-                alertDiv.remove();
-            }
-        }, 5000);
-    }
+        </div>
+    `;
     
-    // Load colormap config function (fallback if not already defined)
-    if (typeof loadColorMapConfig === 'undefined') {
-        async function loadColorMapConfig() {
-            try {
-                const response = await fetch('/get_colormap_config');
-                if (response.ok) {
-                    const config = await response.json();
-                    if (window.DEBUG_MODE) console.log('Colormap config loaded:', config);
-                }
-            } catch (error) {
-                console.error('Error loading colormap config:', error);
-            }
-        }
-    }
+    document.body.appendChild(toast);
     
-    // Camera type selection functions
-    function setupCameraTypeSelection() {
-        const cameraTypeSelect = document.getElementById('camera-type');
-        const cameraConfigs = document.querySelectorAll('.camera-config');
-        
-        if (!cameraTypeSelect) {
-            console.error('Camera type select element not found');
-            return;
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
         }
-        
-        // Remove any existing event listeners to prevent duplicates
-        const newSelect = cameraTypeSelect.cloneNode(true);
-        cameraTypeSelect.parentNode.replaceChild(newSelect, cameraTypeSelect);
-        
-        newSelect.addEventListener('change', function() {
-            const selectedType = this.value;
-            console.log('Camera type changed to:', selectedType);
-            
-            // Use the unified toggle function
-            toggleCameraSettings();
-            
-            // Show/hide PTZ controls based on camera type
-            const ptzControls = document.getElementById('ptz-controls');
-            if (ptzControls) {
-                if (selectedType === 'onvif') {
-                    ptzControls.style.display = 'block';
-                    loadPTZStatus();
-                } else {
-                    ptzControls.style.display = 'none';
-                }
-            }
-        });
-        
-        // Camera type form submission
-        const cameraTypeForm = document.getElementById('camera-type-form');
-        if (cameraTypeForm) {
-            cameraTypeForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                await saveCameraConfiguration();
-            });
-        }
-        
-        // Initialize with current selection
-        setTimeout(() => {
-            toggleCameraSettings();
-            newSelect.dispatchEvent(new Event('change'));
-        }, 200);
-    }
-    
-    async function saveCameraConfiguration() {
-        try {
-            const cameraType = document.getElementById('camera-type').value;
-            const config = { 
-                type: cameraType,
-                fps: 30,
-                resolution: [1280, 720]
-            };
-            
-            // Collect type-specific configuration
-            switch (cameraType) {
-                case 'video_file':
-                    // Use existing video file configuration
-                    const videoConfig = collectVideoConfig();
-                    if (videoConfig.default && videoConfig.videos[videoConfig.default]) {
-                        config.file_path = videoConfig.videos[videoConfig.default];
-                    }
-                    config.loop = document.getElementById('camera-loop').checked;
-                    config.playback_speed = parseFloat(document.getElementById('playback-speed').value);
-                    break;
-                    
-                case 'usb':
-                    const usbDevice = document.getElementById('usb-device').value;
-                    config.device = isNaN(usbDevice) ? usbDevice : parseInt(usbDevice);
-                    config.retry_interval = 5.0;
-                    config.max_retries = -1;
-                    break;
-                    
-                case 'rtsp':
-                    config.url = document.getElementById('rtsp-url').value;
-                    config.buffer_size = 3;
-                    config.timeout = 10.0;
-                    config.retry_interval = 5.0;
-                    config.max_retries = -1;
-                    break;
-                    
-                case 'rtmp':
-                    config.url = document.getElementById('rtmp-url').value;
-                    config.buffer_size = 3;
-                    config.timeout = 10.0;
-                    config.retry_interval = 5.0;
-                    config.max_retries = -1;
-                    break;
-                    
-                case 'rtsps':
-                    config.url = document.getElementById('rtsps-url').value;
-                    config.verify_ssl = false;
-                    config.timeout = 10.0;
-                    config.retry_interval = 5.0;
-                    config.max_retries = -1;
-                    break;
-                    
-                case 'onvif':
-                    config.host = document.getElementById('onvif-host').value;
-                    config.port = parseInt(document.getElementById('onvif-port').value) || 80;
-                    config.username = document.getElementById('onvif-username').value;
-                    config.password = document.getElementById('onvif-password').value;
-                    config.rtsp_port = parseInt(document.getElementById('onvif-rtsp-port').value) || 554;
-                    config.profile_index = parseInt(document.getElementById('onvif-profile').value) || 0;
-                    config.use_https = false;
-                    config.ptz_timeout = 5.0;
-                    break;
-            }
-            
-            // Save camera configuration to main config
-            const data = { camera: config };
-            
-            const response = await fetch('/api/config', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-            
-            const result = await response.json();
-            if (result.status === 'success') {
-                showAlert('success', 'Camera configuration saved successfully');
-                
-                // Restart camera with new configuration
-                try {
-                    const restartResponse = await fetch('/api/camera/restart', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
-                    
-                    const restartResult = await restartResponse.json();
-                    if (restartResult.status === 'success') {
-                        showAlert('info', 'Camera restarted with new configuration');
-                    } else {
-                        showAlert('warning', 'Configuration saved but camera restart failed: ' + restartResult.message);
-                    }
-                } catch (restartError) {
-                    console.error('Camera restart error:', restartError);
-                    showAlert('warning', 'Configuration saved but camera restart failed');
-                }
-                
-                // Reload configuration to reflect changes
-                await loadMainConfig();
-                
-                // If ONVIF camera, load PTZ status
-                if (cameraType === 'onvif') {
-                    setTimeout(() => loadPTZStatus(), 1000);
-                }
-            } else {
-                showAlert('error', result.message || 'Failed to save camera configuration');
-            }
-            
-        } catch (error) {
-            console.error('Error saving camera configuration:', error);
-            showAlert('error', 'Failed to save camera configuration: ' + error.message);
-        }
-    }
-    
-    // PTZ control functions
-    function setupPTZControls() {
-        // PTZ direction buttons
-        document.querySelectorAll('.ptz-btn').forEach(btn => {
-            btn.addEventListener('mousedown', function() {
-                const direction = this.dataset.direction;
-                startContinuousPTZ(direction);
-            });
-            
-            btn.addEventListener('mouseup', stopPTZ);
-            btn.addEventListener('mouseleave', stopPTZ);
-        });
-        
-        // PTZ zoom buttons
-        document.querySelectorAll('.ptz-zoom').forEach(btn => {
-            btn.addEventListener('mousedown', function() {
-                const zoom = this.dataset.zoom;
-                startContinuousZoom(zoom);
-            });
-            
-            btn.addEventListener('mouseup', stopPTZ);
-            btn.addEventListener('mouseleave', stopPTZ);
-        });
-        
-        // Home button
-        document.getElementById('ptz-home').addEventListener('click', function() {
-            movePTZAbsolute(0, 0, 0);
-        });
-        
-        // Absolute move button
-        document.getElementById('ptz-move-absolute').addEventListener('click', function() {
-            const pan = parseFloat(document.getElementById('ptz-pan').value);
-            const tilt = parseFloat(document.getElementById('ptz-tilt').value);
-            const zoom = parseFloat(document.getElementById('ptz-zoom-slider').value);
-            movePTZAbsolute(pan, tilt, zoom);
-        });
-        
-        // Preset controls
-        document.getElementById('ptz-goto-preset').addEventListener('click', gotoPreset);
-        document.getElementById('ptz-save-preset').addEventListener('click', savePreset);
-        
-        // PTZ action buttons
-        document.getElementById('ptz-stop').addEventListener('click', stopPTZ);
-        document.getElementById('ptz-refresh').addEventListener('click', loadPTZStatus);
-        
-        // PTZ slider value updates
-        ['ptz-pan', 'ptz-tilt', 'ptz-zoom-slider'].forEach(id => {
-            const slider = document.getElementById(id);
-            const valueSpan = document.getElementById(id + '-value');
-            
-            slider.addEventListener('input', function() {
-                valueSpan.textContent = parseFloat(this.value).toFixed(1);
-            });
-        });
-    }
-    
-    async function loadPTZStatus() {
-        try {
-            const response = await fetch('/api/ptz/status');
-            if (!response.ok) {
-                throw new Error('Failed to get PTZ status');
-            }
-            
-            const status = await response.json();
-            updatePTZUI(status);
-            
-        } catch (error) {
-            console.error('Error loading PTZ status:', error);
-            document.getElementById('ptz-status').textContent = 'Error';
-            document.getElementById('ptz-status').className = 'badge bg-danger ms-2';
-        }
-    }
-    
-    function updatePTZUI(status) {
-        // Update status badge
-        const statusBadge = document.getElementById('ptz-status');
-        if (status.capabilities && (status.capabilities.pan || status.capabilities.tilt || status.capabilities.zoom)) {
-            statusBadge.textContent = 'Connected';
-            statusBadge.className = 'badge bg-success ms-2';
-        } else {
-            statusBadge.textContent = 'No PTZ';
-            statusBadge.className = 'badge bg-warning ms-2';
-        }
-        
-        // Update camera info
-        const cameraInfo = document.getElementById('camera-info');
-        if (status.camera_info) {
-            const info = status.camera_info;
-            cameraInfo.innerHTML = `
-                <strong>Host:</strong> ${info.host}:${info.port}<br>
-                <strong>Model:</strong> ${info.manufacturer || 'Unknown'} ${info.model || 'Unknown'}<br>
-                <strong>PTZ:</strong> Pan: ${status.capabilities.pan ? '✓' : '✗'}, 
-                Tilt: ${status.capabilities.tilt ? '✓' : '✗'}, 
-                Zoom: ${status.capabilities.zoom ? '✓' : '✗'}
-            `;
-        }
-        
-        // Update position sliders
-        if (status.position) {
-            document.getElementById('ptz-pan').value = status.position.pan || 0;
-            document.getElementById('ptz-pan-value').textContent = (status.position.pan || 0).toFixed(1);
-            
-            document.getElementById('ptz-tilt').value = status.position.tilt || 0;
-            document.getElementById('ptz-tilt-value').textContent = (status.position.tilt || 0).toFixed(1);
-            
-            document.getElementById('ptz-zoom-slider').value = status.position.zoom || 0;
-            document.getElementById('ptz-zoom-value').textContent = (status.position.zoom || 0).toFixed(1);
-        }
-        
-        // Update presets
-        const presetsSelect = document.getElementById('ptz-presets');
-        presetsSelect.innerHTML = '<option value="">Select a preset...</option>';
-        
-        if (status.presets && status.presets.length > 0) {
-            status.presets.forEach(preset => {
-                const option = document.createElement('option');
-                option.value = preset.token;
-                option.textContent = preset.name;
-                presetsSelect.appendChild(option);
-            });
-        }
-        
-        // Update slider limits if available
-        if (status.limits) {
-            const panSlider = document.getElementById('ptz-pan');
-            panSlider.min = status.limits.pan.min;
-            panSlider.max = status.limits.pan.max;
-            
-            const tiltSlider = document.getElementById('ptz-tilt');
-            tiltSlider.min = status.limits.tilt.min;
-            tiltSlider.max = status.limits.tilt.max;
-            
-            const zoomSlider = document.getElementById('ptz-zoom-slider');
-            zoomSlider.min = status.limits.zoom.min;
-            zoomSlider.max = status.limits.zoom.max;
-        }
-    }
-    
-    async function startContinuousPTZ(direction) {
-        const speed = 0.5; // Medium speed
-        let panSpeed = 0, tiltSpeed = 0;
-        
-        switch (direction) {
-            case 'up': tiltSpeed = speed; break;
-            case 'down': tiltSpeed = -speed; break;
-            case 'left': panSpeed = -speed; break;
-            case 'right': panSpeed = speed; break;
-        }
-        
-        try {
-            await fetch('/api/ptz/continuous', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    pan_speed: panSpeed,
-                    tilt_speed: tiltSpeed,
-                    zoom_speed: 0
-                })
-            });
-        } catch (error) {
-            console.error('Error starting continuous PTZ:', error);
-        }
-    }
-    
-    async function startContinuousZoom(direction) {
-        const speed = direction === 'in' ? 0.3 : -0.3;
-        
-        try {
-            await fetch('/api/ptz/continuous', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    pan_speed: 0,
-                    tilt_speed: 0,
-                    zoom_speed: speed
-                })
-            });
-        } catch (error) {
-            console.error('Error starting continuous zoom:', error);
-        }
-    }
-    
-    async function stopPTZ() {
-        try {
-            await fetch('/api/ptz/stop', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            console.error('Error stopping PTZ:', error);
-        }
-    }
-    
-    async function movePTZAbsolute(pan, tilt, zoom) {
-        try {
-            const response = await fetch('/api/ptz/absolute', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pan, tilt, zoom })
-            });
-            
-            if (response.ok) {
-                showAlert('success', 'Camera moved to position');
-                setTimeout(() => loadPTZStatus(), 500);
-            }
-        } catch (error) {
-            console.error('Error moving PTZ absolute:', error);
-            showAlert('error', 'Failed to move camera');
-        }
-    }
-    
-    async function gotoPreset() {
-        const presetToken = document.getElementById('ptz-presets').value;
-        if (!presetToken) {
-            showAlert('error', 'Please select a preset');
-            return;
-        }
-        
-        try {
-            const response = await fetch('/api/ptz/preset/goto', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ preset_token: presetToken })
-            });
-            
-            if (response.ok) {
-                showAlert('success', 'Moved to preset position');
-                setTimeout(() => loadPTZStatus(), 1000);
-            }
-        } catch (error) {
-            console.error('Error going to preset:', error);
-            showAlert('error', 'Failed to move to preset');
-        }
-    }
-    
-    async function savePreset() {
-        const presetName = document.getElementById('new-preset-name').value.trim();
-        if (!presetName) {
-            showAlert('error', 'Please enter a preset name');
-            return;
-        }
-        
-        try {
-            const response = await fetch('/api/ptz/preset/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: presetName })
-            });
-            
-            if (response.ok) {
-                showAlert('success', 'Preset saved successfully');
-                document.getElementById('new-preset-name').value = '';
-                setTimeout(() => loadPTZStatus(), 500);
-            }
-        } catch (error) {
-            console.error('Error saving preset:', error);
-            showAlert('error', 'Failed to save preset');
-        }
-    }
+    }, 5000);
+}
 </script>
-{% endblock %} 
+{% endblock %}

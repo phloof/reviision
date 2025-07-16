@@ -10,7 +10,14 @@ import cv2
 from pathlib import Path
 from collections import defaultdict
 from deepface import DeepFace
-from insightface.app import FaceAnalysis
+import numpy as np
+from scipy.spatial.distance import cosine
+from collections import deque
+try:
+    from insightface.app import FaceAnalysis
+    INSIGHTFACE_AVAILABLE = True
+except ImportError:
+    INSIGHTFACE_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +44,13 @@ class DemographicAnalyzer:
         self.detection_interval = config.get('detection_interval', 30)  # Frames between analysis
         self.analysis_distance = config.get('analysis_distance', 5)  # Don't re-analyze same person
         self.use_insightface = config.get('use_insightface', True)  # Use InsightFace for face detection
+        self.optimized = config.get('one_time_demographics', True)
+        self.embedding_threshold = config.get('embedding_similarity_threshold', 0.4)  # Stricter default
+        self.embedding_normalize = config.get('embedding_normalize', True)
+        self.embedding_window_size = config.get('embedding_window_size', 100)
+        self.embeddings = deque(maxlen=self.embedding_window_size)  # rolling window: list of dicts {person_id, embedding, demographics}
+        self.face_match_backend = config.get('face_match_backend', 'model')
+        self.face_match_threshold = config.get('face_match_threshold', 0.8)
         
         # Tracking parameters
         self.person_demographics = {}  # Dictionary to store demographics by person ID
@@ -123,7 +137,7 @@ class DemographicAnalyzer:
                     continue
                 
                 # Analyze demographics
-                demographics = self._analyze_demographics(face_img)
+                demographics = self.analyze(face_img, person_id)
                 if demographics:
                     # Update or create demographic entry
                     if person_id not in self.person_demographics:
@@ -217,7 +231,7 @@ class DemographicAnalyzer:
                 result = results
             
             demographics = {
-                'age': result.get('age'),
+                'age': float(result.get('age')),  # Use precise age
                 'gender': result.get('gender'),
                 'race': result.get('dominant_race'),
                 'race_scores': result.get('race'),
@@ -229,7 +243,7 @@ class DemographicAnalyzer:
             }
             
             elapsed_time = time.time() - start_time
-            logger.debug(f"Demographic analysis completed in {elapsed_time:.4f} seconds")
+            logger.debug(f"Demographic analysis completed in {elapsed_time:.4f} seconds (precise age: {demographics['age']})")
             
             return demographics
             
@@ -436,3 +450,64 @@ class DemographicAnalyzer:
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
         
         return output_frame 
+
+    def get_face_embedding(self, face_img):
+        if not self.face_app:
+            return None
+        faces = self.face_app.get(face_img)
+        if faces:
+            emb = faces[0].embedding
+            if self.embedding_normalize:
+                emb = emb / np.linalg.norm(emb)
+            return emb
+        return None
+
+    def _verify_faces(self, face_img1, face_img2):
+        # Use InsightFace verification if available
+        if hasattr(self, 'face_app') and hasattr(self.face_app, 'model') and hasattr(self.face_app.model, 'verify'):
+            try:
+                # Returns (is_same, score)
+                is_same, score = self.face_app.model.verify(face_img1, face_img2)
+                return score
+            except Exception as e:
+                logger.warning(f"InsightFace verification failed: {e}")
+                return 0.0
+        # Fallback: always return 0.0 (not same)
+        return 0.0
+
+    def find_matching_person(self, embedding, face_img):
+        best_pid = None
+        best_score = float('-inf') if self.face_match_backend == 'model' else float('inf')
+        for entry in self.embeddings:
+            if self.face_match_backend == 'model':
+                # Use dedicated face verification model
+                score = self._verify_faces(face_img, entry['demographics'].get('face_img'))
+                if score > self.face_match_threshold and score > best_score:
+                    best_score = score
+                    best_pid = entry['person_id']
+            else:
+                # Use cosine similarity
+                score = 1 - cosine(embedding, entry['embedding'])
+                if score > self.face_match_threshold and score > best_score:
+                    best_score = score
+                    best_pid = entry['person_id']
+        if best_pid is not None:
+            logger.info(f"ReID: Matched to person {best_pid} with similarity {best_score:.3f} using {self.face_match_backend}")
+        return best_pid
+
+    def analyze(self, face_img, person_id=None):
+        if not self.optimized or not self.face_app:
+            return self._analyze_demographics(face_img)
+        embedding = self.get_face_embedding(face_img)
+        if embedding is None:
+            return self._analyze_demographics(face_img)
+        match_id = self.find_matching_person(embedding, face_img)
+        if match_id is not None:
+            logger.info(f"ReID: Duplicate detected, merging with person {match_id}")
+            return next(e['demographics'] for e in self.embeddings if e['person_id'] == match_id)
+        demographics = self._analyze_demographics(face_img)
+        if person_id is None:
+            person_id = len(self.embeddings) + 1
+        demographics['face_img'] = face_img  # Store for future verification
+        self.embeddings.append({'person_id': person_id, 'embedding': embedding, 'demographics': demographics})
+        return demographics 

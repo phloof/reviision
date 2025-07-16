@@ -866,6 +866,10 @@
                 // Find existing person data for continuity
                 const existingPerson = detectedObjects.find(obj => obj.id === personId);
                 
+                // Extract demographics with proper handling
+                const demographics = person.demographics || {};
+                console.log(`Person ${personId} demographics:`, demographics); // Debug log
+                
                 return {
                     id: personId,
                     x: person.bbox[0],
@@ -876,10 +880,12 @@
                     confidence: person.confidence || 0.5,
                     frames_tracked: person.frames_tracked || 1,
                     demographics: {
-                        gender: person.demographics?.gender || 'analyzing...',
-                        age_group: person.demographics?.age_group || 'analyzing...',
-                        emotion: person.demographics?.emotion || 'neutral',
-                        confidence: person.demographics?.confidence || 0.1
+                        gender: demographics.gender && demographics.gender !== 'unknown' && demographics.gender !== 'analyzing...' ? demographics.gender : 'analyzing...',
+                        age_group: demographics.age_group && demographics.age_group !== 'unknown' && demographics.age_group !== 'analyzing...' ? demographics.age_group : 'analyzing...',
+                        age: demographics.age || null,  // Include specific age from enhanced analysis
+                        analysis_method: demographics.analysis_method || 'unknown',
+                        emotion: demographics.emotion || 'neutral',
+                        confidence: demographics.confidence || 0.1
                     },
                     dwell_time: person.dwell_time || 0,
                     path: person.path || [],
@@ -991,18 +997,32 @@
         if (avgAgeElement) {
             let ageDisplay = '--';
             
-            // Collect age groups from detected objects
-            const ageGroups = detectedObjects
-                .map(obj => obj.demographics?.age_group)
-                .filter(age => age && age !== 'unknown' && age !== 'analyzing...');
+            // Collect specific ages from enhanced analysis
+            const specificAges = detectedObjects
+                .filter(obj => obj.demographics?.age && obj.demographics?.analysis_method && 
+                              (obj.demographics.analysis_method === 'deepface_insightface' || 
+                               obj.demographics.analysis_method === 'enhanced') &&
+                              obj.demographics.confidence > 0.3)
+                .map(obj => obj.demographics.age);
             
-            // Also check backend analytics
-            if (result.analytics?.age_groups && Object.keys(result.analytics.age_groups).length > 0) {
-                const mostCommonAge = Object.entries(result.analytics.age_groups)
-                    .sort(([,a], [,b]) => b - a)[0]?.[0];
-                if (mostCommonAge) ageDisplay = mostCommonAge;
-            } else if (ageGroups.length > 0) {
-                ageDisplay = ageGroups[0]; // Show first available age group
+            // Calculate average of specific ages if available
+            if (specificAges.length > 0) {
+                const avgAge = Math.round(specificAges.reduce((sum, age) => sum + age, 0) / specificAges.length);
+                ageDisplay = `Avg ${avgAge}`;
+            } else {
+                // Fall back to age groups from detected objects
+                const ageGroups = detectedObjects
+                    .map(obj => obj.demographics?.age_group)
+                    .filter(age => age && age !== 'unknown' && age !== 'analyzing...');
+                
+                // Also check backend analytics
+                if (result.analytics?.age_groups && Object.keys(result.analytics.age_groups).length > 0) {
+                    const mostCommonAge = Object.entries(result.analytics.age_groups)
+                        .sort(([,a], [,b]) => b - a)[0]?.[0];
+                    if (mostCommonAge) ageDisplay = mostCommonAge;
+                } else if (ageGroups.length > 0) {
+                    ageDisplay = ageGroups[0]; // Show first available age group
+                }
             }
             
             avgAgeElement.textContent = ageDisplay;
@@ -1263,6 +1283,8 @@
             const demographics = person.demographics || {};
             const gender = demographics.gender || 'unknown';
             const ageGroup = demographics.age_group || 'unknown';
+            const specificAge = demographics.age;
+            const analysisMethod = demographics.analysis_method || 'unknown';
             const emotion = demographics.emotion || 'neutral';
             const confidence = demographics.confidence || 0;
             
@@ -1272,7 +1294,12 @@
                 labelText += gender.charAt(0).toUpperCase() + gender.slice(1) + ' ';
             }
             if (showAge && ageGroup !== 'unknown') {
-                labelText += ageGroup + ' ';
+                // Use specific age for enhanced analysis, age group for fallback methods
+                if (specificAge && (analysisMethod === 'deepface_insightface' || analysisMethod === 'enhanced') && confidence > 0.3) {
+                    labelText += `${specificAge} `;
+                } else if (ageGroup !== 'analyzing...') {
+                    labelText += ageGroup + ' ';
+                }
             }
             if (showEmotion && emotion !== 'neutral') {
                 const emotionEmoji = emotion === 'happy' ? '😊' : emotion === 'calm' ? '😌' : emotion === 'focused' ? '🧐' : '😐';
@@ -1387,19 +1414,42 @@
         detectedObjects.forEach(person => {
             const demographics = person.demographics || {};
             
-            // Count gender
+            // Count gender with better validation
             const gender = demographics.gender?.toLowerCase();
-            if (gender === 'male') {
+            const genderConfidence = demographics.confidence || 0;
+            console.log(`Counting person ${person.id}: gender="${gender}", confidence=${genderConfidence.toFixed(2)}, age_group="${demographics.age_group}", specific_age=${demographics.age}, method="${demographics.analysis_method}"`);
+            
+            if (gender === 'male' || gender === 'man') {
                 maleCount++;
-            } else if (gender === 'female') {
+            } else if (gender === 'female' || gender === 'woman') {
                 femaleCount++;
+            } else if (gender !== 'analyzing...' && gender !== 'unknown' && genderConfidence > 0.2) {
+                // If it's not analyzing or unknown and has reasonable confidence, try to parse gender
+                if (gender && (gender.includes('male') || gender.includes('man'))) {
+                    maleCount++;
+                } else if (gender && (gender.includes('female') || gender.includes('woman'))) {
+                    femaleCount++;
+                } else {
+                    unknownGender++;
+                }
+            } else if (gender === 'analyzing...') {
+                // Count analyzing as separate category for progress display
+                unknownGender++;
             } else {
                 unknownGender++;
             }
             
-            // Count age groups
+            // Count age groups with better validation - use specific age for enhanced analysis
             const ageGroup = demographics.age_group;
-            if (ageGroup && ageGroup !== 'unknown' && ageGroup !== 'analyzing...') {
+            const specificAge = demographics.age;
+            const analysisMethod = demographics.analysis_method || 'unknown';
+            
+            if (specificAge && (analysisMethod === 'deepface_insightface' || analysisMethod === 'enhanced') && genderConfidence > 0.3) {
+                // Use specific age for enhanced analysis
+                const ageKey = `Age ${specificAge}`;
+                ageGroups[ageKey] = (ageGroups[ageKey] || 0) + 1;
+            } else if (ageGroup && ageGroup !== 'unknown' && ageGroup !== 'analyzing...' && ageGroup.trim().length > 0) {
+                // Fall back to age groups for basic analysis
                 ageGroups[ageGroup] = (ageGroups[ageGroup] || 0) + 1;
             }
             
@@ -1410,9 +1460,9 @@
             }
             
             // Track demographic confidence
-            const confidence = demographics.confidence || 0;
-            if (confidence > 0.3) { // Only count reasonably confident detections
-                confidenceSum.total += confidence;
+            const demoConfidence = demographics.confidence || 0;
+            if (demoConfidence > 0.3) { // Only count reasonably confident detections
+                confidenceSum.total += demoConfidence;
                 confidenceSum.count++;
             }
             
@@ -1443,8 +1493,10 @@
                     ${unknownGender > 0 ? `<div>❓ Unknown: ${unknownGender} (${Math.round(unknownGender/totalPeople*100)}%)</div>` : ''}
                 </div>
             `;
+        } else if (totalPeople > 0) {
+            demographicsHTML += `<div style="color:#orange;font-style:italic;">🔄 Gender analysis in progress... (${totalPeople} people detected)</div>`;
         } else {
-            demographicsHTML += `<div style="color:#ccc;font-style:italic;">Gender analysis in progress...</div>`;
+            demographicsHTML += `<div style="color:#ccc;font-style:italic;">👥 No people detected yet</div>`;
         }
         
         // Age distribution
@@ -1455,8 +1507,10 @@
                 demographicsHTML += `<div>📅 ${age}: ${count} (${percentage}%)</div>`;
             });
             demographicsHTML += '</div>';
+        } else if (totalPeople > 0) {
+            demographicsHTML += `<div style="color:#orange;font-style:italic;">🔄 Age analysis in progress... (${totalPeople} people detected)</div>`;
         } else {
-            demographicsHTML += `<div style="color:#ccc;font-style:italic;">Age analysis in progress...</div>`;
+            demographicsHTML += `<div style="color:#ccc;font-style:italic;">📊 No age data available yet</div>`;
         }
         
         // Emotions

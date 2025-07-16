@@ -275,6 +275,9 @@ class SQLiteDatabase:
             # Populate lookup tables with default data if they're empty
             self._populate_lookup_tables()
             
+            # Create default users for RBAC demonstration
+            self._create_default_users()
+
             self.conn.commit()
             logger.info(f"3NF-compliant SQLite database initialized at {self.db_path}")
             
@@ -1305,4 +1308,99 @@ class SQLiteDatabase:
             return True
         except Exception as e:
             logger.error(f"Error cleaning up expired sessions: {e}")
-            return False 
+            return False
+
+    def _create_default_users(self):
+        """Create default users for RBAC demonstration"""
+        try:
+            from argon2 import PasswordHasher
+
+            # Initialize password hasher
+            ph = PasswordHasher(
+                time_cost=3,
+                memory_cost=65536,
+                parallelism=1,
+                hash_len=32,
+                salt_len=16
+            )
+
+            # Define default users for each role
+            default_users = [
+                {
+                    'username': 'admin',
+                    'email': 'admin@reviision.com',
+                    'password': 'admin',
+                    'full_name': 'Administrator',
+                    'role': 'admin'
+                },
+                {
+                    'username': 'manager',
+                    'email': 'manager@reviision.com',
+                    'password': 'manager',
+                    'full_name': 'Manager User',
+                    'role': 'manager'
+                },
+                {
+                    'username': 'manager2',
+                    'email': 'manager2@reviision.com',
+                    'password': 'manager2',
+                    'full_name': 'Manager User 2',
+                    'role': 'manager'
+                },
+                {
+                    'username': 'viewer',
+                    'email': 'viewer@reviision.com',
+                    'password': 'viewer',
+                    'full_name': 'Viewer User',
+                    'role': 'viewer'
+                },
+                {
+                    'username': 'viewer2',
+                    'email': 'viewer2@reviision.com',
+                    'password': 'viewer2',
+                    'full_name': 'Viewer User 2',
+                    'role': 'viewer'
+                }
+            ]
+
+            # Create each default user if they don't exist
+            for user_data in default_users:
+                self.cursor.execute('SELECT COUNT(*) FROM users WHERE username = ?', (user_data['username'],))
+                if self.cursor.fetchone()[0] == 0:
+                    try:
+                        # Hash the password
+                        password_hash = ph.hash(user_data['password'])
+
+                        # Create the user
+                        self.cursor.execute('''
+                            INSERT INTO users (username, email, password_hash, full_name, role, is_active)
+                            VALUES (?, ?, ?, ?, ?, 1)
+                        ''', (
+                            user_data['username'],
+                            user_data['email'],
+                            password_hash,
+                            user_data['full_name'],
+                            user_data['role']
+                        ))
+
+                        logger.info(f"Created default user: {user_data['username']} ({user_data['role']})")
+
+                    except Exception as e:
+                        logger.error(f"Error creating default user {user_data['username']}: {e}")
+                        continue
+                else:
+                    logger.debug(f"Default user {user_data['username']} already exists")
+
+            # Log summary of created users
+            logger.info("Default users created for RBAC demonstration:")
+            logger.info("- Username: admin, Password: admin, Role: admin")
+            logger.info("- Username: manager, Password: manager, Role: manager")
+            logger.info("- Username: manager2, Password: manager2, Role: manager")
+            logger.info("- Username: viewer, Password: viewer, Role: viewer")
+            logger.info("- Username: viewer2, Password: viewer2, Role: viewer")
+
+        except ImportError:
+            logger.error("Argon2 not available, skipping default user creation")
+        except Exception as e:
+            logger.error(f"Error creating default users: {e}")
+            # Don't raise here to avoid breaking database initialization

@@ -402,3 +402,21 @@ These video files are optimized for retail analytics testing and demonstrate var
 - Customer movement patterns
 - Dwell time analysis
 - Traffic flow visualization 
+
+## Default Users
+
+The system is initialized with the following default users for demonstration and testing purposes:
+
+| Username   | Password   | Role     | Email                    |
+|------------|------------|----------|--------------------------|
+| admin      | admin      | admin    | admin@reviision.com      |
+| manager    | manager    | manager  | manager@reviision.com    |
+| manager2   | manager2   | manager  | manager2@reviision.com   |
+| viewer     | viewer     | viewer   | viewer@reviision.com     |
+| viewer2    | viewer2    | viewer   | viewer2@reviision.com    |
+
+- **admin**: Full system access, can manage users and data.
+- **manager/manager2**: Can access management features, but not all admin functions.
+- **viewer/viewer2**: Read-only access to analytics and reports.
+
+> **Note:** Change these credentials in production environments for security. 
