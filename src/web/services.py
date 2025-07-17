@@ -705,8 +705,15 @@ class FrameAnalysisService:
                 self.motion_detector['last_frame'] = gray_frame
                 return True
             
+            # Ensure frames have the same size before comparison
+            last_frame = self.motion_detector['last_frame']
+            if last_frame.shape != gray_frame.shape:
+                # Resize last frame to match current frame size
+                last_frame = cv2.resize(last_frame, (gray_frame.shape[1], gray_frame.shape[0]))
+                logger.debug(f"Resized last frame from {self.motion_detector['last_frame'].shape} to {gray_frame.shape}")
+            
             # Calculate difference between frames
-            frame_diff = cv2.absdiff(self.motion_detector['last_frame'], gray_frame)
+            frame_diff = cv2.absdiff(last_frame, gray_frame)
             thresh = cv2.threshold(frame_diff, 25, 255, cv2.THRESH_BINARY)[1]
             
             # Count non-zero pixels
@@ -880,7 +887,7 @@ class FrameAnalysisService:
                         continue
                     
                     detections.append({
-                        'bbox': [int(x1), int(y1), int(w), int(h)],
+                        'bbox': [int(x1), int(y1), int(x2), int(y2)],  # Keep original x1,y1,x2,y2 format
                         'center': (float(x1 + w/2), float(y1 + h/2)),
                         'confidence': float(face_detection['confidence']),
                         'person_image': face_img,  # This is actually face image now
@@ -1071,14 +1078,27 @@ class FrameAnalysisService:
             for detection in new_detections:
                 bbox = detection['bbox']
                 if len(bbox) == 4 and bbox[2] > 0 and bbox[3] > 0:  # Ensure valid bbox
-                    x, y, w, h = bbox
-                    tracker_detections.append({
-                        'bbox': (x, y, x+w, y+h),  # Convert to x1,y1,x2,y2 format
-                        'confidence': detection['confidence'],
-                        'quality_score': detection.get('quality_score', 1.0),
-                        'embedding': detection.get('embedding'),
-                        'face_size': detection.get('area', w*h) if self.detection_mode == 'face' else None
-                    })
+                    if self.detection_mode == 'face':
+                        # Face detection uses x1,y1,x2,y2 format
+                        x1, y1, x2, y2 = bbox
+                        w, h = x2 - x1, y2 - y1
+                        tracker_detections.append({
+                            'bbox': (x1, y1, x2, y2),  # Already in correct format
+                            'confidence': detection['confidence'],
+                            'quality_score': detection.get('quality_score', 1.0),
+                            'embedding': detection.get('embedding'),
+                            'face_size': detection.get('area', w*h)
+                        })
+                    else:
+                        # Person detection might use x,y,w,h format  
+                        x, y, w, h = bbox
+                        tracker_detections.append({
+                            'bbox': (x, y, x+w, y+h),  # Convert to x1,y1,x2,y2 format
+                            'confidence': detection['confidence'],
+                            'quality_score': detection.get('quality_score', 1.0),
+                            'embedding': detection.get('embedding'),
+                            'face_size': None
+                        })
             
             # Create dummy frame for tracking if needed
             frame = None
@@ -1198,6 +1218,29 @@ class FrameAnalysisService:
                             else:
                                 logger.warning(f"△ Low-quality demographics for person {track_id}: {gender} {age_group} (conf: {confidence:.2f}, method: {method})")
                                 
+                            # Save person demographics to database
+                            try:
+                                # Mark as not saved initially  
+                                people_db[track_id]['saved_to_db'] = False
+                                
+                                # Save to database with good confidence
+                                if confidence >= 0.3:  # Save demographics with reasonable confidence
+                                    self._save_person_to_database_sync(track_id, demo_data, matching_detection, frame_time)
+                                    people_db[track_id]['saved_to_db'] = True
+                                    logger.info(f"📄 Saved person {track_id} demographics to database")
+                                else:
+                                    logger.debug(f"📄 Skipped database save for person {track_id} due to low confidence ({confidence:.2f})")
+                                    
+                            except Exception as e:
+                                logger.error(f"Failed to save person {track_id} to database: {e}")
+                                
+                            # Save detection data to database
+                            try:
+                                self._save_detection_to_database_sync(track_id, track['bbox'], track['confidence'], frame_time)
+                                logger.debug(f"📄 Saved detection for person {track_id} to database")
+                            except Exception as e:
+                                logger.error(f"Failed to save detection for person {track_id}: {e}")
+                                
                         except Exception as e:
                             logger.error(f"Error in enhanced demographic analysis for person {track_id}: {e}")
                             # Fallback to basic demographics with better defaults
@@ -1224,6 +1267,18 @@ class FrameAnalysisService:
                             }
                             
                             logger.info(f"Used enhanced fallback demographics for person {track_id}")
+                            
+                            # Save fallback demographics to database
+                            try:
+                                self._save_person_to_database_sync(track_id, demo_data, matching_detection, frame_time)
+                                people_db[track_id]['saved_to_db'] = True
+                                logger.info(f"📄 Saved fallback person {track_id} demographics to database")
+                                
+                                # Save detection data to database
+                                self._save_detection_to_database_sync(track_id, track['bbox'], track['confidence'], frame_time)
+                                logger.debug(f"📄 Saved detection for fallback person {track_id} to database")
+                            except Exception as e:
+                                logger.error(f"Failed to save fallback person {track_id} to database: {e}")
                     else:
                         # Update existing person with potential improvement
                         people_db[track_id]['last_seen'] = frame_time
@@ -1245,6 +1300,15 @@ class FrameAnalysisService:
                                     people_db[track_id]['demographics'] = new_demo_data
                                     people_db[track_id]['analysis_method'] = new_demo_data.get('analysis_method', 'enhanced')
                                     logger.debug(f"Improved demographics for person {track_id}: {current_confidence:.2f} → {new_confidence:.2f}")
+                                    
+                                    # Save improved demographics to database
+                                    try:
+                                        if new_confidence >= 0.3:  # Save improved demographics with good confidence
+                                            self._save_person_to_database_sync(track_id, new_demo_data, matching_detection, frame_time)
+                                            people_db[track_id]['saved_to_db'] = True
+                                            logger.info(f"📄 Updated person {track_id} demographics in database")
+                                    except Exception as e:
+                                        logger.error(f"Failed to update person {track_id} in database: {e}")
                                     
                                     # Process improved face snapshot if confidence is good enough
                                     if new_confidence >= 0.5:  # Higher threshold for updates
@@ -1268,15 +1332,33 @@ class FrameAnalysisService:
                                     
                             except Exception as e:
                                 logger.debug(f"Failed to improve demographics for person {track_id}: {e}")
+                        
+                        # Save detection data for existing person (always save detections)
+                        try:
+                            self._save_detection_to_database_sync(track_id, track['bbox'], track['confidence'], frame_time)
+                            logger.debug(f"📄 Saved detection for existing person {track_id} to database")
+                        except Exception as e:
+                            logger.error(f"Failed to save detection for existing person {track_id}: {e}")
                 
                 # Add to tracked people list
                 person_data = people_db.get(track_id, {})
                 demographics = person_data.get('demographics', {})
                 
+                # Convert bbox to frontend format [x, y, width, height]
+                if self.detection_mode == 'face':
+                    # Convert from (x1, y1, x2, y2) to [x, y, w, h]
+                    x1, y1, x2, y2 = track['bbox']
+                    bbox_frontend = [x1, y1, x2 - x1, y2 - y1]
+                    center = ((x1 + x2) / 2, (y1 + y2) / 2)
+                else:
+                    # Person detection bbox is already in correct format
+                    bbox_frontend = track['bbox']
+                    center = ((track['bbox'][0] + track['bbox'][2]) / 2, (track['bbox'][1] + track['bbox'][3]) / 2)
+                
                 tracked_people.append({
                     'id': track_id,
-                    'bbox': track['bbox'],
-                    'center': ((track['bbox'][0] + track['bbox'][2]) / 2, (track['bbox'][1] + track['bbox'][3]) / 2),
+                    'bbox': bbox_frontend,
+                    'center': center,
                     'confidence': track['confidence'],
                     'demographics': demographics,
                     'frames_tracked': track.get('frames_tracked', 1),
@@ -1307,7 +1389,15 @@ class FrameAnalysisService:
             # Place person images in their bounding boxes for feature extraction
             for detection in new_detections:
                 if 'person_image' in detection and detection['person_image'] is not None:
-                    x, y, w, h = detection['bbox']
+                    if self.detection_mode == 'face':
+                        # Face detection uses x1,y1,x2,y2 format
+                        x1, y1, x2, y2 = detection['bbox']
+                        w, h = x2 - x1, y2 - y1
+                        x, y = x1, y1
+                    else:
+                        # Person detection uses x,y,w,h format
+                        x, y, w, h = detection['bbox']
+                    
                     person_img = detection['person_image']
 
                     # Resize person image to fit bounding box
@@ -1320,12 +1410,22 @@ class FrameAnalysisService:
         # Convert detections to tracker format
         tracker_detections = []
         for detection in new_detections:
-            x, y, w, h = detection['bbox']
-            tracker_detections.append({
-                'bbox': (x, y, x+w, y+h),  # Convert to x1,y1,x2,y2 format
-                'confidence': detection['confidence'],
-                'center': detection['center']
-            })
+            if self.detection_mode == 'face':
+                # Face detection uses x1,y1,x2,y2 format
+                x1, y1, x2, y2 = detection['bbox']
+                tracker_detections.append({
+                    'bbox': (x1, y1, x2, y2),  # Already in correct format
+                    'confidence': detection['confidence'],
+                    'center': detection['center']
+                })
+            else:
+                # Person detection uses x,y,w,h format
+                x, y, w, h = detection['bbox']
+                tracker_detections.append({
+                    'bbox': (x, y, x+w, y+h),  # Convert to x1,y1,x2,y2 format
+                    'confidence': detection['confidence'],
+                    'center': detection['center']
+                })
 
         # Update tracker
         active_tracks = self.person_tracker.update(tracker_detections, frame)
@@ -1426,10 +1526,21 @@ class FrameAnalysisService:
                 'confidence': 0.1
             })
 
+            # Convert bbox to frontend format [x, y, width, height]
+            if self.detection_mode == 'face':
+                # Convert from (x1, y1, x2, y2) to [x, y, w, h]
+                x1, y1, x2, y2 = track['bbox']
+                bbox_frontend = [x1, y1, x2 - x1, y2 - y1]
+                center = ((x1 + x2) / 2, (y1 + y2) / 2)
+            else:
+                # Person detection bbox is already in correct format
+                bbox_frontend = track['bbox']
+                center = ((track['bbox'][0] + track['bbox'][2]) / 2, (track['bbox'][1] + track['bbox'][3]) / 2)
+
             tracked_person = {
                 'id': track_id,
-                'bbox': track['bbox'],
-                'center': ((track['bbox'][0] + track['bbox'][2]) / 2, (track['bbox'][1] + track['bbox'][3]) / 2),
+                'bbox': bbox_frontend,
+                'center': center,
                 'confidence': track['confidence'],
                 'frames_tracked': track['frames_tracked'],
                 'demographics': demographics,
