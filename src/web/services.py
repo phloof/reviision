@@ -57,953 +57,7 @@ else:
     logger.warning(f"Advanced demographic models not available (DeepFace: {DEEPFACE_AVAILABLE}, InsightFace: {INSIGHTFACE_AVAILABLE})")
 
 
-class EnhancedDemographicAnalyzer:
-    """
-    Enhanced demographic analyzer using DeepFace and InsightFace for accurate analysis
-    """
-    
-    def __init__(self):
-        self.models_loaded = False
-        self.face_app = None
-        self.deepface_models = {
-            'emotion': 'emotion',
-            'age': 'age', 
-            'gender': 'gender',
-            'race': 'race'
-        }
-        
-        # Performance optimization settings
-        self.optimization_config = {
-            'max_face_size': 224,  # Maximum face size for processing
-            'min_face_size': 48,   # Minimum face size for processing
-            'face_detection_threshold': 0.6,  # Confidence threshold for face detection
-            'enable_face_cache': True,  # Cache face extractions
-            'enable_quick_analysis': True,  # Use faster analysis methods when possible
-            'resize_input_images': True,  # Resize large input images
-            'max_input_size': 640  # Maximum input image dimension
-        }
-        
-        # Face extraction cache
-        self.face_cache = {
-            'extractions': {},  # Cache face extractions
-            'last_cleanup': time.time()
-        }
-        
-        # Enhanced demographic cache
-        self.demographic_cache = {
-            'age_predictions': {},  # Cache age predictions by image hash
-            'full_demographics': {},  # Cache full demographic results
-            'last_cleanup': time.time(),
-            'max_cache_size': 1000,  # Maximum number of cached entries
-            'cache_timeout': 300  # 5 minutes cache timeout
-        }
-        
-        # Log model availability
-        logger.info(f"Model availability - DeepFace: {DEEPFACE_AVAILABLE}, InsightFace: {INSIGHTFACE_AVAILABLE}, Advanced: {ADVANCED_MODELS_AVAILABLE}")
-        logger.info("Enhanced demographic analyzer initialized with ensemble age prediction and improved accuracy")
-        logger.info("Age model improvements: dlib backend, ensemble prediction, outlier filtering, caching")
-        
-        if ADVANCED_MODELS_AVAILABLE:
-            self._load_models()
-        else:
-            logger.warning("Advanced models not available, will use basic analysis methods")
-    
-    def _load_models(self):
-        """Load InsightFace and DeepFace models with optimization"""
-        try:
-            # Load InsightFace buffalo_l model with optimized settings
-            model_dir = Path('./models/models')  # Fixed path to match actual structure
-            if not model_dir.exists():
-                logger.error(f"Model directory does not exist: {model_dir}")
-                self.models_loaded = False
-                return
-                
-            buffalo_dir = model_dir / 'buffalo_l'
-            if not buffalo_dir.exists():
-                logger.error(f"Buffalo_l model directory does not exist: {buffalo_dir}")
-                self.models_loaded = False
-                return
-                
-            logger.info(f"Loading InsightFace models from: {model_dir}")
-            self.face_app = FaceAnalysis(
-                name='buffalo_l',
-                root=str(model_dir),
-                allowed_modules=['detection', 'recognition']
-            )
-            # Use smaller detection size for faster processing
-            self.face_app.prepare(ctx_id=0, det_size=(320, 320))
-            
-            self.models_loaded = True
-            logger.info("Enhanced demographic models loaded successfully with optimizations")
-            
-        except Exception as e:
-            logger.error(f"Error loading enhanced demographic models: {e}", exc_info=True)
-            self.models_loaded = False
-    
-    def _preprocess_image(self, person_img: np.ndarray) -> Optional[np.ndarray]:
-        """
-        Preprocess image for optimal face detection and analysis
-        
-        Args:
-            person_img: Input person image
-            
-        Returns:
-            Preprocessed image or None if invalid
-        """
-        try:
-            if person_img is None or person_img.size == 0:
-                return None
-            
-            h, w = person_img.shape[:2]
-            
-            # Check minimum size
-            if h < 32 or w < 32:
-                logger.debug(f"Image too small for processing: {h}x{w}")
-                return None
-            
-            # Resize if image is too large
-            if self.optimization_config['resize_input_images']:
-                max_size = self.optimization_config['max_input_size']
-                if max(h, w) > max_size:
-                    scale = max_size / max(h, w)
-                    new_h, new_w = int(h * scale), int(w * scale)
-                    person_img = cv2.resize(person_img, (new_w, new_h), interpolation=cv2.INTER_AREA)
-                    logger.debug(f"Resized image from {w}x{h} to {new_w}x{new_h}")
-            
-            # Enhance image quality for better face detection
-            enhanced_img = self._enhance_image_quality(person_img)
-            
-            return enhanced_img
-            
-        except Exception as e:
-            logger.debug(f"Error preprocessing image: {e}")
-            return person_img  # Return original if preprocessing fails
-    
-    def _enhance_image_quality(self, img: np.ndarray) -> np.ndarray:
-        """
-        Advanced image quality enhancement optimized for age prediction accuracy
-        
-        Args:
-            img: Input image
-            
-        Returns:
-            Enhanced image with improved features for demographic analysis
-        """
-        try:
-            # Convert to RGB if needed
-            if len(img.shape) == 3 and img.shape[2] == 3:
-                # Step 1: Noise reduction with bilateral filtering
-                # Preserves edges while smoothing noise - crucial for age estimation
-                enhanced = cv2.bilateralFilter(img, 9, 75, 75)
-                
-                # Step 2: Enhanced CLAHE for better contrast
-                lab = cv2.cvtColor(enhanced, cv2.COLOR_BGR2LAB)
-                l, a, b = cv2.split(lab)
-                
-                # Apply stronger CLAHE to L channel for better facial feature visibility
-                clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
-                l = clahe.apply(l)
-                
-                # Merge channels and convert back
-                enhanced = cv2.merge([l, a, b])
-                enhanced = cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
-                
-                # Step 3: Adaptive sharpening for facial features
-                # Create unsharp mask for better age-related feature enhancement
-                gaussian = cv2.GaussianBlur(enhanced, (0, 0), 2.0)
-                unsharp_mask = cv2.addWeighted(enhanced, 1.5, gaussian, -0.5, 0)
-                
-                # Step 4: Final edge enhancement for wrinkles and texture
-                kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
-                final_enhanced = cv2.filter2D(unsharp_mask, -1, kernel * 0.15)
-                
-                # Step 5: Ensure proper value range
-                final_enhanced = np.clip(final_enhanced, 0, 255).astype(np.uint8)
-                
-                logger.debug("Applied advanced image enhancement for age prediction")
-                return final_enhanced
-            else:
-                return img
-                
-        except Exception as e:
-            logger.debug(f"Advanced image enhancement failed, using basic: {e}")
-            # Fallback to basic enhancement
-            try:
-                if len(img.shape) == 3 and img.shape[2] == 3:
-                    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-                    l, a, b = cv2.split(lab)
-                    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-                    l = clahe.apply(l)
-                    enhanced = cv2.merge([l, a, b])
-                    return cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
-                else:
-                    return img
-            except:
-                return img
-    
-    def _get_cached_face_extraction(self, person_img: np.ndarray) -> Optional[np.ndarray]:
-        """Get cached face extraction if available"""
-        if not self.optimization_config['enable_face_cache']:
-            return None
-        
-        try:
-            # Create a simple hash for the image
-            h, w = person_img.shape[:2]
-            img_hash = f"{h}x{w}_{hash(tuple(person_img[::h//4, ::w//4].flatten()[:20]))}"
-            
-            if img_hash in self.face_cache['extractions']:
-                cached_data = self.face_cache['extractions'][img_hash]
-                if time.time() - cached_data['timestamp'] < 300:  # 5 minute cache
-                    logger.debug(f"Face extraction cache hit: {img_hash}")
-                    return cached_data['face']
-            
-            return None
-            
-        except Exception:
-            return None
-    
-    def _cache_face_extraction(self, person_img: np.ndarray, face_img: np.ndarray):
-        """Cache face extraction result"""
-        if not self.optimization_config['enable_face_cache']:
-            return
-        
-        try:
-            h, w = person_img.shape[:2]
-            img_hash = f"{h}x{w}_{hash(tuple(person_img[::h//4, ::w//4].flatten()[:20]))}"
-            
-            self.face_cache['extractions'][img_hash] = {
-                'face': face_img.copy(),
-                'timestamp': time.time()
-            }
-            
-            # Cleanup old entries periodically
-            if time.time() - self.face_cache['last_cleanup'] > 300:  # Every 5 minutes
-                self._cleanup_face_cache()
-                
-        except Exception as e:
-            logger.debug(f"Face extraction caching failed: {e}")
-    
-    def _cleanup_face_cache(self):
-        """Clean up old face cache entries"""
-        current_time = time.time()
-        expired_keys = []
-        
-        for key, value in self.face_cache['extractions'].items():
-            if current_time - value['timestamp'] > 300:  # 5 minute expiry
-                expired_keys.append(key)
-        
-        for key in expired_keys:
-            self.face_cache['extractions'].pop(key, None)
-        
-        self.face_cache['last_cleanup'] = current_time
-        logger.debug(f"Face cache cleanup: removed {len(expired_keys)} entries")
-    
-    def _cleanup_demographic_cache(self):
-        """Clean up old demographic cache entries"""
-        current_time = time.time()
-        cache_timeout = self.demographic_cache['cache_timeout']
-        
-        # Clean up age predictions cache
-        expired_age_keys = []
-        for key, value in self.demographic_cache['age_predictions'].items():
-            if current_time - value['timestamp'] > cache_timeout:
-                expired_age_keys.append(key)
-        
-        for key in expired_age_keys:
-            self.demographic_cache['age_predictions'].pop(key, None)
-        
-        # Clean up full demographics cache
-        expired_demo_keys = []
-        for key, value in self.demographic_cache['full_demographics'].items():
-            if current_time - value['timestamp'] > cache_timeout:
-                expired_demo_keys.append(key)
-        
-        for key in expired_demo_keys:
-            self.demographic_cache['full_demographics'].pop(key, None)
-        
-        # Limit cache size
-        max_size = self.demographic_cache['max_cache_size']
-        if len(self.demographic_cache['age_predictions']) > max_size:
-            # Remove oldest entries
-            sorted_items = sorted(
-                self.demographic_cache['age_predictions'].items(),
-                key=lambda x: x[1]['timestamp']
-            )
-            for key, _ in sorted_items[:-max_size]:
-                self.demographic_cache['age_predictions'].pop(key, None)
-        
-        if len(self.demographic_cache['full_demographics']) > max_size:
-            # Remove oldest entries
-            sorted_items = sorted(
-                self.demographic_cache['full_demographics'].items(),
-                key=lambda x: x[1]['timestamp']
-            )
-            for key, _ in sorted_items[:-max_size]:
-                self.demographic_cache['full_demographics'].pop(key, None)
-        
-        self.demographic_cache['last_cleanup'] = current_time
-        logger.debug(f"Demographic cache cleanup: removed {len(expired_age_keys)} age entries, {len(expired_demo_keys)} demo entries")
-    
-    def _get_image_hash(self, img: np.ndarray) -> str:
-        """Generate a hash for an image for caching purposes"""
-        try:
-            # Resize image to small size for consistent hashing
-            small_img = cv2.resize(img, (32, 32))
-            # Convert to grayscale for simpler hash
-            gray_img = cv2.cvtColor(small_img, cv2.COLOR_BGR2GRAY) if len(small_img.shape) == 3 else small_img
-            # Calculate hash
-            img_hash = str(hash(gray_img.tobytes()))
-            return img_hash
-        except Exception as e:
-            logger.debug(f"Error generating image hash: {e}")
-            return str(time.time())  # Fallback to timestamp
-
-    def analyze_demographics(self, person_img: np.ndarray) -> Dict[str, Any]:
-        """
-        Robust demographic analysis with caching and multiple fallback methods
-        
-        Args:
-            person_img: Person image array
-            
-        Returns:
-            Dictionary with demographic information
-        """
-        if person_img is None or person_img.size == 0:
-            logger.debug("No person image provided, using fallback")
-            return self._fallback_analysis(person_img)
-        
-        # Generate image hash for caching
-        img_hash = self._get_image_hash(person_img)
-        
-        # Clean up cache periodically
-        current_time = time.time()
-        if current_time - self.demographic_cache['last_cleanup'] > 60:  # Clean every minute
-            self._cleanup_demographic_cache()
-        
-        # Check cache first
-        if img_hash in self.demographic_cache['full_demographics']:
-            cached_result = self.demographic_cache['full_demographics'][img_hash]
-            if current_time - cached_result['timestamp'] < self.demographic_cache['cache_timeout']:
-                logger.debug(f"Cache hit for demographic analysis: {img_hash}")
-                result = cached_result['demographics'].copy()
-                result['analysis_method'] = result.get('analysis_method', 'unknown') + '_cached'
-                return result
-        
-        logger.debug(f"Starting demographic analysis on image: {person_img.shape}")
-        
-        # Try advanced models if available
-        result = None
-        if ADVANCED_MODELS_AVAILABLE and self.models_loaded:
-            try:
-                result = self._analyze_with_advanced_models(person_img)
-            except Exception as e:
-                logger.warning(f"Advanced model analysis failed: {e}")
-        
-        # Try basic DeepFace analysis if available
-        if not result and DEEPFACE_AVAILABLE:
-            try:
-                result = self._analyze_with_basic_deepface(person_img)
-            except Exception as e:
-                logger.warning(f"Basic DeepFace analysis failed: {e}")
-        
-        # Final fallback
-        if not result:
-            if not DEEPFACE_AVAILABLE:
-                logger.warning("DeepFace not available, using fallback")
-            result = self._fallback_analysis(person_img)
-        
-        # Cache the result
-        if result and img_hash:
-            self.demographic_cache['full_demographics'][img_hash] = {
-                'demographics': result.copy(),
-                'timestamp': current_time
-            }
-            logger.debug(f"Cached demographic result for: {img_hash}")
-        
-        return result
-    
-    def _analyze_with_advanced_models(self, person_img: np.ndarray) -> Dict[str, Any]:
-        """Advanced model analysis with InsightFace and DeepFace"""
-        # Preprocess image for optimal performance
-        processed_img = self._preprocess_image(person_img)
-        if processed_img is None:
-            raise Exception("Image preprocessing failed")
-        
-        # Extract face using InsightFace
-        face_img = self._extract_face_insightface_optimized(processed_img)
-        if face_img is None:
-            # Try simple face extraction as fallback
-            face_img = self._extract_face_simple(processed_img)
-            if face_img is None:
-                raise Exception("Face extraction failed")
-        
-        logger.debug(f"Face extracted successfully, analyzing with DeepFace: {face_img.shape}")
-        
-        # Analyze with optimized DeepFace
-        demographics = self._analyze_with_deepface_optimized(face_img)
-        
-        logger.debug(f"Advanced demographic analysis completed: {demographics.get('gender', 'unknown')} {demographics.get('age_group', 'unknown')} conf: {demographics.get('confidence', 0):.2f}")
-        
-        return demographics
-    
-    def _analyze_with_basic_deepface(self, person_img: np.ndarray) -> Dict[str, Any]:
-        """Basic DeepFace analysis without InsightFace"""
-        # Try simple face extraction
-        face_img = self._extract_face_simple(person_img)
-        if face_img is None:
-            logger.debug("Simple face extraction failed for basic DeepFace")
-            raise Exception("Simple face extraction failed")
-        
-        logger.debug(f"Analyzing face with basic DeepFace: {face_img.shape}")
-        
-        # Use basic DeepFace analysis with error handling
-        try:
-            results = DeepFace.analyze(
-                img_path=face_img,
-                actions=['age', 'gender', 'emotion'],
-                enforce_detection=False,
-                detector_backend='opencv',
-                silent=True
-            )
-        except Exception as e:
-            logger.warning(f"DeepFace analysis failed: {e}")
-            # Try with different backend
-            try:
-                results = DeepFace.analyze(
-                    img_path=face_img,
-                    actions=['age', 'gender'],
-                    enforce_detection=False,
-                    detector_backend='mtcnn',
-                    silent=True
-                )
-            except Exception as e2:
-                logger.warning(f"DeepFace analysis with MTCNN also failed: {e2}")
-                raise Exception(f"All DeepFace backends failed: {e}")
-        
-        if isinstance(results, list):
-            result = results[0]
-        else:
-            result = results
-        
-        age = result.get('age', 25)
-        gender = result.get('dominant_gender', 'unknown')
-        emotion = result.get('dominant_emotion', 'neutral')
-        
-        # Calculate confidence based on result completeness
-        confidence = 0.5  # Base confidence
-        if gender != 'unknown' and gender is not None:
-            confidence += 0.2
-        if emotion != 'neutral' and emotion is not None:
-            confidence += 0.1
-        if age > 0 and age < 100:
-            confidence += 0.2
-        
-        logger.debug(f"Basic DeepFace analysis completed: {gender} {age} years old, confidence: {confidence:.2f}")
-        
-        return {
-            'age': age,
-            'age_group': self._calculate_age_group_fast(age),
-            'gender': gender.lower() if gender else 'unknown',
-            'emotion': emotion.lower() if emotion else 'neutral',
-            'race': 'unknown',
-            'confidence': min(confidence, 1.0),
-            'analysis_method': 'basic_deepface'
-        }
-    
-    def _extract_face_simple(self, person_img: np.ndarray) -> Optional[np.ndarray]:
-        """Simple face extraction using OpenCV or just crop upper portion"""
-        try:
-            # First try OpenCV cascade classifier
-            import cv2
-            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-            
-            if person_img.shape[2] == 3:  # RGB
-                gray = cv2.cvtColor(person_img, cv2.COLOR_RGB2GRAY)
-            else:
-                gray = person_img
-            
-            faces = face_cascade.detectMultiScale(gray, 1.1, 4, minSize=(48, 48))
-            
-            if len(faces) > 0:
-                # Use the largest face
-                x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
-                face_img = person_img[y:y+h, x:x+w]
-                
-                # Ensure minimum size
-                if face_img.shape[0] >= 48 and face_img.shape[1] >= 48:
-                    logger.debug(f"OpenCV face extraction successful: {face_img.shape}")
-                    return face_img
-            
-            # Fallback: crop upper 40% of person image (likely contains face)
-            h, w = person_img.shape[:2]
-            face_region = person_img[:int(h * 0.4), :]
-            
-            if face_region.shape[0] >= 48 and face_region.shape[1] >= 48:
-                logger.debug(f"Simple crop face extraction: {face_region.shape}")
-                return face_region
-            
-            return None
-            
-        except Exception as e:
-            logger.warning(f"Simple face extraction failed: {e}")
-            return None
-    
-    def _extract_face_insightface_optimized(self, person_img: np.ndarray) -> Optional[np.ndarray]:
-        """
-        Optimized face extraction using InsightFace with better performance
-        
-        Args:
-            person_img: Input person image
-            
-        Returns:
-            Extracted face image or None
-        """
-        try:
-            if self.face_app is None:
-                logger.debug("InsightFace face_app not available")
-                return None
-            
-            # Use optimized face detection
-            faces = self.face_app.get(person_img)
-            if not faces:
-                logger.debug("No faces detected with InsightFace")
-                return None
-            
-            # Filter faces by confidence and size
-            valid_faces = []
-            min_face_size = self.optimization_config['min_face_size']
-            detection_threshold = self.optimization_config['face_detection_threshold']
-            
-            for face in faces:
-                bbox = face.bbox.astype(int)
-                face_width = bbox[2] - bbox[0]
-                face_height = bbox[3] - bbox[1]
-                
-                # Check face size and detection score
-                if (face_width >= min_face_size and 
-                    face_height >= min_face_size and
-                    getattr(face, 'det_score', 1.0) >= detection_threshold):
-                    valid_faces.append(face)
-            
-            if not valid_faces:
-                logger.debug("No valid faces found after filtering")
-                return None
-            
-            # Use the largest valid face
-            largest_face = max(valid_faces, key=lambda x: (x.bbox[2] - x.bbox[0]) * (x.bbox[3] - x.bbox[1]))
-            bbox = largest_face.bbox.astype(int)
-            
-            x1, y1, x2, y2 = bbox[0], bbox[1], bbox[2], bbox[3]
-            
-            # Add optimized margin (smaller for performance)
-            margin_ratio = 0.1  # 10% margin instead of 15%
-            margin_x = int((x2 - x1) * margin_ratio)
-            margin_y = int((y2 - y1) * margin_ratio)
-            
-            x1 = max(0, x1 - margin_x)
-            y1 = max(0, y1 - margin_y) 
-            x2 = min(person_img.shape[1], x2 + margin_x)
-            y2 = min(person_img.shape[0], y2 + margin_y)
-            
-            if x2 <= x1 or y2 <= y1:
-                logger.debug("Invalid face bbox coordinates after margin adjustment")
-                return None
-            
-            face_img = person_img[y1:y2, x1:x2]
-            
-            # Resize to optimal size for processing
-            if face_img.shape[0] > 0 and face_img.shape[1] > 0:
-                max_face_size = self.optimization_config['max_face_size']
-                h, w = face_img.shape[:2]
-                
-                if max(h, w) > max_face_size:
-                    scale = max_face_size / max(h, w)
-                    new_h, new_w = int(h * scale), int(w * scale)
-                    face_img = cv2.resize(face_img, (new_w, new_h), interpolation=cv2.INTER_AREA)
-                elif min(h, w) < self.optimization_config['min_face_size']:
-                    # Upscale very small faces
-                    scale = self.optimization_config['min_face_size'] / min(h, w)
-                    new_h, new_w = int(h * scale), int(w * scale)
-                    face_img = cv2.resize(face_img, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
-                
-                logger.debug(f"Optimized face extracted and resized: {face_img.shape}")
-                return face_img
-            else:
-                logger.debug(f"Extracted face invalid: {face_img.shape}")
-                    
-        except Exception as e:
-            logger.warning(f"Optimized InsightFace face extraction failed: {e}")
-            
-        return None
-
-    def _analyze_with_deepface_optimized(self, face_img: np.ndarray) -> Dict[str, Any]:
-        """
-        Enhanced DeepFace analysis with ensemble age prediction for improved accuracy
-        
-        Args:
-            face_img: Face image for analysis
-            
-        Returns:
-            Demographic analysis results with improved age accuracy
-        """
-        try:
-            # Ensure optimal face size for DeepFace
-            h, w = face_img.shape[:2]
-            
-            # DeepFace works best with faces >= 48x48
-            min_size = 48
-            if h < min_size or w < min_size:
-                # Resize to minimum required size
-                if h < w:
-                    new_h, new_w = min_size, int(w * min_size / h)
-                else:
-                    new_h, new_w = int(h * min_size / w), min_size
-                face_img = cv2.resize(face_img, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
-            
-            # Ensemble age prediction with multiple backends for better accuracy
-            age_predictions = []
-            primary_result = None
-            
-            # Try primary backend (dlib) for age estimation
-            try:
-                primary_results = DeepFace.analyze(
-                    img_path=face_img,
-                    actions=['age', 'gender', 'race', 'emotion'],
-                    enforce_detection=False,
-                    detector_backend='dlib',  # Primary backend for better accuracy
-                    silent=True
-                )
-                primary_result = primary_results[0] if isinstance(primary_results, list) else primary_results
-                if 'age' in primary_result:
-                    age_predictions.append(primary_result['age'])
-                logger.debug(f"Primary age prediction (dlib): {primary_result.get('age', 'N/A')}")
-            except Exception as e:
-                logger.debug(f"Primary backend (dlib) failed: {e}")
-            
-            # Try fallback backend (mtcnn) for additional age estimation
-            try:
-                fallback_results = DeepFace.analyze(
-                    img_path=face_img,
-                    actions=['age'],
-                    enforce_detection=False,
-                    detector_backend='mtcnn',  # Fallback backend
-                    silent=True
-                )
-                fallback_result = fallback_results[0] if isinstance(fallback_results, list) else fallback_results
-                if 'age' in fallback_result:
-                    age_predictions.append(fallback_result['age'])
-                logger.debug(f"Fallback age prediction (mtcnn): {fallback_result.get('age', 'N/A')}")
-            except Exception as e:
-                logger.debug(f"Fallback backend (mtcnn) failed: {e}")
-            
-            # If no predictions, use skip backend as last resort
-            if not age_predictions and not primary_result:
-                try:
-                    skip_results = DeepFace.analyze(
-                        img_path=face_img,
-                        actions=['age', 'gender', 'race', 'emotion'],
-                        enforce_detection=False,
-                        detector_backend='skip',  # Last resort
-                        silent=True
-                    )
-                    primary_result = skip_results[0] if isinstance(skip_results, list) else skip_results
-                    if 'age' in primary_result:
-                        age_predictions.append(primary_result['age'])
-                    logger.debug(f"Skip backend age prediction: {primary_result.get('age', 'N/A')}")
-                except Exception as e:
-                    logger.warning(f"All age prediction backends failed: {e}")
-                    raise e
-            
-            # Calculate ensemble age prediction
-            if age_predictions:
-                # Remove outliers and calculate weighted average
-                valid_ages = [age for age in age_predictions if isinstance(age, (int, float)) and 1 <= age <= 100]
-                if valid_ages:
-                    if len(valid_ages) == 1:
-                        final_age = valid_ages[0]
-                    else:
-                        # Weighted average with outlier removal
-                        ages_array = np.array(valid_ages)
-                        mean_age = np.mean(ages_array)
-                        std_age = np.std(ages_array)
-                        # Remove outliers beyond 1.5 standard deviations
-                        filtered_ages = ages_array[np.abs(ages_array - mean_age) <= 1.5 * std_age]
-                        final_age = np.mean(filtered_ages) if len(filtered_ages) > 0 else mean_age
-                    
-                    final_age = max(1, min(100, int(round(final_age))))
-                    logger.debug(f"Ensemble age prediction: {final_age} (from {len(valid_ages)} models)")
-                else:
-                    final_age = 25  # Default fallback
-            else:
-                final_age = primary_result.get('age', 25) if primary_result else 25
-            
-            # Use primary result for other attributes or fallback
-            if not primary_result:
-                logger.warning("No successful analysis results, using fallback")
-                return self._fallback_analysis(face_img)
-            
-            # Handle gender parsing robustly
-            gender = primary_result.get('dominant_gender', 'unknown')
-            if gender == 'unknown' or not gender:
-                gender_data = primary_result.get('gender', {})
-                if isinstance(gender_data, dict) and gender_data:
-                    gender = max(gender_data.keys(), key=lambda k: gender_data[k])
-                elif isinstance(gender_data, str):
-                    gender = gender_data
-                else:
-                    gender = 'unknown'
-            
-            # Get other attributes
-            race = primary_result.get('dominant_race', 'unknown')
-            emotion = primary_result.get('dominant_emotion', 'neutral')
-            
-            # Calculate age group efficiently
-            age_group = self._calculate_age_group_fast(final_age)
-            
-            # Calculate confidence based on age prediction consistency
-            gender_scores = primary_result.get('gender', {})
-            base_confidence = 0.6
-            if isinstance(gender_scores, dict) and gender_scores:
-                base_confidence = max(gender_scores.values())
-                if base_confidence > 1:
-                    base_confidence = base_confidence / 100.0
-            
-            # Boost confidence if multiple age predictions are consistent
-            if len(age_predictions) > 1:
-                ages_std = np.std(age_predictions) if age_predictions else 0
-                if ages_std < 5:  # Ages within 5 years are considered consistent
-                    base_confidence = min(1.0, base_confidence + 0.1)
-            
-            confidence = min(1.0, max(0.1, base_confidence))
-            
-            return {
-                'age': final_age,
-                'age_group': age_group,
-                'gender': gender.lower() if gender != 'unknown' else 'unknown',
-                'race': race,
-                'emotion': emotion,
-                'confidence': confidence,
-                'analysis_method': 'deepface_ensemble',
-                'age_predictions': age_predictions,  # For debugging
-                'age_consistency': len(age_predictions) > 1 and np.std(age_predictions) < 5 if age_predictions else False
-            }
-            
-        except Exception as e:
-            logger.warning(f"Enhanced DeepFace analysis failed: {e}")
-            return self._fallback_analysis(face_img)
-
-    def _calculate_age_group_fast(self, age: int) -> str:
-        """Fast age group calculation using lookup"""
-        if age < 13:
-            return "0-12"
-        elif age < 18:
-            return "13-17"
-        elif age < 25:
-            return "18-24"
-        elif age < 35:
-            return "25-34"
-        elif age < 45:
-            return "35-44"
-        elif age < 55:
-            return "45-54"
-        elif age < 65:
-            return "55-64"
-        else:
-            return "65+"
-
-    def _extract_face_insightface(self, person_img: np.ndarray) -> Optional[np.ndarray]:
-        """Extract face using InsightFace detection with quality enhancement"""
-        try:
-            if self.face_app is None:
-                logger.debug("InsightFace face_app not available")
-                return None
-            
-            # Ensure minimum image size
-            if person_img.shape[0] < 32 or person_img.shape[1] < 32:
-                logger.debug(f"Person image too small for face detection: {person_img.shape}")
-                return None
-            
-            # Enhance image quality before detection
-            enhanced_img = self._enhance_image_quality(person_img)
-                
-            # Try face detection on enhanced image first
-            faces = self.face_app.get(enhanced_img)
-            if not faces:
-                # Fallback to original image
-                logger.debug("No faces on enhanced image, trying original")
-                faces = self.face_app.get(person_img)
-                source_img = person_img
-            else:
-                source_img = enhanced_img
-                
-            if faces:
-                # Sort by face size and take the largest
-                faces = sorted(faces, key=lambda x: (x.bbox[2] - x.bbox[0]) * (x.bbox[3] - x.bbox[1]), reverse=True)
-                bbox = faces[0].bbox.astype(int)
-                x1, y1, x2, y2 = bbox[0], bbox[1], bbox[2], bbox[3]
-                
-                # Add margin around face for better context
-                margin = int((y2 - y1) * 0.15)  # 15% margin
-                x1 = max(0, x1 - margin)
-                y1 = max(0, y1 - margin) 
-                x2 = min(source_img.shape[1], x2 + margin)
-                y2 = min(source_img.shape[0], y2 + margin)
-                
-                if x2 <= x1 or y2 <= y1:
-                    logger.debug("Invalid face bbox coordinates")
-                    return None
-                
-                face_img = source_img[y1:y2, x1:x2]
-                
-                # Resize face to optimal size for DeepFace
-                if face_img.shape[0] > 0 and face_img.shape[1] > 0:
-                    # Resize to standard size for consistent analysis
-                    face_img = cv2.resize(face_img, (112, 112))  # Standard face recognition size
-                    logger.debug(f"Face extracted and resized: {face_img.shape}")
-                    return face_img
-                else:
-                    logger.debug(f"Extracted face invalid: {face_img.shape}")
-                    
-        except Exception as e:
-            logger.warning(f"InsightFace face extraction failed: {e}")
-            
-        return None
-    
-    def _analyze_with_deepface(self, face_img: np.ndarray) -> Dict[str, Any]:
-        """Analyze face with DeepFace"""
-        try:
-            # Ensure minimum face size for DeepFace
-            h, w = face_img.shape[:2]
-            if h < 48 or w < 48:
-                # Resize to minimum required size
-                face_img = cv2.resize(face_img, (48, 48))
-            
-            # Analyze with DeepFace
-            results = DeepFace.analyze(
-                img_path=face_img,
-                actions=['age', 'gender', 'race', 'emotion'],
-                enforce_detection=False,
-                detector_backend='opencv',
-                silent=True
-            )
-            
-            # Process results
-            if isinstance(results, list):
-                result = results[0]
-            else:
-                result = results
-            
-            # Extract dominant attributes with better parsing
-            age = result.get('age', 25)
-            
-            # Handle gender parsing more robustly
-            gender = result.get('dominant_gender', 'unknown')
-            if gender == 'unknown':
-                # Try alternative gender field parsing
-                gender_data = result.get('gender', {})
-                if isinstance(gender_data, dict) and gender_data:
-                    # Find the gender with highest confidence
-                    gender = max(gender_data.keys(), key=lambda k: gender_data[k])
-                elif isinstance(gender_data, str):
-                    gender = gender_data
-            
-            race = result.get('dominant_race', 'unknown')
-            emotion = result.get('dominant_emotion', 'neutral')
-            
-            # Calculate age group
-            age_group = self._calculate_age_group(age)
-            
-            # Calculate confidence (use gender confidence as overall indicator)
-            gender_scores = result.get('gender', {})
-            if isinstance(gender_scores, dict) and gender_scores:
-                confidence = max(gender_scores.values()) / 100.0 if max(gender_scores.values()) > 1 else max(gender_scores.values())
-                confidence = min(1.0, max(0.1, confidence))  # Ensure 0.1-1.0 range
-            else:
-                confidence = 0.7
-            
-            return {
-                'age': age,
-                'age_group': age_group,
-                'gender': gender.lower(),
-                'race': race,
-                'emotion': emotion,
-                'confidence': confidence,
-                'analysis_method': 'deepface_insightface'
-            }
-            
-        except Exception as e:
-            logger.warning(f"DeepFace analysis failed: {e}")
-            return self._fallback_analysis(None)
-    
-    def _calculate_age_group(self, age: int) -> str:
-        """Calculate age group from numeric age"""
-        if age < 13:
-            return "0-12"
-        elif age < 18:
-            return "13-17"
-        elif age < 25:
-            return "18-24"
-        elif age < 35:
-            return "25-34"
-        elif age < 45:
-            return "35-44"
-        elif age < 55:
-            return "45-54"
-        elif age < 65:
-            return "55-64"
-        else:
-            return "65+"
-    
-    def _fallback_analysis(self, person_img: Optional[np.ndarray]) -> Dict[str, Any]:
-        """Fallback to basic analysis when advanced models fail"""
-        # Try basic OpenCV face detection as a last resort
-        if person_img is not None:
-            try:
-                # Use simple heuristics for basic demographics
-                gray = cv2.cvtColor(person_img, cv2.COLOR_BGR2GRAY)
-                
-                # Load OpenCV face cascade
-                face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-                faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-                
-                if len(faces) > 0:
-                    # At least we detected a face with OpenCV
-                    logger.debug(f"OpenCV detected {len(faces)} faces as fallback")
-                    
-                    # Try basic heuristics based on image properties
-                    face_x, face_y, face_w, face_h = faces[0]
-                    face_roi = gray[face_y:face_y+face_h, face_x:face_x+face_w]
-                    
-                    # Basic age estimation from face size/proportion
-                    estimated_age = 25 + min(15, max(-5, int((face_h - 80) / 4)))  # Rough age estimation
-                    age_group = self._calculate_age_group(estimated_age)
-                    
-                    return {
-                        'age': estimated_age,
-                        'age_group': age_group,
-                        'gender': 'unknown',
-                        'race': 'unknown',
-                        'emotion': 'neutral',
-                        'confidence': 0.4,  # Slightly higher confidence since we detected a face
-                        'analysis_method': 'opencv_fallback'
-                    }
-                else:
-                    logger.debug("No faces detected even with OpenCV fallback")
-                    
-            except Exception as e:
-                logger.debug(f"OpenCV fallback also failed: {e}")
-        
-        # Ultimate fallback with very low confidence
-        logger.debug("Using ultimate fallback demographics")
-        return {
-            'age': 30,
-            'age_group': '25-34',  # Provide a reasonable default age group instead of unknown
-            'gender': 'unknown',
-            'race': 'unknown',
-            'emotion': 'neutral',
-            'confidence': 0.2,  # Slightly higher than before
-            'analysis_method': 'ultimate_fallback'
-        }
+# Note: EnhancedDemographicAnalyzer class removed - now using simplified DemographicAnalyzer from analysis module
 
 
 class FrameAnalysisService:
@@ -1011,7 +65,7 @@ class FrameAnalysisService:
     Enhanced Frame Analysis Service with Face Detection and Advanced Demographics
     
     This service maintains persistent tracking of faces across frames
-    and performs sophisticated demographic analysis using InsightFace and DeepFace.
+    and performs sophisticated demographic analysis using simplified InsightFace buffalo_l model.
     """
     
     def __init__(self):
@@ -1050,7 +104,7 @@ class FrameAnalysisService:
             self.tracker = get_tracker(tracking_config)
             self.detection_mode = detection_mode
             
-            # Initialize demographic analyzer with config
+            # Use simplified demographic analyzer with config
             self.demographic_analyzer = DemographicAnalyzer(config['analysis']['demographics'])
             
             # Initialize face snapshot manager
@@ -1058,16 +112,24 @@ class FrameAnalysisService:
             face_storage_config.update(config['analysis'].get('demographics', {}))
             self.face_snapshot_manager = FaceSnapshotManager(face_storage_config, database=None)  # Database will be set later
             
-            logger.info(f"FrameAnalysisService initialized with {detection_mode} detection mode and face snapshot management")
+            logger.info(f"FrameAnalysisService initialized with {detection_mode} detection mode and simplified demographic analyzer")
             
         except Exception as e:
             logger.error(f"Error initializing detection pipeline: {e}")
-            # Fallback to legacy mode
+            # Fallback to legacy mode with simplified analyzer
             self.detector = None
             self.tracker = None
             self.detection_mode = 'person'
             self.yolo_model = None
-            self.demographic_analyzer = EnhancedDemographicAnalyzer()
+            # Use simplified demographic analyzer as fallback
+            fallback_config = {
+                'model_dir': './models',
+                'confidence_threshold': 0.6,
+                'min_face_size': 48,
+                'detection_interval': 15,
+                'one_time_demographics': True
+            }
+            self.demographic_analyzer = DemographicAnalyzer(fallback_config)
 
         # Database reference (set later)
         self.database = None
@@ -1103,14 +165,14 @@ class FrameAnalysisService:
         self.processing_config = {
             'analysis_resolution': (960, 540),  # Reduced resolution for better performance
             'frame_skip_factor': 3,  # Process every 3rd frame for reduced load
-            'demographic_skip_factor': 10,  # Less frequent demographic analysis
+            'demographic_skip_factor': 5,  # Reduced for more frequent analysis with simplified model
             'motion_threshold': 1000,  # Higher threshold for better stability
             'max_processing_time': 2.0,  # Increased for more stability
             'enable_motion_detection': True,
             'enable_frame_skipping': True,
             'enable_fast_yolo': True,
-            'enable_async_demographics': True,  # New: async demographic analysis
-            'enable_demographic_caching': True,  # New: cache demographic results
+            'enable_async_demographics': False,  # Disabled for simplified synchronous processing
+            'enable_demographic_caching': True,  # Keep caching enabled
             'yolo_confidence': 0.4,  # Higher for fewer false positives
             'yolo_iou': 0.5,  # Higher for better tracking
             'yolo_imgsz': 416  # Smaller input size for faster processing
@@ -1204,6 +266,8 @@ class FrameAnalysisService:
         if hasattr(self, 'face_snapshot_manager') and self.face_snapshot_manager:
             self.face_snapshot_manager.database = database
             logger.info("Database reference set for FrameAnalysisService and FaceSnapshotManager")
+        else:
+            logger.warning("FaceSnapshotManager not available for database reference setting")
     
     def _schedule_cache_cleanup(self):
         """Schedule periodic cache cleanup to prevent memory leaks"""
@@ -1382,12 +446,12 @@ class FrameAnalysisService:
             return self._get_fallback_demographics()
     
     def _analyze_demographics_background(self, person_img: np.ndarray, person_id: int, img_hash: str, callback=None):
-        """Background demographic analysis task"""
+        """Simplified demographic analysis task using single InsightFace model"""
         try:
             start_time = time.time()
             
-            # Perform the actual demographic analysis
-            demographics = self.demographic_analyzer.analyze(person_img)
+            # Perform the actual demographic analysis using simplified analyzer
+            demographics = self.demographic_analyzer.analyze(person_img, person_id)
             
             # Cache the results
             self._cache_demographics(person_img, demographics, person_id)
@@ -1405,11 +469,6 @@ class FrameAnalysisService:
                     person_data['demographics'] = demographics
                     person_data['analyzing'] = False
                     
-                    # Update database with full demographic info
-                    # Note: detection and timestamp need to be passed from the actual detection context
-                    # For now, we'll skip this call since we don't have the full detection data
-                    pass
-                    
                     logger.info(f"Completed demographic analysis for person {person_id}: {demographics.get('gender', 'unknown')} {demographics.get('age_group', 'unknown')} conf: {demographics.get('confidence', 0):.2f}")
                 
                 # Update reid database - creating a mock detection dict since we don't have the full detection data
@@ -1425,7 +484,7 @@ class FrameAnalysisService:
             processing_time = time.time() - start_time
             self.performance_stats['demographic_analysis_count'] += 1
             
-            logger.debug(f"Background demographic analysis completed for person {person_id} in {processing_time:.3f}s")
+            logger.debug(f"Simplified demographic analysis completed for person {person_id} in {processing_time:.3f}s")
             
             # Call callback if provided
             if callback:
@@ -1437,7 +496,7 @@ class FrameAnalysisService:
             return demographics
             
         except Exception as e:
-            logger.error(f"Error in background demographic analysis: {e}")
+            logger.error(f"Error in simplified demographic analysis: {e}")
             # Remove from processing queue on error
             self.demographic_cache['processing_queue'].pop(img_hash, None)
             return self._get_fallback_demographics()
@@ -1925,7 +984,7 @@ class FrameAnalysisService:
         return detections
 
     def detect_and_analyze_face(self, person_img: np.ndarray) -> Dict[str, Any]:
-        """Detect face and analyze demographics using enhanced models with robust error handling"""
+        """Enhanced face detection and analysis using optimized DemographicAnalyzer with face extraction"""
         try:
             if person_img is None or person_img.size == 0:
                 logger.debug("No person image provided for face analysis")
@@ -1937,18 +996,24 @@ class FrameAnalysisService:
                     'analysis_method': 'no_image'
                 }
             
-            logger.debug(f"Starting face analysis on person image: {person_img.shape}")
+            logger.debug(f"Starting enhanced face analysis on person image: {person_img.shape}")
             
-            # Use enhanced demographic analyzer
+            # Use enhanced demographic analyzer with face extraction
             demographics = self.demographic_analyzer.analyze(person_img)
             
-            # Log successful analysis
+            # Log successful analysis with detailed information
             method = demographics.get('analysis_method', 'unknown')
             confidence = demographics.get('confidence', 0)
             gender = demographics.get('gender', 'unknown')
             age_group = demographics.get('age_group', 'unknown')
+            age = demographics.get('age', 'unknown')
             
-            logger.info(f"Face analysis successful: {gender} {age_group} (conf: {confidence:.2f}, method: {method})")
+            if confidence > 0.5:
+                logger.info(f"Enhanced face analysis successful: {gender} {age_group} (age: {age}, conf: {confidence:.2f}, method: {method})")
+            elif confidence > 0.3:
+                logger.info(f"Moderate face analysis: {gender} {age_group} (conf: {confidence:.2f}, method: {method})")
+            else:
+                logger.warning(f"Low confidence face analysis: {gender} {age_group} (conf: {confidence:.2f}, method: {method})")
             
             # Format for compatibility with existing code
             return {
@@ -1958,11 +1023,14 @@ class FrameAnalysisService:
                 'confidence': confidence,
                 'age': demographics.get('age'),
                 'race': demographics.get('race'),
-                'analysis_method': method
+                'analysis_method': method,
+                'face_area': demographics.get('face_area', 0),
+                'det_score': demographics.get('det_score', 0),
+                'is_extracted_face': demographics.get('is_extracted_face', False)
             }
             
         except Exception as e:
-            logger.error(f"Error in face detection and analysis: {e}", exc_info=True)
+            logger.error(f"Error in enhanced face detection and analysis: {e}", exc_info=True)
             return {
                 'age_group': 'unknown',
                 'gender': 'unknown', 
@@ -1995,7 +1063,7 @@ class FrameAnalysisService:
             return self._legacy_track_people(new_detections, frame_shape, frame_time)
 
     def _enhanced_track_people_new(self, new_detections: List[Dict], frame_shape: Tuple[int, int], frame_time: float) -> List[Dict]:
-        """Enhanced tracking using the new FaceTracker/PersonTracker with better features"""
+        """Enhanced tracking using the new FaceTracker/PersonTracker with improved demographic analysis"""
         
         try:
             # Convert detections to tracker format
@@ -2035,157 +1103,198 @@ class FrameAnalysisService:
             for track in active_tracks:
                 track_id = track['id']
                 
-                # Find matching detection for this track
+                # Find matching detection with person image
                 matching_detection = None
-                track_bbox = track['bbox']
                 for detection in new_detections:
-                    detection_bbox = detection['bbox']
-                    if len(detection_bbox) == 4:
-                        det_x1, det_y1, det_w, det_h = detection_bbox
-                        det_bbox = (det_x1, det_y1, det_x1 + det_w, det_y1 + det_h)
-                        if self._bbox_overlap_coords(track_bbox, det_bbox) > 0.3:
-                            matching_detection = detection
-                            break
-                
-                # Check if person needs demographic analysis
-                if (track['is_confirmed'] and
-                    track['frames_tracked'] >= self.duplicate_reduction['min_frames_for_db'] and
-                    track['confidence'] >= self.duplicate_reduction['min_confidence_for_db']):
+                    det_center = detection['center']
+                    track_center = ((track['bbox'][0] + track['bbox'][2]) / 2, (track['bbox'][1] + track['bbox'][3]) / 2)
                     
-                    # Analyze demographics if we have a matching detection with image
-                    if matching_detection and 'person_image' in matching_detection:
-                        person_image = matching_detection['person_image']
+                    # Calculate distance between detection and track
+                    distance = np.sqrt((det_center[0] - track_center[0])**2 + (det_center[1] - track_center[1])**2)
+                    
+                    if distance < 50:  # Reasonable matching threshold
+                        matching_detection = detection
+                        break
+                
+                # Analyze demographics if we have a matching detection with image
+                if matching_detection and 'person_image' in matching_detection:
+                    person_image = matching_detection['person_image']
+                    
+                    # Validate person image quality
+                    if person_image is None or person_image.size == 0:
+                        logger.warning(f"Invalid person image for track {track_id}")
+                        continue
+                    
+                    # Check if this person is already in our database
+                    if track_id not in people_db:
+                        # New person - use enhanced demographic analysis 
+                        try:
+                            logger.debug(f"Analyzing new person {track_id} with image shape: {person_image.shape}")
+                            
+                            # Set database reference for face snapshot manager
+                            if hasattr(self, 'database') and self.database:
+                                self.face_snapshot_manager.database = self.database
+                            
+                            # Simplified demographic analysis using InsightFace primary + DeepFace fallback
+                            demo_data = self.demographic_analyzer.analyze(
+                                person_img=person_image,
+                                person_id=track_id
+                            )
+                            
+                            # Process face snapshot for storage and reidentification
+                            face_snapshot_result = None
+                            if demo_data.get('confidence', 0) >= 0.3:  # Only save faces with reasonable confidence
+                                try:
+                                    # Extract face bounding box from track
+                                    face_bbox = track['bbox']
+                                    detection_confidence = track.get('confidence', 0.7)
+                                    
+                                    # Process face snapshot (includes quality assessment and storage)
+                                    face_snapshot_result = self.face_snapshot_manager.process_face_snapshot(
+                                        person_id=track_id,
+                                        face_img=person_image,
+                                        bbox=face_bbox,
+                                        detection_confidence=detection_confidence,
+                                        landmarks=None,  # Could be enhanced later
+                                        timestamp=datetime.fromtimestamp(frame_time)
+                                    )
+                                    
+                                    if face_snapshot_result and face_snapshot_result.get('stored'):
+                                        logger.info(f"Saved face snapshot for person {track_id} "
+                                                  f"(quality: {face_snapshot_result.get('quality_score', 0):.3f}, "
+                                                  f"primary: {face_snapshot_result.get('is_primary', False)})")
+                                    
+                                except Exception as e:
+                                    logger.warning(f"Failed to process face snapshot for person {track_id}: {e}")
+                            
+                            # Validate demographic results
+                            if demo_data.get('confidence', 0) < 0.2:
+                                logger.warning(f"Low confidence demographic analysis for person {track_id}: {demo_data.get('confidence', 0):.2f}")
+                            
+                            # Store in people database
+                            people_db[track_id] = {
+                                'id': track_id,
+                                'demographics': demo_data,
+                                'first_seen': frame_time,
+                                'last_seen': frame_time,
+                                'total_detections': 1,
+                                'bbox_history': [track['bbox']],
+                                'confidence_history': [track['confidence']],
+                                'saved_to_db': False,
+                                'analysis_method': demo_data.get('analysis_method', 'enhanced'),
+                                'quality_scores': [demo_data.get('confidence', 0.1)]
+                            }
+                            
+                            # Log successful demographic analysis
+                            confidence = demo_data.get('confidence', 0)
+                            gender = demo_data.get('gender', 'unknown')
+                            age_group = demo_data.get('age_group', 'unknown')
+                            method = demo_data.get('analysis_method', 'unknown')
+                            
+                            if confidence > 0.5:
+                                logger.info(f"✓ High-quality demographics for person {track_id}: {gender} {age_group} (conf: {confidence:.2f}, method: {method})")
+                            elif confidence > 0.3:
+                                logger.info(f"○ Moderate demographics for person {track_id}: {gender} {age_group} (conf: {confidence:.2f}, method: {method})")
+                            else:
+                                logger.warning(f"△ Low-quality demographics for person {track_id}: {gender} {age_group} (conf: {confidence:.2f}, method: {method})")
+                                
+                        except Exception as e:
+                            logger.error(f"Error in enhanced demographic analysis for person {track_id}: {e}")
+                            # Fallback to basic demographics with better defaults
+                            demo_data = {
+                                'age': 30,
+                                'age_group': '25-34',
+                                'gender': 'unknown',
+                                'race': 'unknown',
+                                'emotion': 'neutral',
+                                'confidence': 0.2,  # Low but not zero confidence
+                                'analysis_method': 'fallback_enhanced'
+                            }
+                            
+                            people_db[track_id] = {
+                                'id': track_id,
+                                'demographics': demo_data,
+                                'first_seen': frame_time,
+                                'last_seen': frame_time,
+                                'total_detections': 1,
+                                'bbox_history': [track['bbox']],
+                                'confidence_history': [track['confidence']],
+                                'saved_to_db': False,
+                                'analysis_method': 'fallback_enhanced'
+                            }
+                            
+                            logger.info(f"Used enhanced fallback demographics for person {track_id}")
+                    else:
+                        # Update existing person with potential improvement
+                        people_db[track_id]['last_seen'] = frame_time
+                        people_db[track_id]['total_detections'] += 1
+                        people_db[track_id]['bbox_history'].append(track['bbox'])
+                        people_db[track_id]['confidence_history'].append(track['confidence'])
                         
-                        # Check if this person is already in our database
-                        if track_id not in people_db:
-                            # New person - use enhanced demographic analysis with quality check
+                        # Try to improve demographics if current confidence is low
+                        current_confidence = people_db[track_id]['demographics'].get('confidence', 0)
+                        if current_confidence < 0.7:  # Try to improve if confidence is not high
                             try:
-                                # Extract face from person image first
-                                face_img = self.demographic_analyzer._extract_face(person_image, (0, 0, person_image.shape[1], person_image.shape[0]))
-                                
-                                # If face extraction fails, use the full person image as fallback
-                                if face_img is None or face_img.size == 0:
-                                    logger.warning(f"Face extraction failed for person {track_id}, using person image")
-                                    face_img = person_image
-                                
-                                # Set database reference for face snapshot manager
-                                if hasattr(self, 'database') and self.database:
-                                    self.face_snapshot_manager.database = self.database
-                                
-                                # Enhanced demographic analysis with face quality assessment
-                                demo_data = self.demographic_analyzer.analyze_with_quality_check(
-                                    person_id=track_id,
-                                    face_img=face_img,
-                                    bbox=track['bbox'],
-                                    detection_confidence=track['confidence'],
-                                    landmarks=matching_detection.get('landmarks'),
-                                    database=getattr(self, 'database', None),
-                                    face_snapshot_manager=self.face_snapshot_manager
+                                new_demo_data = self.demographic_analyzer.analyze(
+                                    person_img=person_image,
+                                    person_id=track_id
                                 )
                                 
-                                # Store in people database
-                                people_db[track_id] = {
-                                    'id': track_id,
-                                    'demographics': demo_data,
-                                    'first_seen': frame_time,
-                                    'last_seen': frame_time,
-                                    'total_detections': 1,
-                                    'bbox_history': [track['bbox']],
-                                    'confidence_history': [track['confidence']],
-                                    'saved_to_db': False,
-                                    'face_quality': demo_data.get('quality_score', 0.0),
-                                    'analysis_method': demo_data.get('analysis_method', 'enhanced')
-                                }
-                                
-                                logger.info(f"New person {track_id} added with {demo_data.get('analysis_method', 'enhanced')} "
-                                          f"demographics (quality: {demo_data.get('quality_score', 0.0):.3f})")
-                                
+                                new_confidence = new_demo_data.get('confidence', 0)
+                                if new_confidence > current_confidence + 0.1:  # Significant improvement
+                                    people_db[track_id]['demographics'] = new_demo_data
+                                    people_db[track_id]['analysis_method'] = new_demo_data.get('analysis_method', 'enhanced')
+                                    logger.debug(f"Improved demographics for person {track_id}: {current_confidence:.2f} → {new_confidence:.2f}")
+                                    
+                                    # Process improved face snapshot if confidence is good enough
+                                    if new_confidence >= 0.5:  # Higher threshold for updates
+                                        try:
+                                            face_bbox = track['bbox']
+                                            detection_confidence = track.get('confidence', 0.7)
+                                            
+                                            face_snapshot_result = self.face_snapshot_manager.process_face_snapshot(
+                                                person_id=track_id,
+                                                face_img=person_image,
+                                                bbox=face_bbox,
+                                                detection_confidence=detection_confidence,
+                                                landmarks=None,
+                                                timestamp=datetime.fromtimestamp(frame_time)
+                                            )
+                                            
+                                            if face_snapshot_result and face_snapshot_result.get('stored'):
+                                                logger.info(f"Updated face snapshot for person {track_id} with improved quality")
+                                        except Exception as e:
+                                            logger.warning(f"Failed to update face snapshot for person {track_id}: {e}")
+                                    
                             except Exception as e:
-                                logger.error(f"Error in enhanced demographic analysis for person {track_id}: {e}")
-                                # Fallback to basic demographics
-                                demo_data = {
-                                    'age': 25,
-                                    'age_group': '25-34',
-                                    'gender': 'unknown',
-                                    'race': 'unknown',
-                                    'emotion': 'neutral',
-                                    'confidence': 0.1,
-                                    'analysis_method': 'fallback_error'
-                                }
-                                
-                                people_db[track_id] = {
-                                    'id': track_id,
-                                    'demographics': demo_data,
-                                    'first_seen': frame_time,
-                                    'last_seen': frame_time,
-                                    'total_detections': 1,
-                                    'bbox_history': [track['bbox']],
-                                    'confidence_history': [track['confidence']],
-                                    'saved_to_db': False,
-                                    'analysis_method': 'fallback_error'
-                                }
-                        else:
-                            # Update existing person
-                            people_db[track_id]['last_seen'] = frame_time
-                            people_db[track_id]['total_detections'] += 1
-                            people_db[track_id]['bbox_history'].append(track['bbox'])
-                            people_db[track_id]['confidence_history'].append(track['confidence'])
-                        
-                        # Save to database if not yet saved
-                        if (track_id in people_db and 
-                            not people_db[track_id].get('saved_to_db', False)):
-                            
-                            person_data = people_db[track_id]
-                            self._save_person_to_database(
-                                track_id, 
-                                person_data['demographics'],
-                                matching_detection,
-                                frame_time
-                            )
-                            self._save_detection_to_database(
-                                track_id, 
-                                track['bbox'], 
-                                track['confidence'], 
-                                frame_time
-                            )
-                            people_db[track_id]['saved_to_db'] = True
+                                logger.debug(f"Failed to improve demographics for person {track_id}: {e}")
                 
-                # Create tracked person data
-                x1, y1, x2, y2 = track['bbox']
-                person_demographics = people_db.get(track_id, {}).get('demographics', {
-                    'age_group': 'analyzing...',
-                    'gender': 'analyzing...',
-                    'emotion': 'neutral',
-                    'confidence': 0.1
-                })
+                # Add to tracked people list
+                person_data = people_db.get(track_id, {})
+                demographics = person_data.get('demographics', {})
                 
-                # Calculate dwell time
-                if track_id in people_db:
-                    dwell_time = frame_time - people_db[track_id]['first_seen']
-                else:
-                    dwell_time = 0
-                
-                tracked_person = {
+                tracked_people.append({
                     'id': track_id,
-                    'bbox': [x1, y1, x2 - x1, y2 - y1],  # Convert back to x,y,w,h
-                    'center': ((x1 + x2) / 2, (y1 + y2) / 2),
+                    'bbox': track['bbox'],
+                    'center': ((track['bbox'][0] + track['bbox'][2]) / 2, (track['bbox'][1] + track['bbox'][3]) / 2),
                     'confidence': track['confidence'],
+                    'demographics': demographics,
+                    'frames_tracked': track.get('frames_tracked', 1),
                     'quality_score': track.get('quality_score', 1.0),
-                    'frames_tracked': track['frames_tracked'],
-                    'demographics': person_demographics,
-                    'dwell_time': dwell_time,
-                    'is_confirmed': track['is_confirmed']
-                }
-                
-                tracked_people.append(tracked_person)
+                    'first_seen': person_data.get('first_seen', frame_time),
+                    'last_seen': person_data.get('last_seen', frame_time),
+                    'total_detections': person_data.get('total_detections', 1)
+                })
             
-            logger.debug(f"New tracker processed {len(tracked_people)} people from {len(active_tracks)} tracks")
             return tracked_people
             
         except Exception as e:
-            logger.error(f"Error in new enhanced tracking: {e}")
+            logger.error(f"Error in enhanced people tracking: {e}")
             # Fallback to legacy tracking
-            return self._legacy_track_people(new_detections, frame_shape, frame_time)
+            if self.person_tracker is not None:
+                return self._enhanced_track_people(new_detections, frame_shape, frame_time)
+            else:
+                return self._legacy_track_people(new_detections, frame_shape, frame_time)
 
     def _enhanced_track_people(self, new_detections: List[Dict], frame_shape: Tuple[int, int], frame_time: float) -> List[Dict]:
         """Enhanced tracking using the new PersonTracker with visual features"""

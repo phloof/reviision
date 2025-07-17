@@ -5,56 +5,24 @@ mode: face
 
 analysis:
   demographics:
-    age_backend: dlib  # Changed from retinaface to dlib for better age accuracy
-    age_model: Age
+    enabled: true
+    model_dir: ./models
+    
+    # Simple two-tier system: InsightFace primary, DeepFace fallback
+    use_insightface: true
+    min_face_size: 32
+    detection_interval: 5
+    one_time_demographics: true
+    
+    # Basic attributes to analyze
     attributes:
     - age
     - gender
-    - race
-    - emotion
-    confidence_threshold: 0.5  # Lowered threshold for better detection
-    detection_interval: 30  # Increased interval to reduce processing load
-    embedding_normalize: true
-    embedding_similarity_threshold: 0.4
-    embedding_window_size: 100
-    emotion_backend: dlib  # Changed to dlib for consistency
-    emotion_model: Emotion
-    enabled: true
-    face_match_backend: model
-    face_match_threshold: 0.75  # Slightly lowered for better matching
-    gender_backend: dlib  # Changed to dlib for better accuracy
-    gender_model: Gender
-    min_face_size: 48  # Optimized minimum size
-    model: deepface
-    model_dir: ./models
-    one_time_demographics: true
-    # Enhanced age prediction settings
-    age_estimation_method: ensemble  # Use ensemble of models for better accuracy
-    fallback_age_backend: mtcnn  # Fallback backend if dlib fails
-    age_smoothing: true  # Enable age smoothing across frames
-    age_confidence_threshold: 0.6  # Minimum confidence for age predictions
-    race_backend: retinaface
-    race_model: Race
-    use_insightface: true
-    # New optimization settings
-    enable_async_analysis: true  # Enable asynchronous demographic analysis
-    enable_caching: true  # Enable demographic and feature caching
-    enable_progressive_reid: true  # Enable progressive re-identification
+    
+    # Simple performance settings
+    enable_caching: true
     cache_timeout: 300  # Cache timeout in seconds (5 minutes)
-    max_face_size: 224  # Maximum face size for processing
-    enable_quick_analysis: true  # Use faster analysis methods when possible
-    resize_input_images: true  # Resize large input images for performance
-    max_input_size: 640  # Maximum input image dimension
-    # Face quality assessment settings
-    min_quality_threshold: 0.5  # Minimum quality to process face
-    improvement_threshold: 0.1  # Minimum improvement to update face
-    size_weight: 0.25  # Weight for face size in quality score
-    clarity_weight: 0.30  # Weight for image clarity
-    frontality_weight: 0.20  # Weight for face angle
-    lighting_weight: 0.15  # Weight for lighting quality
-    detection_weight: 0.10  # Weight for detection confidence
-    optimal_face_size: 112  # Optimal face size for analysis
-    max_face_size_limit: 300  # Maximum allowed face size
+
   dwell_time:
     enabled: true
     min_duration: 5
