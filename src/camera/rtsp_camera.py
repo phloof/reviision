@@ -18,6 +18,18 @@ try:
 except ImportError:
     PYAV_AVAILABLE = False
 
+# Check if enhanced components are available
+try:
+    from .rtsp_connection_manager import RTSPConnectionManager
+    from .h264_validator import H264StreamValidator
+    from .adaptive_buffer_manager import AdaptiveBufferManager
+    from .stream_health_monitor import StreamHealthMonitor
+    from .network_optimizer import NetworkOptimizer
+    from .pyav_enhanced_handler import PyAVEnhancedHandler
+    ENHANCED_COMPONENTS_AVAILABLE = True
+except ImportError:
+    ENHANCED_COMPONENTS_AVAILABLE = False
+
 class RTSPCamera(BaseCamera):
     """
     RTSP Camera implementation for IP cameras
@@ -59,6 +71,16 @@ class RTSPCamera(BaseCamera):
         # Set RTSP transport method
         self.rtsp_transport = config.get('rtsp_transport', 'tcp')  # tcp or udp
         
+        # Force resolution settings
+        self.force_resolution = config.get('force_resolution', True)
+        self.target_resolution = tuple(config.get('resolution', [1280, 720]))
+        self.fast_decode = config.get('fast_decode', True)
+        self.drop_frames = config.get('drop_frames', True)
+        
+        # Stream URL alternatives for different resolutions
+        self.stream_urls = self._generate_stream_urls()
+        self.current_stream_index = 0
+        
         # H.264 error handling settings
         self.h264_error_threshold = config.get('h264_error_threshold', 20)  # Max consecutive H.264 errors
         self.frame_skip_on_error = config.get('frame_skip_on_error', True)  # Skip corrupted frames
@@ -67,6 +89,16 @@ class RTSPCamera(BaseCamera):
         # Frame validation settings
         self.min_frame_size = config.get('min_frame_size', 100)  # Minimum frame size in pixels
         self.max_decode_errors = config.get('max_decode_errors', 50)  # Max decode errors before reconnect
+
+        # Enhanced features configuration (default: enabled to fix H.264 errors)
+        self.enable_enhanced_features = config.get('enable_enhanced_features', True) and ENHANCED_COMPONENTS_AVAILABLE
+        
+        # Initialize enhanced components if available and enabled
+        if self.enable_enhanced_features:
+            self._init_enhanced_components()
+            logger.info("Enhanced H.264 error recovery enabled")
+        else:
+            logger.info("Using legacy RTSP camera mode")
 
         # Tracking variables for H.264 errors
         self.h264_error_count = 0
@@ -116,6 +148,135 @@ class RTSPCamera(BaseCamera):
         if extra_options and isinstance(extra_options, list) and len(extra_options) % 2 == 0:
             self.cap_options.extend(extra_options)
     
+    def _init_enhanced_components(self):
+        """Initialize enhanced H.264 error recovery components"""
+        try:
+            # Connection Manager
+            from .rtsp_connection_manager import RTSPConnectionManager, ConnectionConfig
+            from .h264_validator import H264StreamValidator
+            from .adaptive_buffer_manager import AdaptiveBufferManager
+            from .stream_health_monitor import StreamHealthMonitor
+            from .network_optimizer import NetworkOptimizer
+            from .pyav_enhanced_handler import PyAVEnhancedHandler
+            
+            conn_config = ConnectionConfig(
+                connection_timeout=self.connection_timeout,
+                keepalive_interval=10.0,
+                max_retries=self.max_retries,
+                retry_base_delay=2.0,
+                health_check_interval=5.0,
+                frame_timeout=self.connection_timeout
+            )
+            
+            self.connection_manager = RTSPConnectionManager(conn_config)
+            self.h264_validator = H264StreamValidator()
+            self.buffer_manager = AdaptiveBufferManager()
+            self.health_monitor = StreamHealthMonitor()
+            self.network_optimizer = NetworkOptimizer()
+            self.pyav_handler = PyAVEnhancedHandler(self.url)
+            
+            logger.info("Enhanced components initialized successfully")
+        except Exception as e:
+            logger.warning(f"Failed to initialize enhanced components: {e}")
+            self.enable_enhanced_features = False
+    
+    def _generate_stream_urls(self):
+        """
+        Generate alternative RTSP stream URLs to try different resolution streams
+        
+        Returns:
+            list: List of alternative stream URLs to try
+        """
+        base_url = self.url or ""
+        width, height = self.target_resolution
+        fps = self.config.get('fps', 15)
+        
+        # Common RTSP stream endpoint variations for different cameras
+        stream_variations = [
+            # Main stream with resolution parameters
+            f"?width={width}&height={height}&fps={fps}",
+            # Sub-stream endpoints (typically lower resolution)
+            "/stream2",
+            "/h264Preview_01_sub", 
+            "/live1.sdp",
+            "/live2.sdp",
+            "/videoMain",
+            "/videoSub",
+            "/cam/realmonitor?channel=1&subtype=1",  # Dahua sub-stream
+            "/axis-media/media.amp?resolution={width}x{height}",  # Axis
+            # Original URL without parameters
+            ""
+        ]
+        
+        urls = []
+        for variation in stream_variations:
+            if base_url:
+                if variation.startswith('?'):
+                    # Add parameters to existing URL
+                    if '?' in base_url:
+                        url = base_url + '&' + variation[1:]
+                    else:
+                        url = base_url + variation
+                elif variation.startswith('/'):
+                    # Replace path
+                    parsed = urllib.parse.urlparse(base_url)
+                    url = urllib.parse.urlunparse((
+                        parsed.scheme, parsed.netloc, variation,
+                        parsed.params, parsed.query, parsed.fragment
+                    ))
+                else:
+                    # Original URL
+                    url = base_url
+                urls.append(url)
+        
+        return urls if urls else [base_url]
+    
+    def _force_frame_resize(self, frame):
+        """
+        Force frame to target resolution regardless of source resolution
+        
+        Args:
+            frame: Input frame of any resolution
+            
+        Returns:
+            np.ndarray: Frame resized to target resolution
+        """
+        if frame is None:
+            return None
+            
+        if not self.force_resolution:
+            return frame
+            
+        current_height, current_width = frame.shape[:2]
+        target_width, target_height = self.target_resolution
+        
+        # If frame is already at target resolution, return as-is
+        if current_width == target_width and current_height == target_height:
+            return frame
+            
+        # Log resolution mismatch only occasionally to avoid spam
+        if hasattr(self, '_last_logged_resolution'):
+            if self._last_logged_resolution != (current_width, current_height):
+                logger.warning(f"Camera streaming at {current_width}x{current_height}, forcing resize to {target_width}x{target_height}")
+                self._last_logged_resolution = (current_width, current_height)
+        else:
+            logger.warning(f"Camera streaming at {current_width}x{current_height}, forcing resize to {target_width}x{target_height}")
+            self._last_logged_resolution = (current_width, current_height)
+        
+        # Force resize to target resolution
+        try:
+            if self.fast_decode:
+                # Use faster interpolation for real-time processing
+                resized_frame = cv2.resize(frame, (target_width, target_height), interpolation=cv2.INTER_LINEAR)
+            else:
+                # Use higher quality interpolation
+                resized_frame = cv2.resize(frame, (target_width, target_height), interpolation=cv2.INTER_CUBIC)
+            
+            return resized_frame
+        except Exception as e:
+            logger.error(f"Error resizing frame: {e}")
+            return frame
+    
     def _validate_frame(self, frame):
         """
         Validate frame quality and detect H.264 corruption
@@ -162,7 +323,7 @@ class RTSPCamera(BaseCamera):
 
         # Try to recover by skipping frames
         if self.frame_skip_on_error and self.cap is not None:
-            logger.debug(f"H.264 error #{self.h264_error_count}, attempting frame skip recovery")
+            
 
             # Skip several frames to get past corrupted section
             for _ in range(self.recovery_frame_count):
@@ -285,8 +446,7 @@ class RTSPCamera(BaseCamera):
             for i in range(0, len(self.cap_options), 2):
                 prop = self.cap_options[i]
                 value = self.cap_options[i+1]
-                if not self.cap.set(prop, value):
-                    logger.debug(f"Failed to set property {prop} to {value}")
+                self.cap.set(prop, value)
 
             # Wait for the connection to establish
             start_time = time.time()
@@ -387,31 +547,189 @@ class RTSPCamera(BaseCamera):
                 break
 
     def _grabber_loop_pyav(self):
+        """Enhanced PyAV grabber loop with robust error handling and optimization"""
         url = self._get_url_with_auth()
+        
+        # Try to force resolution by modifying URL
+        target_width, target_height = self.target_resolution
+        if '?' in url:
+            url = f"{url}&width={target_width}&height={target_height}&fps=15"
+        else:
+            url = f"{url}?width={target_width}&height={target_height}&fps=15"
+        
+        logger.info(f"PyAV trying URL with resolution parameters: {self._get_safe_url(url)}")
+        
+        # Build comprehensive options for PyAV - optimized for stability
         options = {
             'rtsp_transport': self.config.get('rtsp_transport', 'tcp'),
-            'stimeout': str(int(self.config.get('connection_timeout', 10.0) * 1000000)),
+            'stimeout': str(int(self.config.get('connection_timeout', 15.0) * 1000000)),
         }
+        
+        # Add PyAV-specific options from config
+        pyav_options = self.config.get('pyav_options', {})
+        options.update(pyav_options)
+        
+        # Enhanced stability options for better connection handling
+        options.update({
+            'rtsp_flags': 'prefer_tcp',
+            'fflags': 'nobuffer+flush_packets',
+            'flags': 'low_delay',
+            'max_delay': '500000',  # Increased to 500ms max delay for stability
+            'reorder_queue_size': '0',  # Disable reordering for live streams
+            'buffer_size': '1048576',  # Increased to 1MB buffer for stability
+            'analyzeduration': '2000000',  # 2 seconds analysis for better stream detection
+            'probesize': '1048576',  # 1MB probe size for better format detection
+            'reconnect': '1',  # Enable automatic reconnection
+            'reconnect_at_eof': '1',  # Reconnect on end of file
+            'reconnect_streamed': '1',  # Reconnect for streamed content
+            'reconnect_delay_max': '2',  # Maximum 2 second delay between reconnects
+        })
+        
+        container = None
+        stream = None
+        consecutive_errors = 0
+        max_consecutive_errors = 10
+        
         try:
+            logger.info(f"PyAV opening RTSP stream: {self._get_safe_url(url)}")
+            logger.debug(f"PyAV options: {options}")
+            
             container = av.open(url, options=options)
-            stream = next(s for s in container.streams if s.type == 'video')
-            for frame in container.decode(stream):
+            
+            # Find video stream
+            video_streams = [s for s in container.streams if s.type == 'video']
+            if not video_streams:
+                logger.error("No video streams found in RTSP source")
+                return
+                
+            stream = video_streams[0]
+            
+            # Log stream properties
+            logger.info(f"PyAV stream opened - Codec: {stream.codec_context.name}, "
+                       f"Size: {stream.codec_context.width}x{stream.codec_context.height}, "
+                       f"FPS: {stream.average_rate}")
+            
+            frame_count = 0
+            last_log_time = time.time()
+            
+            # Main frame processing loop
+            for packet in container.demux(stream):
                 if not self.grabber_running:
+                    logger.info("PyAV grabber stopping...")
                     break
-                img = frame.to_ndarray(format='bgr24')
+                    
                 try:
-                    if self.frame_queue.full():
-                        self.frame_queue.get_nowait()
-                    self.frame_queue.put_nowait(img)
-                except queue.Full:
-                    pass
-                except Exception as e:
-                    logger.error(f"PyAV grabber thread error: {e}")
+                    # Decode packet into frames
+                    frames = packet.decode()
+                    
+                    for frame in frames:
+                        if not self.grabber_running:
+                            break
+                            
+                        # Convert frame to numpy array
+                        img = frame.to_ndarray(format='bgr24')
+                        
+                        # Apply forced resizing if needed
+                        resized_img = self._force_frame_resize(img)
+                        final_img = resized_img if resized_img is not None else img
+                        
+                        # Queue the frame
+                        try:
+                            # Keep only the latest frame
+                            if self.frame_queue.full():
+                                try:
+                                    self.frame_queue.get_nowait()
+                                except queue.Empty:
+                                    pass
+                            
+                            self.frame_queue.put_nowait(final_img)
+                            consecutive_errors = 0  # Reset error counter on success
+                            frame_count += 1
+                            
+                            # Log progress periodically
+                            current_time = time.time()
+                            if current_time - last_log_time > 30:  # Every 30 seconds
+                                logger.debug(f"PyAV processed {frame_count} frames, queue size: {self.frame_queue.qsize()}")
+                                last_log_time = current_time
+                                
+                        except queue.Full:
+                            # Queue full is normal for live streams
+                            pass
+                        except Exception as e:
+                            logger.warning(f"Error queuing PyAV frame: {e}")
+                            consecutive_errors += 1
+                            
+                except av.error.InvalidDataError as e:
+                    logger.debug(f"PyAV invalid data (skipping): {e}")
+                    consecutive_errors += 1
+                except av.error.EOFError:
+                    logger.warning("PyAV reached end of stream")
                     break
+                except Exception as e:
+                    logger.warning(f"PyAV decode error: {e}")
+                    consecutive_errors += 1
+                
+                # Break if too many consecutive errors
+                if consecutive_errors > max_consecutive_errors:
+                    logger.error(f"Too many consecutive PyAV errors ({consecutive_errors}), restarting")
+                    break
+                    
+        except av.error.HTTPNotFoundError:
+            logger.error(f"PyAV HTTP 404: Stream not found - {self._get_safe_url(url)}")
+        except av.error.HTTPUnauthorizedError:
+            logger.error(f"PyAV HTTP 401: Unauthorized access - check credentials")
+        except av.error.ConnectionResetError as e:
+            logger.error(f"PyAV connection reset: {e}")
+        except av.error.TimeoutError:
+            logger.error(f"PyAV timeout connecting to stream")
         except Exception as e:
-            logger.error(f"PyAV failed to open RTSP stream: {e}")
+            logger.error(f"PyAV unexpected error: {e}")
+        finally:
+            # Clean up resources
+            if container:
+                try:
+                    container.close()
+                except:
+                    pass
+            logger.info(f"PyAV grabber loop ended, processed {frame_count} frames")
 
     def _capture_loop(self):
+        """Main capture loop - delegates to enhanced or legacy mode"""
+        if self.enable_enhanced_features:
+            self._enhanced_capture_loop()
+        else:
+            self._legacy_capture_loop()
+    
+    def _enhanced_capture_loop(self):
+        """Enhanced capture loop with H.264 error recovery"""
+        while self.is_running:
+            try:
+                # Check connection state
+                if not self.connection_manager.is_connected() and not self.connection_manager.is_connecting():
+                    if self.connection_manager.can_attempt_connection():
+                        if not self.connection_manager.start_connection():
+                            retry_delay = self.connection_manager.get_retry_delay()
+                            time.sleep(retry_delay)
+                            continue
+                    else:
+                        time.sleep(1.0)
+                        continue
+
+                # Process frames if connected
+                if self.connection_manager.is_connected():
+                    success = self._process_next_frame()
+                    if not success:
+                        self._handle_frame_processing_error()
+
+                time.sleep(0.001)
+
+            except Exception as e:
+                logger.error(f"Enhanced capture loop error: {e}")
+                self._handle_capture_error(e)
+                time.sleep(0.1)
+    
+    def _legacy_capture_loop(self):
+        """Legacy capture loop for backward compatibility"""
         retries = 0
         consecutive_failures = 0
         decode_errors = 0
@@ -472,9 +790,14 @@ class RTSPCamera(BaseCamera):
 
                 consecutive_failures = 0
                 self._reset_error_counters()
+                
+                # Force frame resize if needed
+                resized_frame = self._force_frame_resize(frame)
+                
                 with self.frame_lock:
-                    self.last_good_frame = frame.copy()
-                processed_frame = self._preprocess_frame(frame)
+                    self.last_good_frame = resized_frame.copy() if resized_frame is not None else frame.copy()
+                
+                processed_frame = self._preprocess_frame(resized_frame if resized_frame is not None else frame)
                 if processed_frame is not None:
                     self._set_frame(processed_frame)
                 time.sleep(0.01)
@@ -500,7 +823,61 @@ class RTSPCamera(BaseCamera):
             logger.info("RTSP stream closed")
         self._stop_grabber()
 
+    def _process_next_frame(self):
+        """Process next frame with enhanced validation"""
+        try:
+            # Get latest frame from grabber queue
+            try:
+                frame = self.frame_queue.get(timeout=1)
+            except queue.Empty:
+                return False
+            
+            if frame is None:
+                return False
+            
+            # Validate frame with H.264 validator if available
+            if hasattr(self, 'h264_validator') and self.h264_validator:
+                if not self.h264_validator.validate_frame_data(frame):
+                    return False
+            
+            # Update frame buffer
+            with self.frame_lock:
+                self.frame_buffer = frame
+                self.last_good_frame = frame.copy()
+            
+            return True
+            
+        except Exception as e:
+            return False
+    
+    def _handle_frame_processing_error(self):
+        """Handle frame processing errors"""
+        self.h264_error_count += 1
+        if self.h264_error_count > self.h264_error_threshold:
+            logger.warning("Too many frame processing errors, attempting recovery")
+            if hasattr(self, 'connection_manager'):
+                self.connection_manager.trigger_recovery("Frame processing errors")
+            self.h264_error_count = 0
+    
+    def _handle_capture_error(self, error):
+        """Handle capture loop errors"""
+        logger.error(f"Capture error: {error}")
+        if hasattr(self, 'connection_manager'):
+            self.connection_manager.trigger_recovery(f"Capture error: {error}")
+
     def stop(self):
+        # Stop enhanced components if enabled
+        if self.enable_enhanced_features and hasattr(self, 'connection_manager'):
+            try:
+                if hasattr(self, 'health_monitor') and self.health_monitor:
+                    self.health_monitor.stop_monitoring()
+                if hasattr(self, 'buffer_manager') and self.buffer_manager:
+                    self.buffer_manager.stop()
+                if hasattr(self, 'connection_manager') and self.connection_manager:
+                    self.connection_manager.disconnect("Camera stopping")
+            except Exception as e:
+                logger.warning(f"Error stopping enhanced components: {e}")
+        
         super().stop()
         self._close_camera()
         self._stop_grabber()

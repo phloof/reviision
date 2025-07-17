@@ -179,6 +179,73 @@ class SQLiteDatabase:
                 )
             ''')
             
+            # Face snapshots table for storing best quality face images per person
+            self.cursor.execute('''
+                CREATE TABLE IF NOT EXISTS face_snapshots (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    person_id INTEGER NOT NULL,
+                    face_image_path VARCHAR(255),
+                    face_image_data BLOB,
+                    quality_score REAL NOT NULL CHECK (quality_score >= 0 AND quality_score <= 1),
+                    confidence REAL NOT NULL CHECK (confidence >= 0 AND confidence <= 1),
+                    bbox_x1 INTEGER NOT NULL,
+                    bbox_y1 INTEGER NOT NULL,
+                    bbox_x2 INTEGER NOT NULL,
+                    bbox_y2 INTEGER NOT NULL,
+                    face_width INTEGER GENERATED ALWAYS AS (bbox_x2 - bbox_x1) VIRTUAL,
+                    face_height INTEGER GENERATED ALWAYS AS (bbox_y2 - bbox_y1) VIRTUAL,
+                    is_primary BOOLEAN DEFAULT FALSE,
+                    embedding_vector BLOB, -- Store face embedding for ReID
+                    analysis_method VARCHAR(50),
+                    timestamp DATETIME NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE CASCADE
+                )
+            ''')
+            
+            # Create indexes for face snapshots for performance
+            self.cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_face_snapshots_person_primary 
+                ON face_snapshots(person_id, is_primary)
+            ''')
+            
+            self.cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_face_snapshots_quality 
+                ON face_snapshots(person_id, quality_score DESC)
+            ''')
+            
+            self.cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_face_snapshots_timestamp 
+                ON face_snapshots(timestamp DESC)
+            ''')
+            
+            # Trigger to ensure only one primary face per person
+            self.cursor.execute('''
+                CREATE TRIGGER IF NOT EXISTS ensure_single_primary_face
+                AFTER INSERT ON face_snapshots
+                WHEN NEW.is_primary = 1
+                BEGIN
+                    UPDATE face_snapshots 
+                    SET is_primary = 0 
+                    WHERE person_id = NEW.person_id 
+                    AND id != NEW.id 
+                    AND is_primary = 1;
+                END
+            ''')
+            
+            self.cursor.execute('''
+                CREATE TRIGGER IF NOT EXISTS ensure_single_primary_face_update
+                AFTER UPDATE ON face_snapshots
+                WHEN NEW.is_primary = 1 AND OLD.is_primary != 1
+                BEGIN
+                    UPDATE face_snapshots 
+                    SET is_primary = 0 
+                    WHERE person_id = NEW.person_id 
+                    AND id != NEW.id 
+                    AND is_primary = 1;
+                END
+            ''')
+            
             # Analytics sessions table
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS analytics_sessions (
@@ -537,6 +604,258 @@ class SQLiteDatabase:
         except Exception as e:
             logger.error(f"Error storing dwell time: {e}")
             return None
+    
+    def store_face_snapshot(self, person_id, face_image_data, quality_score, confidence, 
+                           bbox, embedding_vector=None, analysis_method=None, 
+                           timestamp=None, is_primary=False, face_image_path=None):
+        """
+        Store a face snapshot for a person
+        
+        Args:
+            person_id (int): Person track ID
+            face_image_data (bytes): Face image as binary data
+            quality_score (float): Quality score (0-1)
+            confidence (float): Detection confidence (0-1)
+            bbox (tuple): Bounding box (x1, y1, x2, y2)
+            embedding_vector (bytes): Serialized face embedding
+            analysis_method (str): Method used for analysis
+            timestamp (datetime): When snapshot was taken
+            is_primary (bool): Whether this is the primary face for the person
+            face_image_path (str): Optional file path if storing on disk
+            
+        Returns:
+            int: Face snapshot ID or None if failed
+        """
+        if timestamp is None:
+            timestamp = datetime.now()
+            
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            # Ensure person exists
+            cursor.execute('SELECT id FROM persons WHERE id = ?', (person_id,))
+            if not cursor.fetchone():
+                logger.warning(f"Person {person_id} not found, cannot store face snapshot")
+                return None
+            
+            cursor.execute('''
+                INSERT INTO face_snapshots (
+                    person_id, face_image_data, face_image_path, quality_score, 
+                    confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, 
+                    embedding_vector, analysis_method, timestamp, is_primary
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                person_id, face_image_data, face_image_path, quality_score, 
+                confidence, bbox[0], bbox[1], bbox[2], bbox[3],
+                embedding_vector, analysis_method, timestamp, is_primary
+            ))
+            
+            snapshot_id = cursor.lastrowid
+            conn.commit()
+            
+            logger.info(f"Stored face snapshot {snapshot_id} for person {person_id} (quality: {quality_score:.3f})")
+            return snapshot_id
+            
+        except Exception as e:
+            logger.error(f"Error storing face snapshot: {e}")
+            return None
+    
+    def get_primary_face_snapshot(self, person_id):
+        """
+        Get the primary face snapshot for a person
+        
+        Args:
+            person_id (int): Person track ID
+            
+        Returns:
+            dict: Face snapshot record or None
+        """
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT * FROM face_snapshots 
+                WHERE person_id = ? AND is_primary = 1
+                ORDER BY quality_score DESC, timestamp DESC
+                LIMIT 1
+            ''', (person_id,))
+            
+            result = cursor.fetchone()
+            if result:
+                columns = [desc[0] for desc in cursor.description]
+                return dict(zip(columns, result))
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error getting primary face snapshot: {e}")
+            return None
+    
+    def get_best_face_snapshot(self, person_id):
+        """
+        Get the best quality face snapshot for a person (may not be primary)
+        
+        Args:
+            person_id (int): Person track ID
+            
+        Returns:
+            dict: Best face snapshot record or None
+        """
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT * FROM face_snapshots 
+                WHERE person_id = ?
+                ORDER BY quality_score DESC, confidence DESC, timestamp DESC
+                LIMIT 1
+            ''', (person_id,))
+            
+            result = cursor.fetchone()
+            if result:
+                columns = [desc[0] for desc in cursor.description]
+                return dict(zip(columns, result))
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error getting best face snapshot: {e}")
+            return None
+    
+    def update_primary_face_snapshot(self, person_id, snapshot_id):
+        """
+        Set a specific face snapshot as primary for a person
+        
+        Args:
+            person_id (int): Person track ID
+            snapshot_id (int): Face snapshot ID to make primary
+            
+        Returns:
+            bool: Success status
+        """
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            # First verify the snapshot belongs to the person
+            cursor.execute('''
+                SELECT id FROM face_snapshots 
+                WHERE id = ? AND person_id = ?
+            ''', (snapshot_id, person_id))
+            
+            if not cursor.fetchone():
+                logger.warning(f"Face snapshot {snapshot_id} not found for person {person_id}")
+                return False
+            
+            # Update the snapshot to be primary (trigger will handle making others non-primary)
+            cursor.execute('''
+                UPDATE face_snapshots 
+                SET is_primary = 1 
+                WHERE id = ?
+            ''', (snapshot_id,))
+            
+            conn.commit()
+            logger.info(f"Set face snapshot {snapshot_id} as primary for person {person_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error updating primary face snapshot: {e}")
+            return False
+    
+    def cleanup_old_face_snapshots(self, person_id, max_snapshots=3):
+        """
+        Clean up old face snapshots, keeping only the best quality ones
+        
+        Args:
+            person_id (int): Person track ID
+            max_snapshots (int): Maximum snapshots to keep per person
+            
+        Returns:
+            int: Number of snapshots removed
+        """
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            # Get all snapshots for the person, ordered by quality
+            cursor.execute('''
+                SELECT id, is_primary FROM face_snapshots 
+                WHERE person_id = ?
+                ORDER BY quality_score DESC, confidence DESC, timestamp DESC
+            ''', (person_id,))
+            
+            snapshots = cursor.fetchall()
+            
+            if len(snapshots) <= max_snapshots:
+                return 0  # No cleanup needed
+            
+            # Keep the best ones and primary, remove the rest
+            snapshots_to_keep = []
+            primary_found = False
+            
+            for snapshot_id, is_primary in snapshots:
+                if is_primary:
+                    snapshots_to_keep.append(snapshot_id)
+                    primary_found = True
+                elif len(snapshots_to_keep) < max_snapshots:
+                    snapshots_to_keep.append(snapshot_id)
+            
+            # If we kept more than max because of primary, remove some non-primary ones
+            if len(snapshots_to_keep) > max_snapshots and primary_found:
+                # Keep primary + (max_snapshots - 1) best quality
+                keep_primary = [sid for sid, is_primary in snapshots if is_primary][0]
+                keep_others = [sid for sid, is_primary in snapshots if not is_primary][:max_snapshots-1]
+                snapshots_to_keep = [keep_primary] + keep_others
+            
+            # Remove the excess snapshots
+            snapshots_to_remove = [sid for sid, _ in snapshots if sid not in snapshots_to_keep]
+            
+            if snapshots_to_remove:
+                cursor.executemany(
+                    'DELETE FROM face_snapshots WHERE id = ?',
+                    [(sid,) for sid in snapshots_to_remove]
+                )
+                conn.commit()
+                
+                logger.info(f"Cleaned up {len(snapshots_to_remove)} old face snapshots for person {person_id}")
+                return len(snapshots_to_remove)
+            
+            return 0
+            
+        except Exception as e:
+            logger.error(f"Error cleaning up face snapshots: {e}")
+            return 0
+    
+    def has_good_demographics(self, person_id, min_confidence=0.7):
+        """
+        Check if a person already has good quality demographic data
+        
+        Args:
+            person_id (int): Person track ID
+            min_confidence (float): Minimum confidence threshold
+            
+        Returns:
+            bool: True if person has good demographics
+        """
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT confidence FROM demographics 
+                WHERE person_id = ? AND confidence >= ?
+                ORDER BY confidence DESC, timestamp DESC
+                LIMIT 1
+            ''', (person_id, min_confidence))
+            
+            result = cursor.fetchone()
+            return result is not None
+            
+        except Exception as e:
+            logger.error(f"Error checking demographics quality: {e}")
+            return False
     
     def get_detections(self, start_time=None, end_time=None, person_id=None):
         """
@@ -939,6 +1258,25 @@ class SQLiteDatabase:
                 "demographic_records": 0
             }
     
+    def get_total_persons_count(self):
+        """
+        Get total count of persons in database
+        
+        Returns:
+            int: Total number of persons in database
+        """
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('SELECT COUNT(*) FROM persons')
+            result = cursor.fetchone()
+            return result[0] if result else 0
+            
+        except Exception as e:
+            logger.error(f"Error getting total persons count: {e}")
+            return 0
+
     def get_analytics_summary(self, hours=24):
         """
         Get analytics summary using 3NF schema with proper joins
@@ -1053,7 +1391,7 @@ class SQLiteDatabase:
                 # Higher dwell time suggests higher engagement/conversion
                 conversion_rate = min(95, max(20, 30 + (avg_dwell_time * 2)))
             else:
-                conversion_rate = 25  # Base conversion rate
+                conversion_rate = 0  # No data available
             
             return {
                 "success": True,

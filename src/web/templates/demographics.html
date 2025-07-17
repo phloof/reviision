@@ -4,177 +4,369 @@
 
 {% block header %}Customer Demographics Analysis{% endblock %}
 
+{% block styles %}
+<style>
+    .demographics-nav {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .demographics-nav .nav-link {
+        border-radius: 8px;
+        color: #6c757d;
+        font-weight: 500;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .demographics-nav .nav-link:hover {
+        background: #f8f9fa;
+        color: #495057;
+    }
+    
+    .demographics-nav .nav-link.active {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+    }
+    
+    .demographics-section {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        padding: 0.75rem;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    }
+    
+    .btn {
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        border: none;
+    }
+    
+    .btn-outline-primary {
+        border-color: #3498db;
+        color: #3498db;
+    }
+    
+    .btn-outline-primary:hover {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        border-color: #3498db;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin-bottom: 1rem;
+    }
+    
+    .chart-container canvas {
+        max-height: 400px;
+    }
+    
+    .tooltip {
+        position: relative;
+        display: inline-block;
+        cursor: help;
+    }
+    
+    .tooltip i {
+        color: #6c757d;
+        font-size: 1.1rem;
+        transition: color 0.3s ease;
+    }
+    
+    .tooltip:hover i {
+        color: #3498db;
+    }
+    
+    .tooltip-text {
+        visibility: hidden;
+        width: 200px;
+        background-color: rgba(0, 0, 0, 0.9);
+        color: white;
+        text-align: center;
+        border-radius: 8px;
+        padding: 0.75rem;
+        position: absolute;
+        z-index: 1000;
+        bottom: 125%;
+        right: 0;
+        font-size: 0.9rem;
+        font-weight: 400;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        backdrop-filter: blur(10px);
+    }
+    
+    .tooltip:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+    }
+    
+    @media (max-width: 768px) {
+        .chart-container {
+            height: 300px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="page-container">
-    <!-- Page Header -->
-    <div class="section-header">
-        <h1 class="section-title">
-            <i class="fas fa-users"></i>
-            Demographics Analysis
-        </h1>
-        <p class="section-subtitle">Customer demographic insights and analytics</p>
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex align-items-center mb-4">
+                <div>
+                    <h1 class="h2 mb-1">Demographics Analysis</h1>
+                    <p class="text-muted mb-0">Customer demographic insights and analytics</p>
+                </div>
+            </div>
+        </div>
     </div>
     
-    <!-- Demographics Analysis Cards -->
-
-<!-- Age Distribution Card -->
-<div class="modern-card">
-    <div class="modern-card-header">
-        <h3><i class="fas fa-users me-2"></i>Age Distribution</h3>
-        <div class="tooltip">
-            <i class="fas fa-info-circle"></i>
-            <span class="tooltip-text">Age breakdown of store visitors</span>
-        </div>
-    </div>
-    <div class="modern-card-body">
-        <div class="chart-container">
-            <canvas id="ageChart"></canvas>
-        </div>
-    </div>
-</div>
-
-<!-- Gender Distribution Card -->
-<div class="modern-card">
-    <div class="modern-card-header">
-        <h3><i class="fas fa-venus-mars me-2"></i>Gender Distribution</h3>
-        <div class="tooltip">
-            <i class="fas fa-info-circle"></i>
-            <span class="tooltip-text">Gender breakdown of store visitors</span>
-        </div>
-    </div>
-    <div class="modern-card-body">
-        <div class="chart-container">
-            <canvas id="genderChart"></canvas>
-        </div>
-    </div>
-</div>
-
-<!-- Demographic Trends Over Time Card -->
-<div class="modern-card">
-    <div class="modern-card-header">
-        <h3><i class="fas fa-chart-line me-2"></i>Demographic Trends Over Time</h3>
-        <div class="tooltip">
-            <i class="fas fa-info-circle"></i>
-            <span class="tooltip-text">Changes in demographics over time period</span>
-        </div>
-    </div>
-    <div class="modern-card-body">
-        <div class="chart-container">
-            <canvas id="demographicTrends"></canvas>
-        </div>
-    </div>
-</div>
-
-<!-- Detailed Demographics Data Card -->
-<div class="modern-card">
-    <div class="modern-card-header">
-        <div class="d-flex justify-content-between align-items-center flex-wrap">
-            <div class="d-flex align-items-center">
-                <h3 class="mb-0"><i class="fas fa-table me-2"></i>Detailed Demographics Data</h3>
-                <div class="tooltip ms-2">
-                    <i class="fas fa-info-circle"></i>
-                    <span class="tooltip-text">Individual demographic records from analysis</span>
-                </div>
-            </div>
-            <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
-                <!-- Search input -->
-                <div class="input-group" style="width: 250px;">
-                    <span class="input-group-text"><i class="fas fa-search"></i></span>
-                    <input type="text" class="form-control" id="table-search" placeholder="Search records...">
-                </div>
-                <!-- Results per page -->
-                <select class="form-select" id="records-per-page" style="width: auto;">
-                    <option value="10">10 per page</option>
-                    <option value="25">25 per page</option>
-                    <option value="50">50 per page</option>
-                    <option value="100">100 per page</option>
-                </select>
-                <!-- Refresh button -->
-                <button type="button" class="btn btn-outline-primary" id="refresh-table" title="Refresh Data">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-    <div class="card-body p-0">
-        <!-- Table loading overlay -->
-        <div id="table-loading" class="table-loading-overlay" style="display: none;">
-            <div class="d-flex align-items-center justify-content-center h-100">
-                <div class="text-center">
-                    <div class="spinner-border text-primary mb-3" role="status"></div>
-                    <div>Loading records...</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Table container -->
-        <div class="table-responsive">
-            <table class="table table-striped table-hover table-modern" id="demographicsTable">
-                <thead class="table-dark sticky-top">
-                    <tr>
-                        <th class="sortable" data-sort="timestamp">
-                            <i class="fas fa-calendar me-1"></i>Date & Time
-                            <i class="fas fa-sort sort-icon"></i>
-                        </th>
-                        <th class="sortable" data-sort="gender">
-                            <i class="fas fa-venus-mars me-1"></i>Gender
-                            <i class="fas fa-sort sort-icon"></i>
-                        </th>
-                        <th class="sortable" data-sort="age">
-                            <i class="fas fa-birthday-cake me-1"></i>Age Group
-                            <i class="fas fa-sort sort-icon"></i>
-                        </th>
-                        <th class="sortable" data-sort="emotion">
-                            <i class="fas fa-smile me-1"></i>Emotion
-                            <i class="fas fa-sort sort-icon"></i>
-                        </th>
-                        <th class="sortable" data-sort="dwell_time">
-                            <i class="fas fa-clock me-1"></i>Dwell Time
-                            <i class="fas fa-sort sort-icon"></i>
-                        </th>
-                        <th class="sortable" data-sort="confidence">
-                            <i class="fas fa-percentage me-1"></i>Confidence
-                            <i class="fas fa-sort sort-icon"></i>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
-                            <i class="fas fa-spinner fa-spin me-2"></i>Loading data...
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Table footer with pagination and info -->
-        <div class="card-footer bg-light border-top">
-            <div class="d-flex justify-content-between align-items-center flex-wrap">
-                <!-- Table info -->
-                <div class="table-info">
-                    <span id="table-info-text">Showing 0 of 0 records</span>
+    <div class="row">
+        <!-- Filter Navigation -->
+        <div class="col-lg-3 mb-4">
+            <div class="demographics-nav">
+                <div class="nav nav-pills flex-column" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                    <button class="nav-link active" id="v-pills-charts-tab" data-bs-toggle="pill" data-bs-target="#v-pills-charts" type="button" role="tab">
+                        <i class="fas fa-chart-pie me-2"></i>Charts
+                    </button>
+                    <button class="nav-link" id="v-pills-trends-tab" data-bs-toggle="pill" data-bs-target="#v-pills-trends" type="button" role="tab">
+                        <i class="fas fa-chart-line me-2"></i>Trends
+                    </button>
+                    <button class="nav-link" id="v-pills-data-tab" data-bs-toggle="pill" data-bs-target="#v-pills-data" type="button" role="tab">
+                        <i class="fas fa-table me-2"></i>Data Table
+                    </button>
                 </div>
                 
-                <!-- Pagination controls -->
-                <div class="pagination-controls">
-                    <nav aria-label="Table pagination">
-                        <ul class="pagination pagination-sm mb-0" id="table-pagination">
-                            <li class="page-item disabled">
-                                <a class="page-link" href="#" id="prev-page">
-                                    <i class="fas fa-chevron-left"></i>
-                                </a>
-                            </li>
-                            <li class="page-item active">
-                                <a class="page-link" href="#" data-page="1">1</a>
-                            </li>
-                            <li class="page-item disabled">
-                                <a class="page-link" href="#" id="next-page">
-                                    <i class="fas fa-chevron-right"></i>
-                                </a>
-                            </li>
-                        </ul>
-                    </nav>
+                <!-- Time Range Filter -->
+                <div class="mt-3">
+                    <label for="time-range" class="form-label">Time Range</label>
+                    <select class="form-select" id="time-range">
+                        <option value="1h">Last Hour</option>
+                        <option value="6h">Last 6 Hours</option>
+                        <option value="24h" selected>Last 24 Hours</option>
+                        <option value="7d">Last 7 Days</option>
+                        <option value="30d">Last 30 Days</option>
+                    </select>
+                </div>
+                
+                <div class="mt-3">
+                    <button class="btn btn-primary w-100" id="refresh-demographics">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh Data
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Demographics Content -->
+        <div class="col-lg-9">
+            <div class="tab-content" id="v-pills-tabContent">
+                
+                <!-- Charts Tab -->
+                <div class="tab-pane fade show active" id="v-pills-charts" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="demographics-section">
+                                <h3 class="section-title">
+                                    <span><i class="fas fa-users me-2"></i>Age Distribution</span>
+                                    <div class="tooltip">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span class="tooltip-text">Age breakdown of store visitors</span>
+                                    </div>
+                                </h3>
+                                <div class="chart-container">
+                                    <canvas id="ageChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="demographics-section">
+                                <h3 class="section-title">
+                                    <span><i class="fas fa-venus-mars me-2"></i>Gender Distribution</span>
+                                    <div class="tooltip">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span class="tooltip-text">Gender breakdown of store visitors</span>
+                                    </div>
+                                </h3>
+                                <div class="chart-container">
+                                    <canvas id="genderChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Trends Tab -->
+                <div class="tab-pane fade" id="v-pills-trends" role="tabpanel">
+                    <div class="demographics-section">
+                        <h3 class="section-title">
+                            <span><i class="fas fa-chart-line me-2"></i>Demographic Trends Over Time</span>
+                            <div class="tooltip">
+                                <i class="fas fa-info-circle"></i>
+                                <span class="tooltip-text">Changes in demographics over time period</span>
+                            </div>
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="demographicTrends"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Data Table Tab -->
+                <div class="tab-pane fade" id="v-pills-data" role="tabpanel">
+                    <div class="demographics-section">
+                        <h3 class="section-title">
+                            <span><i class="fas fa-table me-2"></i>Detailed Demographics Data</span>
+                            <div class="tooltip">
+                                <i class="fas fa-info-circle"></i>
+                                <span class="tooltip-text">Individual demographic records from analysis</span>
+                            </div>
+                        </h3>
+                        
+                        <!-- Table Controls -->
+                        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                            <div class="input-group" style="width: 250px;">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" class="form-control" id="table-search" placeholder="Search records...">
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <select class="form-select" id="records-per-page" style="width: auto;">
+                                    <option value="10">10 per page</option>
+                                    <option value="25">25 per page</option>
+                                    <option value="50">50 per page</option>
+                                    <option value="100">100 per page</option>
+                                </select>
+                                <button type="button" class="btn btn-outline-primary" id="refresh-table" title="Refresh Data">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Table loading overlay -->
+                        <div id="table-loading" class="table-loading-overlay" style="display: none;">
+                            <div class="d-flex align-items-center justify-content-center h-100">
+                                <div class="text-center">
+                                    <div class="spinner-border text-primary mb-3" role="status"></div>
+                                    <div>Loading records...</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Table container -->
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover table-modern" id="demographicsTable">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th class="sortable" data-sort="timestamp">
+                                            <i class="fas fa-calendar me-1"></i>Date & Time
+                                            <i class="fas fa-sort sort-icon"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="gender">
+                                            <i class="fas fa-venus-mars me-1"></i>Gender
+                                            <i class="fas fa-sort sort-icon"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="age">
+                                            <i class="fas fa-birthday-cake me-1"></i>Age Group
+                                            <i class="fas fa-sort sort-icon"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="emotion">
+                                            <i class="fas fa-smile me-1"></i>Emotion
+                                            <i class="fas fa-sort sort-icon"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="dwell_time">
+                                            <i class="fas fa-clock me-1"></i>Dwell Time
+                                            <i class="fas fa-sort sort-icon"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="confidence">
+                                            <i class="fas fa-percentage me-1"></i>Confidence
+                                            <i class="fas fa-sort sort-icon"></i>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            <i class="fas fa-spinner fa-spin me-2"></i>Loading data...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Table footer with pagination and info -->
+                        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap">
+                            <div class="pagination-controls">
+                                <nav aria-label="Table pagination">
+                                    <ul class="pagination pagination-sm mb-0" id="table-pagination">
+                                        <li class="page-item disabled">
+                                            <button class="page-link" type="button" id="prev-page" title="Previous page">
+                                                <i class="fas fa-chevron-left"></i>
+                                                <span class="sr-only">Previous</span>
+                                            </button>
+                                        </li>
+                                        <li class="page-item active">
+                                            <button class="page-link" type="button" data-page="1">1</button>
+                                        </li>
+                                        <li class="page-item disabled">
+                                            <button class="page-link" type="button" id="next-page" title="Next page">
+                                                <i class="fas fa-chevron-right"></i>
+                                                <span class="sr-only">Next</span>
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                            <div class="table-info">
+                                <span id="table-info-text">Showing 0 of 0 records</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -280,6 +472,99 @@
     font-size: 0.875rem;
 }
 
+/* Enhanced pagination styling */
+.pagination {
+    gap: 0.25rem;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.pagination .page-item {
+    display: inline-block !important;
+    margin: 0 !important;
+}
+
+.pagination .page-link {
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    background-color: white;
+    font-weight: 500;
+    min-width: 40px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination .page-link:hover {
+    background-color: #f8f9fa;
+    border-color: #3498db;
+    color: #3498db;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pagination .page-link:focus {
+    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    border-color: #3498db;
+    color: #3498db;
+}
+
+.pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    border-color: #3498db;
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.pagination .page-item.disabled .page-link {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    color: #adb5bd;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.pagination .page-item.disabled .page-link:hover {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    color: #adb5bd;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Previous/Next button specific styling */
+.pagination .page-item:first-child .page-link,
+.pagination .page-item:last-child .page-link {
+    min-width: 44px;
+    font-weight: 600;
+}
+
+.pagination .page-item:first-child .page-link i,
+.pagination .page-item:last-child .page-link i {
+    font-size: 0.875rem;
+}
+
+/* Screen reader text */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 @media (max-width: 768px) {
     .card-header .d-flex {
         flex-direction: column;
@@ -314,24 +599,611 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // ====================================
-    // Demographics Page JavaScript
-    // ====================================
+// Demographics Page JavaScript
+class DemographicsManager {
+    constructor() {
+        this.charts = {};
+        this.currentData = null;
+        this.currentPage = 1;
+        this.recordsPerPage = 10;
+        this.currentSearch = '';
+        this.currentSort = 'timestamp';
+        this.currentSortOrder = 'desc';
+        this.totalRecords = 0;
+        this.totalPages = 0;
+        this.init();
+    }
+    
+    init() {
+        this.setupEventHandlers();
+        this.loadData();
+        this.initializeTable();
+    }
+    
+    setupEventHandlers() {
+        // Time range change
+        document.getElementById('time-range').addEventListener('change', () => {
+            this.loadData();
+            this.currentPage = 1;
+            this.loadTableData();
+        });
+        
+        // Refresh button
+        document.getElementById('refresh-demographics').addEventListener('click', () => {
+            this.loadData();
+            this.loadTableData();
+        });
+        
+        // Tab changes
+        document.querySelectorAll('[data-bs-toggle="pill"]').forEach(tab => {
+            tab.addEventListener('shown.bs.tab', (e) => {
+                this.handleTabChange(e.target);
+            });
+        });
+    }
+    
+    handleTabChange(tab) {
+        // Resize charts when tab becomes visible
+        setTimeout(() => {
+            Object.values(this.charts).forEach(chart => {
+                if (chart && typeof chart.resize === 'function') {
+                    chart.resize();
+                }
+            });
+        }, 100);
+    }
+    
+    async loadData() {
+        try {
+            const hours = this.getHoursFromRange();
+            const response = await fetch(`/api/analytics/historical?hours=${hours}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.currentData = data;
+                this.updateCharts(data);
+            } else {
+                this.showNoDataState();
+            }
+        } catch (error) {
+            console.error('Error loading data:', error);
+            this.showNoDataState();
+        }
+    }
+    
+    updateCharts(data) {
+        this.createAgeChart(data);
+        this.createGenderChart(data);
+        this.createDemographicTrendsChart(data);
+    }
+    
+    createAgeChart(data) {
+        const ctx = document.getElementById('ageChart');
+        if (!ctx) return;
+        
+        if (this.charts.age) {
+            this.charts.age.destroy();
+        }
+        
+        const ageData = data.age_groups || {};
+        const labels = Object.keys(ageData);
+        const values = Object.values(ageData);
+        
+        this.charts.age = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Visitors by Age Group',
+                    data: values,
+                    backgroundColor: [
+                        'rgba(52, 152, 219, 0.7)',
+                        'rgba(46, 204, 113, 0.7)',
+                        'rgba(155, 89, 182, 0.7)',
+                        'rgba(241, 196, 15, 0.7)',
+                        'rgba(230, 126, 34, 0.7)',
+                        'rgba(231, 76, 60, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(52, 152, 219, 1)',
+                        'rgba(46, 204, 113, 1)',
+                        'rgba(155, 89, 182, 1)',
+                        'rgba(241, 196, 15, 1)',
+                        'rgba(230, 126, 34, 1)',
+                        'rgba(231, 76, 60, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Visitors'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Age Group'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    createGenderChart(data) {
+        const ctx = document.getElementById('genderChart');
+        if (!ctx) return;
+        
+        if (this.charts.gender) {
+            this.charts.gender.destroy();
+        }
+        
+        const genderData = data.gender_distribution || {};
+        const labels = Object.keys(genderData);
+        const values = Object.values(genderData);
+        
+        this.charts.gender = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: ['#3498db', '#e74c3c', '#f39c12']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    createDemographicTrendsChart(data) {
+        const ctx = document.getElementById('demographicTrends');
+        if (!ctx) return;
+        
+        if (this.charts.trends) {
+            this.charts.trends.destroy();
+        }
+        
+        const traffic = data.traffic || {};
+        const labels = traffic.labels || [];
+        const totalTrafficData = traffic.data || [];
+        const genderData = data.gender_distribution || {};
+        
+        // Calculate male/female ratios from total traffic
+        const totalGender = (genderData.Male || 0) + (genderData.Female || 0);
+        const maleRatio = totalGender > 0 ? (genderData.Male || 0) / totalGender : 0.5;
+        const femaleRatio = totalGender > 0 ? (genderData.Female || 0) / totalGender : 0.5;
+        
+        const maleData = totalTrafficData.map(total => Math.round(total * maleRatio));
+        const femaleData = totalTrafficData.map(total => Math.round(total * femaleRatio));
+        
+        this.charts.trends = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Male Visitors',
+                        data: maleData,
+                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: false
+                    },
+                    {
+                        label: 'Female Visitors',
+                        data: femaleData,
+                        backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                        borderColor: 'rgba(231, 76, 60, 1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Visitors'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time Period'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    getHoursFromRange() {
+        const range = document.getElementById('time-range').value;
+        const map = {
+            '1h': 1,
+            '6h': 6,
+            '24h': 24,
+            '7d': 168,
+            '30d': 720
+        };
+        return map[range] || 24;
+    }
+    
+    showNoDataState() {
+        // Clear charts
+        Object.values(this.charts).forEach(chart => {
+            if (chart) {
+                chart.destroy();
+            }
+        });
+        this.charts = {};
+    }
+    
+    initializeTable() {
+        this.setupTableHandlers();
+        this.loadTableData();
+    }
+    
+    setupTableHandlers() {
+        // Search functionality
+        const searchInput = document.getElementById('table-search');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.currentSearch = searchInput.value.trim();
+                    this.currentPage = 1;
+                    this.loadTableData();
+                }, 500);
+            });
+        }
 
-    /**
-     * Initialize the page when DOM is loaded
-     */
-    document.addEventListener('DOMContentLoaded', function() {
-        fetchDemographicData();
-        setupEventHandlers();
-        initializeTable(); // Initialize table functionality
-    });
+        // Records per page dropdown
+        const perPageSelect = document.getElementById('records-per-page');
+        if (perPageSelect) {
+            perPageSelect.addEventListener('change', () => {
+                this.recordsPerPage = parseInt(perPageSelect.value);
+                this.currentPage = 1;
+                this.loadTableData();
+            });
+        }
 
-    /**
-     * Setup event handlers for time range changes
-     */
-    function setupEventHandlers() {
+        // Refresh button
+        const refreshBtn = document.getElementById('refresh-table');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                this.loadTableData();
+            });
+        }
+
+        // Sortable columns
+        document.querySelectorAll('.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const sortField = th.dataset.sort;
+                
+                if (this.currentSort === sortField) {
+                    this.currentSortOrder = this.currentSortOrder === 'desc' ? 'asc' : 'desc';
+                } else {
+                    this.currentSort = sortField;
+                    this.currentSortOrder = 'desc';
+                }
+                
+                this.updateSortIcons();
+                this.loadTableData();
+            });
+        });
+    }
+    
+    async loadTableData() {
+        this.showTableLoading(true);
+        
+        try {
+            const hours = this.getHoursFromRange();
+            const params = new URLSearchParams({
+                page: this.currentPage,
+                per_page: this.recordsPerPage,
+                search: this.currentSearch,
+                sort_by: this.currentSort,
+                sort_order: this.currentSortOrder,
+                hours: hours
+            });
+
+            const response = await fetch(`/api/analytics/demographics?${params}`);
+            const result = await response.json();
+
+            if (result.success) {
+                this.populateTable(result.data);
+                this.updatePagination(result.pagination);
+                this.updateTableInfo(result.pagination);
+            } else {
+                this.showEmptyTable(result.error || 'Failed to load data');
+            }
+        } catch (error) {
+            console.error('Error loading table data:', error);
+            this.showEmptyTable('Error loading data');
+        } finally {
+            this.showTableLoading(false);
+        }
+    }
+    
+    populateTable(records) {
+        const tableBody = document.querySelector('#demographicsTable tbody');
+        if (!tableBody) return;
+        
+        tableBody.innerHTML = '';
+
+        if (records && records.length > 0) {
+            records.forEach(record => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-nowrap">
+                        <div class="fw-semibold">${this.formatDateTime(record.timestamp)}</div>
+                        <small class="text-muted">${this.formatTimeAgo(record.timestamp)}</small>
+                    </td>
+                    <td>
+                        <span class="badge badge-gender-${record.gender.toLowerCase()} text-white">
+                            <i class="fas fa-${this.getGenderIcon(record.gender)} me-1"></i>
+                            ${record.gender}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="fw-semibold">${record.age_group}</div>
+                        <small class="text-muted">${record.age} years old</small>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border">
+                            <i class="fas fa-${this.getEmotionIcon(record.emotion)} me-1"></i>
+                            ${record.emotion}
+                        </span>
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                        <div class="fw-semibold">${record.age_group}</div>
+                        <small class="text-muted">${record.age} years old</small>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border">
+                            <i class="fas fa-${this.getEmotionIcon(record.emotion)} me-1"></i>
+                            ${record.emotion}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-info dwell-time-badge">
+                            ${this.formatDwellTime(record.dwell_time)}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <span class="me-2">${Math.round(record.confidence * 100)}%</span>
+                            <div class="confidence-bar" style="width: 60px;">
+                                <div class="confidence-fill confidence-${this.getConfidenceLevel(record.confidence)}" 
+                                     style="width: ${record.confidence * 100}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        } else {
+            this.showEmptyTable();
+        }
+    }
+    
+    showEmptyTable(errorMessage = null) {
+        const tableBody = document.querySelector('#demographicsTable tbody');
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    ${errorMessage || 'No demographic data available. Use the "Add Sample Data" button in Settings to populate demo data.'}
+                </td>
+            </tr>
+        `;
+        this.updateTableInfo({total_records: 0, page: 1, per_page: this.recordsPerPage});
+        this.updatePagination({total_pages: 0, page: 1, has_prev: false, has_next: false});
+    }
+    
+    showTableLoading(show) {
+        const loadingOverlay = document.getElementById('table-loading');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = show ? 'block' : 'none';
+        }
+    }
+    
+    updatePagination(pagination) {
+        const paginationContainer = document.getElementById('table-pagination');
+        const prevBtn = document.getElementById('prev-page');
+        const nextBtn = document.getElementById('next-page');
+        
+        if (!paginationContainer || !prevBtn || !nextBtn) return;
+        
+        this.totalPages = pagination.total_pages;
+        this.currentPage = pagination.page;
+
+        // Update prev/next buttons
+        prevBtn.parentElement.classList.toggle('disabled', !pagination.has_prev);
+        nextBtn.parentElement.classList.toggle('disabled', !pagination.has_next);
+
+        // Clear existing page numbers
+        const pageItems = paginationContainer.querySelectorAll('.page-item:not(:first-child):not(:last-child)');
+        pageItems.forEach(item => item.remove());
+
+        // Add new page numbers
+        const startPage = Math.max(1, this.currentPage - 2);
+        const endPage = Math.min(this.totalPages, this.currentPage + 2);
+
+        for (let i = startPage; i <= endPage; i++) {
+            const li = document.createElement('li');
+            li.className = `page-item ${i === this.currentPage ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i}</a>`;
+            
+            li.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (i !== this.currentPage) {
+                    this.currentPage = i;
+                    this.loadTableData();
+                }
+            });
+            
+            paginationContainer.insertBefore(li, nextBtn.parentElement);
+        }
+
+        // Update prev/next click handlers
+        prevBtn.onclick = (e) => {
+            e.preventDefault();
+            if (pagination.has_prev) {
+                this.currentPage--;
+                this.loadTableData();
+            }
+        };
+
+        nextBtn.onclick = (e) => {
+            e.preventDefault();
+            if (pagination.has_next) {
+                this.currentPage++;
+                this.loadTableData();
+            }
+        };
+    }
+    
+    updateTableInfo(pagination) {
+        const infoText = document.getElementById('table-info-text');
+        if (!infoText) return;
+        
+        const start = ((pagination.page - 1) * pagination.per_page) + 1;
+        const end = Math.min(start + pagination.per_page - 1, pagination.total_records);
+        
+        if (pagination.total_records > 0) {
+            infoText.textContent = `Showing ${start}-${end} of ${pagination.total_records} records`;
+        } else {
+            infoText.textContent = 'Showing 0 of 0 records';
+        }
+    }
+    
+    updateSortIcons() {
+        document.querySelectorAll('.sortable').forEach(th => {
+            th.classList.remove('sort-asc', 'sort-desc');
+            if (th.dataset.sort === this.currentSort) {
+                th.classList.add(`sort-${this.currentSortOrder}`);
+            }
+        });
+    }
+    
+    formatDateTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+
+    formatTimeAgo(timestamp) {
+        const now = new Date();
+        const then = new Date(timestamp);
+        const diffMs = now - then;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+
+        if (diffDays > 0) return `${diffDays}d ago`;
+        if (diffHours > 0) return `${diffHours}h ago`;
+        if (diffMins > 0) return `${diffMins}m ago`;
+        return 'Just now';
+    }
+
+    formatDwellTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        if (mins > 0) {
+            return `${mins}m ${secs}s`;
+        }
+        return `${secs}s`;
+    }
+
+    getGenderIcon(gender) {
+        switch (gender.toLowerCase()) {
+            case 'male': return 'mars';
+            case 'female': return 'venus';
+            default: return 'question';
+        }
+    }
+
+    getEmotionIcon(emotion) {
+        switch (emotion.toLowerCase()) {
+            case 'happy': return 'smile';
+            case 'sad': return 'frown';
+            case 'angry': return 'angry';
+            case 'surprised': return 'surprise';
+            case 'neutral': return 'meh';
+            default: return 'meh';
+        }
+    }
+
+    getConfidenceLevel(confidence) {
+        if (confidence >= 0.8) return 'high';
+        if (confidence >= 0.6) return 'medium';
+        return 'low';
+    }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    new DemographicsManager();
+});
+
+// Legacy function stubs for backward compatibility
+function setupEventHandlers() {
+    showNoDataState() 
+        // Clear charts
+        Object.values(this.charts).forEach(chart => {
+            if (chart) {
+                chart.destroy();
+            }
+        });
+        this.charts = {};
+    }
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    new DemographicsManager();
+});
         const timeRangeElement = document.getElementById('time-range');
         if (timeRangeElement) {
             timeRangeElement.addEventListener('change', function() {
@@ -343,7 +1215,18 @@
                 }
             });
         }
-    }
+        
+        // Refresh demographics button
+        const refreshBtn = document.getElementById('refresh-demographics');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', function() {
+                fetchDemographicData();
+                // Also reload table data when refreshing
+                if (typeof loadTableData === 'function') {
+                    loadTableData();
+                }
+            });
+        }
 
     /**
      * Fetch demographic data and create charts
@@ -364,8 +1247,29 @@
         const hours = hoursMap[timeRange] || 24;
         
         try {
-            // Fetch real demographic data
-            const response = await fetch(`/api/analytics/summary?hours=${hours}`);
+            // Fetch real demographic data using the same endpoint as historical page
+            const response = await fetch(`/api/analytics/historical?hours=${hours}`, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Invalid response format - expected JSON');
+            }
+            
             const result = await response.json();
             
             if (result.success) {
@@ -374,8 +1278,8 @@
                 createGenderChart(result.gender_distribution);
                 createDemographicTrendsChart(dates.start, dates.end, result);
             } else {
-                // Fallback to empty charts
-                console.warn('Failed to fetch demographic data, showing empty charts');
+                // Fallback to empty charts with error message
+                console.warn('Failed to fetch demographic data:', result.message || 'Unknown error');
                 createAgeChart();
                 createGenderChart();
                 createDemographicTrendsChart(dates.start, dates.end);
@@ -425,6 +1329,11 @@
     function createAgeChart(ageGroups = {}) {
         const ctx = document.getElementById('ageChart').getContext('2d');
         
+        // Destroy existing chart if it exists
+        if (window.ageChart) {
+            window.ageChart.destroy();
+        }
+        
         // Prepare age data
         const defaultAgeGroups = ['18-24', '25-34', '35-44', '45-54', '55+'];
         const labels = [];
@@ -446,7 +1355,7 @@
             data.push(0);
         }
         
-        new Chart(ctx, {
+        window.ageChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
@@ -483,7 +1392,7 @@
                         callbacks: {
                             label: function(context) {
                                 const total = context.dataset.data.reduce((acc, data) => acc + data, 0);
-                                const percentage = Math.round((context.raw / total) * 100);
+                                const percentage = total > 0 ? Math.round((context.raw / total) * 100) : 0;
                                 return `${context.label}: ${context.formattedValue} visitors (${percentage}%)`;
                             }
                         }
@@ -514,6 +1423,11 @@
     function createGenderChart(genderDistribution = {}) {
         const ctx = document.getElementById('genderChart').getContext('2d');
         
+        // Destroy existing chart if it exists
+        if (window.genderChart) {
+            window.genderChart.destroy();
+        }
+        
         // Prepare gender data
         const labels = [];
         const data = [];
@@ -534,7 +1448,7 @@
             data.push(1);
         }
         
-        new Chart(ctx, {
+        window.genderChart = new Chart(ctx, {
             type: 'pie',
             data: {
                 labels: labels,
@@ -563,7 +1477,7 @@
                                 const value = context.formattedValue || '';
                                 const dataset = context.dataset;
                                 const total = dataset.data.reduce((acc, data) => acc + data, 0);
-                                const percentage = Math.round((context.raw / total) * 100);
+                                const percentage = total > 0 ? Math.round((context.raw / total) * 100) : 0;
                                 return `${label}: ${value} visitors (${percentage}%)`;
                             }
                         }
@@ -576,32 +1490,61 @@
     /**
      * Create demographic trends line chart
      */
-    function createDemographicTrendsChart(start, end) {
+    function createDemographicTrendsChart(start, end, data = null) {
         const ctx = document.getElementById('demographicTrends').getContext('2d');
         
-        // Generate sample data between start and end dates
-        const dates = [];
-        const maleData = [];
-        const femaleData = [];
-        
-        const diffTime = Math.abs(end - start);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        const step = Math.max(1, Math.ceil(diffDays / 7)); // Maximum 7 data points
-        
-        for (let i = 0; i <= diffDays; i += step) {
-            const date = new Date(start);
-            date.setDate(date.getDate() + i);
-            dates.push(date.toLocaleDateString());
-            
-            // Generate realistic sample data
-            maleData.push(Math.floor(Math.random() * 100) + 50);
-            femaleData.push(Math.floor(Math.random() * 80) + 40);
+        // Destroy existing chart if it exists
+        if (window.demographicTrendsChart) {
+            window.demographicTrendsChart.destroy();
         }
         
-        new Chart(ctx, {
+        let labels = [];
+        let maleData = [];
+        let femaleData = [];
+        
+        // Use real data if available from API response
+        if (data && data.traffic && data.traffic.labels && data.gender_distribution) {
+            labels = data.traffic.labels;
+            const totalTrafficData = data.traffic.data || [];
+            const genderData = data.gender_distribution;
+            
+            // Calculate male/female ratios from total traffic
+            const maleRatio = (genderData.Male || 0) / (genderData.Male + genderData.Female || 1);
+            const femaleRatio = (genderData.Female || 0) / (genderData.Male + genderData.Female || 1);
+            
+            // Apply ratios to traffic data to get gender-specific trends
+            totalTrafficData.forEach(totalVisitors => {
+                maleData.push(Math.round(totalVisitors * maleRatio));
+                femaleData.push(Math.round(totalVisitors * femaleRatio));
+            });
+        } else {
+            // Fallback to sample data if no real data available
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const step = Math.max(1, Math.ceil(diffDays / 7)); // Maximum 7 data points
+            
+            for (let i = 0; i <= diffDays; i += step) {
+                const date = new Date(start);
+                date.setDate(date.getDate() + i);
+                labels.push(date.toLocaleDateString());
+                
+                // Generate realistic sample data
+                maleData.push(Math.floor(Math.random() * 100) + 50);
+                femaleData.push(Math.floor(Math.random() * 80) + 40);
+            }
+        }
+        
+        // Handle case where no data is available
+        if (labels.length === 0) {
+            labels = ['No Data Available'];
+            maleData = [0];
+            femaleData = [0];
+        }
+        
+        window.demographicTrendsChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: dates,
+                labels: labels,
                 datasets: [
                     {
                         label: 'Male Visitors',
@@ -1036,4 +1979,4 @@
     }
 </script>
 </div> <!-- Close page-container -->
-{% endblock %} 
+{% endblock %}

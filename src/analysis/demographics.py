@@ -64,7 +64,10 @@ class DemographicAnalyzer:
     def _init_models(self):
         """Initialize face detection and analysis models"""
         try:
-            if self.use_insightface:
+            # Initialize face_app to None by default
+            self.face_app = None
+            
+            if self.use_insightface and INSIGHTFACE_AVAILABLE:
                 # InsightFace for face detection and recognition
                 self.face_app = FaceAnalysis(name='buffalo_l', 
                                            root=self.config.get('model_dir', './models'),
@@ -99,11 +102,11 @@ class DemographicAnalyzer:
     
     def process(self, frame, tracks):
         """
-        Process a frame to extract demographic information for tracked persons
+        Process face tracks to extract demographic information for tracked faces
         
         Args:
             frame (numpy.ndarray): Current video frame
-            tracks (list): List of person tracks with IDs and bounding boxes
+            tracks (list): List of face tracks with IDs, bounding boxes, and quality scores
             
         Returns:
             dict: Updated demographic information by person ID
@@ -117,17 +120,22 @@ class DemographicAnalyzer:
             return self.person_demographics
         
         try:
-            # Process each tracked person
+            # Process each tracked face
             for track in tracks:
                 person_id = track['id']
                 bbox = track['bbox']
+                quality_score = track.get('quality_score', 1.0)
                 
                 # Skip if we already have good demographic data for this person
                 if person_id in self.person_demographics and self.person_demographics[person_id].get('confidence', 0) > 0.9:
                     continue
                 
-                # Extract face from bounding box
-                face_img = self._extract_face(frame, bbox)
+                # Skip low quality faces
+                if quality_score < self.confidence_threshold:
+                    continue
+                
+                # Extract face image directly from face bounding box
+                face_img = self._extract_face_from_bbox(frame, bbox)
                 if face_img is None:
                     continue
                 
@@ -152,9 +160,46 @@ class DemographicAnalyzer:
             logger.error(f"Error in demographic analysis: {e}")
             return self.person_demographics
     
+    def _extract_face_from_bbox(self, frame, bbox):
+        """
+        Extract face image directly from face bounding box
+        
+        Args:
+            frame (numpy.ndarray): Current video frame
+            bbox (tuple): Face bounding box (x1, y1, x2, y2)
+            
+        Returns:
+            numpy.ndarray: Face image or None if extraction fails
+        """
+        try:
+            x1, y1, x2, y2 = bbox
+            
+            # Ensure coordinates are within frame bounds
+            h, w = frame.shape[:2]
+            x1 = max(0, min(x1, w))
+            y1 = max(0, min(y1, h))
+            x2 = max(0, min(x2, w))
+            y2 = max(0, min(y2, h))
+            
+            # Check if bounding box is valid
+            if x2 <= x1 or y2 <= y1:
+                return None
+            
+            # Extract face region directly
+            face_img = frame[y1:y2, x1:x2]
+            
+            if face_img.size == 0:
+                return None
+                
+            return face_img
+                
+        except Exception as e:
+            logger.error(f"Error extracting face from bbox: {e}")
+            return None
+
     def _extract_face(self, frame, bbox):
         """
-        Extract face image from person bounding box
+        Legacy method for extracting face from person bounding box (kept for compatibility)
         
         Args:
             frame (numpy.ndarray): Current video frame
@@ -202,54 +247,155 @@ class DemographicAnalyzer:
     
     def _analyze_demographics(self, face_img):
         """
-        Analyze demographics from a face image
+        Enhanced demographic analysis with ensemble age prediction for improved accuracy
         
         Args:
             face_img (numpy.ndarray): Face image
             
         Returns:
-            dict: Demographic information (age, gender, race, emotion)
+            dict: Demographic information (age, gender, race, emotion) with improved age accuracy
         """
         try:
             start_time = time.time()
             
-            # DeepFace analysis for demographics
-            results = DeepFace.analyze(
-                img_path=face_img,
-                actions=['age', 'gender', 'race', 'emotion'],
-                models=self.models,
-                enforce_detection=False,
-                detector_backend=self.backends.get('age'),
-                prog_bar=False,
-                silent=True
-            )
+            # Ensemble age prediction with multiple backends for better accuracy
+            age_predictions = []
+            primary_result = None
             
-            # Process results
-            if isinstance(results, list):
-                result = results[0]  # Take first face
+            # Try primary backend (dlib) for enhanced age estimation
+            try:
+                primary_results = DeepFace.analyze(
+                    img_path=face_img,
+                    actions=['age', 'gender', 'race', 'emotion'],
+                    enforce_detection=False,
+                    detector_backend=self.backends.get('age', 'dlib'),
+                    silent=True
+                )
+                primary_result = primary_results[0] if isinstance(primary_results, list) else primary_results
+                if 'age' in primary_result:
+                    age_predictions.append(primary_result['age'])
+                logger.debug(f"Primary age prediction: {primary_result.get('age', 'N/A')}")
+            except Exception as e:
+                logger.debug(f"Primary backend failed: {e}")
+            
+            # Try fallback backend for additional age estimation
+            fallback_backend = self.config.get('fallback_age_backend', 'mtcnn')
+            if fallback_backend and fallback_backend != self.backends.get('age'):
+                try:
+                    fallback_results = DeepFace.analyze(
+                        img_path=face_img,
+                        actions=['age'],
+                        enforce_detection=False,
+                        detector_backend=fallback_backend,
+                        silent=True
+                    )
+                    fallback_result = fallback_results[0] if isinstance(fallback_results, list) else fallback_results
+                    if 'age' in fallback_result:
+                        age_predictions.append(fallback_result['age'])
+                    logger.debug(f"Fallback age prediction: {fallback_result.get('age', 'N/A')}")
+                except Exception as e:
+                    logger.debug(f"Fallback backend failed: {e}")
+            
+            # If no predictions, use original backend as last resort
+            if not age_predictions and not primary_result:
+                try:
+                    original_results = DeepFace.analyze(
+                        img_path=face_img,
+                        actions=['age', 'gender', 'race', 'emotion'],
+                        enforce_detection=False,
+                        detector_backend='opencv',  # Original fallback
+                        silent=True
+                    )
+                    primary_result = original_results[0] if isinstance(original_results, list) else original_results
+                    if 'age' in primary_result:
+                        age_predictions.append(primary_result['age'])
+                except Exception as e:
+                    logger.warning(f"All age prediction backends failed: {e}")
+                    raise e
+            
+            # Calculate ensemble age prediction
+            if age_predictions:
+                # Remove outliers and calculate weighted average
+                valid_ages = [age for age in age_predictions if isinstance(age, (int, float)) and 1 <= age <= 100]
+                if valid_ages:
+                    if len(valid_ages) == 1:
+                        final_age = valid_ages[0]
+                    else:
+                        # Weighted average with outlier removal
+                        ages_array = np.array(valid_ages)
+                        mean_age = np.mean(ages_array)
+                        std_age = np.std(ages_array)
+                        # Remove outliers beyond 1.5 standard deviations
+                        filtered_ages = ages_array[np.abs(ages_array - mean_age) <= 1.5 * std_age]
+                        final_age = np.mean(filtered_ages) if len(filtered_ages) > 0 else mean_age
+                    
+                    final_age = max(1, min(100, float(final_age)))
+                    logger.debug(f"Ensemble age prediction: {final_age} (from {len(valid_ages)} models)")
+                else:
+                    final_age = 25.0  # Default fallback
             else:
-                result = results
+                final_age = float(primary_result.get('age', 25)) if primary_result else 25.0
+            
+            # Use primary result for other attributes or fallback
+            if not primary_result:
+                logger.warning("No successful analysis results, using fallback")
+                return {
+                    'age': final_age,
+                    'age_group': self._calculate_age_group(final_age),
+                    'gender': 'unknown',
+                    'race': 'unknown',
+                    'emotion': 'neutral',
+                    'confidence': 0.1,
+                    'analysis_method': 'fallback_enhanced'
+                }
+            
+            # Handle gender parsing robustly
+            gender = primary_result.get('dominant_gender', primary_result.get('gender', 'unknown'))
+            if isinstance(gender, dict):
+                gender = max(gender.keys(), key=lambda k: gender[k]) if gender else 'unknown'
+            
+            # Calculate confidence based on age prediction consistency
+            base_confidence = 0.7
+            if len(age_predictions) > 1:
+                ages_std = np.std(age_predictions) if age_predictions else 0
+                if ages_std < 5:  # Ages within 5 years are considered consistent
+                    base_confidence = min(1.0, base_confidence + 0.1)
             
             demographics = {
-                'age': float(result.get('age')),  # Use precise age
-                'gender': result.get('gender'),
-                'race': result.get('dominant_race'),
-                'race_scores': result.get('race'),
-                'emotion': result.get('dominant_emotion'),
-                'emotion_scores': result.get('emotion'),
-                'confidence': result.get('gender_confidence', 0.7),  # Use gender confidence as overall
+                'age': final_age,
+                'gender': gender,
+                'race': primary_result.get('dominant_race', 'unknown'),
+                'race_scores': primary_result.get('race', {}),
+                'emotion': primary_result.get('dominant_emotion', 'neutral'),
+                'emotion_scores': primary_result.get('emotion', {}),
+                'confidence': base_confidence,
                 'timestamp': time.time(),
-                'analysis_count': 1
+                'analysis_count': 1,
+                'analysis_method': 'enhanced_ensemble',
+                'age_predictions': age_predictions,  # For debugging
+                'age_consistency': len(age_predictions) > 1 and np.std(age_predictions) < 5 if age_predictions else False
             }
             
+            # Calculate age group from enhanced age
+            demographics['age_group'] = self._calculate_age_group(demographics['age'])
+            
             elapsed_time = time.time() - start_time
-            logger.debug(f"Demographic analysis completed in {elapsed_time:.4f} seconds (precise age: {demographics['age']})")
+            logger.debug(f"Enhanced demographic analysis completed in {elapsed_time:.4f} seconds (ensemble age: {demographics['age']})")
             
             return demographics
             
         except Exception as e:
-            logger.warning(f"Error analyzing demographics: {e}")
-            return None
+            logger.warning(f"Error in enhanced demographics analysis: {e}")
+            # Return fallback demographics instead of None
+            return {
+                'age': 25,
+                'age_group': '25-34',
+                'gender': 'unknown',
+                'race': 'unknown',
+                'emotion': 'neutral',
+                'confidence': 0.1,
+                'analysis_method': 'error_fallback'
+            }
     
     def _update_demographics(self, person_id, new_data):
         """
@@ -405,7 +551,7 @@ class DemographicAnalyzer:
         
         Args:
             frame (numpy.ndarray): Current video frame
-            tracks (list): List of person tracks with IDs
+            tracks (list): List of face tracks with IDs and quality scores
             
         Returns:
             numpy.ndarray: Frame with demographic information visualized
@@ -416,10 +562,11 @@ class DemographicAnalyzer:
         # Create a copy of the frame
         output_frame = frame.copy()
         
-        # Draw demographic information for each person
+        # Draw demographic information for each face
         for track in tracks:
             person_id = track['id']
             bbox = track['bbox']
+            quality_score = track.get('quality_score', 1.0)
             
             # Skip if no demographic data
             if person_id not in self.person_demographics:
@@ -433,13 +580,23 @@ class DemographicAnalyzer:
             label += f"{demo.get('gender', 'Unknown')} | "
             label += f"{demo.get('race', 'Unknown')} | "
             label += f"{demo.get('emotion', 'Unknown')}"
+            label += f" | Q: {quality_score:.2f}"
             
-            # Get position for text
+            # Get position for text (above the face)
             text_x = bbox[0]
             text_y = bbox[1] - 10
             
+            # Color based on quality and demographic confidence
+            demo_confidence = demo.get('confidence', 0.5)
+            if quality_score > 0.7 and demo_confidence > 0.8:
+                color = (0, 255, 0)  # Green for high quality
+            elif quality_score > 0.4 and demo_confidence > 0.5:
+                color = (0, 255, 255)  # Yellow for medium quality
+            else:
+                color = (0, 0, 255)  # Red for low quality
+            
             # Draw background rectangle for text
-            text_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)[0]
+            text_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.4, 1)[0]
             cv2.rectangle(output_frame, 
                           (text_x, text_y - text_size[1] - 10), 
                           (text_x + text_size[0], text_y), 
@@ -447,7 +604,7 @@ class DemographicAnalyzer:
             
             # Draw text
             cv2.putText(output_frame, label, (text_x, text_y - 5), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
         
         return output_frame 
 
@@ -497,17 +654,189 @@ class DemographicAnalyzer:
 
     def analyze(self, face_img, person_id=None):
         if not self.optimized or not self.face_app:
-            return self._analyze_demographics(face_img)
+            demographics = self._analyze_demographics(face_img)
+            return demographics if demographics is not None else self._get_fallback_demographics_with_quality(0.0)
+        
         embedding = self.get_face_embedding(face_img)
         if embedding is None:
-            return self._analyze_demographics(face_img)
+            demographics = self._analyze_demographics(face_img)
+            return demographics if demographics is not None else self._get_fallback_demographics_with_quality(0.0)
+        
         match_id = self.find_matching_person(embedding, face_img)
         if match_id is not None:
             logger.info(f"ReID: Duplicate detected, merging with person {match_id}")
-            return next(e['demographics'] for e in self.embeddings if e['person_id'] == match_id)
+            # Safely find matching demographics
+            matching_entry = next((e for e in self.embeddings if e['person_id'] == match_id), None)
+            if matching_entry and 'demographics' in matching_entry:
+                return matching_entry['demographics']
+            else:
+                logger.warning(f"Could not find demographics for matched person {match_id}")
+                
         demographics = self._analyze_demographics(face_img)
+        if demographics is None:
+            demographics = self._get_fallback_demographics_with_quality(0.0)
+            
         if person_id is None:
             person_id = len(self.embeddings) + 1
-        demographics['face_img'] = face_img  # Store for future verification
-        self.embeddings.append({'person_id': person_id, 'embedding': embedding, 'demographics': demographics})
-        return demographics 
+        
+        # Ensure demographics is a valid dict before adding face_img
+        if isinstance(demographics, dict):
+            demographics['face_img'] = face_img  # Store for future verification
+            self.embeddings.append({'person_id': person_id, 'embedding': embedding, 'demographics': demographics})
+        else:
+            logger.error(f"Demographics is not a dict: {type(demographics)}")
+            demographics = self._get_fallback_demographics_with_quality(0.0)
+            
+        return demographics
+    
+    def analyze_with_quality_check(self, person_id, face_img, bbox, detection_confidence, 
+                                  landmarks=None, database=None, face_snapshot_manager=None):
+        """
+        Enhanced analyze method with quality assessment and one-time demographic analysis
+        
+        Args:
+            person_id (int): Person track ID
+            face_img (np.ndarray): Face image
+            bbox (tuple): Face bounding box
+            detection_confidence (float): Detection confidence
+            landmarks: Optional facial landmarks
+            database: Database connection for checking existing demographics
+            face_snapshot_manager: Face snapshot manager for quality assessment
+            
+        Returns:
+            dict: Demographic analysis results with quality info
+        """
+        try:
+            # Check if person already has good demographics
+            if database and database.has_good_demographics(person_id):
+                logger.debug(f"Person {person_id} already has good demographics, skipping analysis")
+                # Return cached demographics from database
+                cached_demographics = self._get_cached_demographics_from_db(person_id, database)
+                if cached_demographics:
+                    cached_demographics['analysis_method'] = 'cached'
+                    return cached_demographics
+            
+            # Process face snapshot and check quality
+            if face_snapshot_manager:
+                snapshot_result = face_snapshot_manager.process_face_snapshot(
+                    person_id, face_img, bbox, detection_confidence, landmarks
+                )
+                
+                quality_score = snapshot_result.get('quality_score', 0.0)
+                
+                # Only analyze if quality is good enough
+                if quality_score < face_snapshot_manager.min_quality_threshold:
+                    logger.debug(f"Face quality too low for analysis: {quality_score:.3f}")
+                    return self._get_fallback_demographics_with_quality(quality_score)
+                
+                # Perform demographic analysis only on high-quality faces
+                demographics = self.analyze(face_img, person_id)
+                
+                # Ensure demographics is a valid dict
+                if not isinstance(demographics, dict):
+                    logger.error(f"analyze() returned invalid type: {type(demographics)}")
+                    demographics = self._get_fallback_demographics_with_quality(quality_score)
+                
+                # Add quality information to demographics
+                demographics['quality_score'] = quality_score
+                demographics['quality_grade'] = face_snapshot_manager.quality_scorer.get_quality_grade(quality_score)
+                demographics['face_stored'] = snapshot_result.get('stored', False)
+                demographics['is_primary_face'] = snapshot_result.get('is_primary', False)
+                demographics['analysis_method'] = 'enhanced_quality'
+                
+                return demographics
+            else:
+                # Fallback to standard analysis
+                demographics = self.analyze(face_img, person_id)
+                
+                # Ensure demographics is a valid dict
+                if not isinstance(demographics, dict):
+                    logger.error(f"analyze() returned invalid type: {type(demographics)}")
+                    demographics = self._get_fallback_demographics_with_quality(0.0)
+                
+                demographics['analysis_method'] = 'standard'
+                return demographics
+                
+        except Exception as e:
+            logger.error(f"Error in enhanced demographic analysis: {e}")
+            return self._get_fallback_demographics_with_quality(0.0)
+    
+    def _get_cached_demographics_from_db(self, person_id, database):
+        """Get cached demographics from database"""
+        try:
+            # Get the most recent high-confidence demographics
+            demographics_records = database.get_demographics(person_id=person_id)
+            if not demographics_records:
+                return None
+            
+            # Find the best record
+            best_record = None
+            best_confidence = 0.0
+            
+            for record in demographics_records:
+                confidence = record.get('confidence', 0.0) if isinstance(record, dict) else record[9]  # confidence column
+                if confidence > best_confidence:
+                    best_confidence = confidence
+                    best_record = record
+            
+            if best_record:
+                if isinstance(best_record, dict):
+                    return {
+                        'age': best_record.get('age'),
+                        'age_group': self._calculate_age_group(best_record.get('age', 25)),
+                        'gender': best_record.get('gender', 'unknown'),
+                        'race': best_record.get('race', 'unknown'),
+                        'emotion': best_record.get('emotion', 'neutral'),
+                        'confidence': best_record.get('confidence', 0.0),
+                        'analysis_method': 'database_cached'
+                    }
+                else:
+                    # Handle tuple format from database
+                    age = best_record[4] if len(best_record) > 4 else 25
+                    return {
+                        'age': age,
+                        'age_group': self._calculate_age_group(age),
+                        'gender': 'unknown',  # Would need join to lookup tables
+                        'race': 'unknown',
+                        'emotion': 'neutral',
+                        'confidence': best_confidence,
+                        'analysis_method': 'database_cached'
+                    }
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error getting cached demographics from database: {e}")
+            return None
+    
+    def _get_fallback_demographics_with_quality(self, quality_score):
+        """Get fallback demographics with quality information"""
+        return {
+            'age': 25,
+            'age_group': '25-34',
+            'gender': 'unknown',
+            'race': 'unknown',
+            'emotion': 'neutral',
+            'confidence': 0.1,
+            'quality_score': quality_score,
+            'analysis_method': 'fallback'
+        }
+    
+    def _calculate_age_group(self, age):
+        """Calculate age group from age"""
+        if age < 13:
+            return "0-12"
+        elif age < 18:
+            return "13-17"
+        elif age < 25:
+            return "18-24"
+        elif age < 35:
+            return "25-34"
+        elif age < 45:
+            return "35-44"
+        elif age < 55:
+            return "45-54"
+        elif age < 65:
+            return "55-64"
+        else:
+            return "65+" 

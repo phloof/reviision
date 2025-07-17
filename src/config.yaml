@@ -1,31 +1,60 @@
+# Detection mode: 'face' or 'person'
+# 'face' - Direct face detection with better ReID and demographics (recommended)
+# 'person' - Traditional person detection (legacy mode)
+mode: face
+
 analysis:
   demographics:
-    age_backend: retinaface
+    age_backend: dlib  # Changed from retinaface to dlib for better age accuracy
     age_model: Age
     attributes:
     - age
     - gender
     - race
     - emotion
-    confidence_threshold: 0.7
-    detection_interval: 30
+    confidence_threshold: 0.5  # Lowered threshold for better detection
+    detection_interval: 30  # Increased interval to reduce processing load
     embedding_normalize: true
     embedding_similarity_threshold: 0.4
     embedding_window_size: 100
-    emotion_backend: retinaface
+    emotion_backend: dlib  # Changed to dlib for consistency
     emotion_model: Emotion
     enabled: true
     face_match_backend: model
-    face_match_threshold: 0.8
-    gender_backend: retinaface
+    face_match_threshold: 0.75  # Slightly lowered for better matching
+    gender_backend: dlib  # Changed to dlib for better accuracy
     gender_model: Gender
-    min_face_size: 50
+    min_face_size: 48  # Optimized minimum size
     model: deepface
     model_dir: ./models
     one_time_demographics: true
+    # Enhanced age prediction settings
+    age_estimation_method: ensemble  # Use ensemble of models for better accuracy
+    fallback_age_backend: mtcnn  # Fallback backend if dlib fails
+    age_smoothing: true  # Enable age smoothing across frames
+    age_confidence_threshold: 0.6  # Minimum confidence for age predictions
     race_backend: retinaface
     race_model: Race
     use_insightface: true
+    # New optimization settings
+    enable_async_analysis: true  # Enable asynchronous demographic analysis
+    enable_caching: true  # Enable demographic and feature caching
+    enable_progressive_reid: true  # Enable progressive re-identification
+    cache_timeout: 300  # Cache timeout in seconds (5 minutes)
+    max_face_size: 224  # Maximum face size for processing
+    enable_quick_analysis: true  # Use faster analysis methods when possible
+    resize_input_images: true  # Resize large input images for performance
+    max_input_size: 640  # Maximum input image dimension
+    # Face quality assessment settings
+    min_quality_threshold: 0.5  # Minimum quality to process face
+    improvement_threshold: 0.1  # Minimum improvement to update face
+    size_weight: 0.25  # Weight for face size in quality score
+    clarity_weight: 0.30  # Weight for image clarity
+    frontality_weight: 0.20  # Weight for face angle
+    lighting_weight: 0.15  # Weight for lighting quality
+    detection_weight: 0.10  # Weight for detection confidence
+    optimal_face_size: 112  # Optimal face size for analysis
+    max_face_size_limit: 300  # Maximum allowed face size
   dwell_time:
     enabled: true
     min_duration: 5
@@ -35,57 +64,138 @@ analysis:
     grid_size: 0.5
 camera:
   backend: pyav
-  buffer_size: 1
-  connection_timeout: 20.0
+  buffer_size: 1  # Reduced for lower latency
+  connection_timeout: 15.0  # Increased for better connection stability
   fps: 15
   frame_skip_on_error: true
-  h264_error_threshold: 20
-  max_decode_errors: 50
+  h264_error_threshold: 20  # Increased tolerance
+  max_decode_errors: 50  # Increased tolerance
   max_retries: -1
   min_frame_size: 100
   password: reviision
   process_latest_only: true
-  recovery_frame_count: 5
+  recovery_frame_count: 5  # Increased for better recovery
   resolution:
   - 1280
   - 720
-  retry_interval: 3.0
+  retry_interval: 2.0  # Increased retry interval
   rtsp_transport: tcp
-  timeout: 20.0
+  timeout: 15.0  # Increased timeout
   type: rtsp
   url: rtsp://reviision:reviision@192.168.4.31:554/stream1
   username: reviision
+  watchdog_timeout: 15.0  # Increased watchdog timeout
+  force_resolution: true
+  fast_decode: true
+  drop_frames: true
+  # Enhanced PyAV options for better stability
+  pyav_options:
+    stimeout: "15000000"  # Increased to 15 seconds
+    rtsp_transport: "tcp"
+    rtsp_flags: "prefer_tcp"
+    fflags: "nobuffer+flush_packets"
+    flags: "low_delay"
+    max_delay: "500000"  # Increased to 500ms max delay
+    reorder_queue_size: "0"
+    buffer_size: "1048576"  # 1MB buffer
+    analyzeduration: "2000000"  # 2 seconds analysis
+    probesize: "1048576"  # 1MB probe size
+    reconnect: "1"
+    reconnect_at_eof: "1"
+    reconnect_streamed: "1"
+    reconnect_delay_max: "2"
 database:
-  path: reviision.db
+  path: ../reviision.db
   type: sqlite
+
+# Face snapshot storage configuration
+face_storage:
+  storage_directory: "data/faces"  # Directory for face images
+  storage_format: "jpg"  # Image format (jpg, png)
+  storage_quality: 95  # JPEG quality (1-100)
+  max_faces_per_person: 3  # Maximum face snapshots per person
+  enable_file_storage: true  # Store faces as files
+  enable_db_storage: true  # Store face metadata in database
+  store_image_in_db: false  # Store actual image data in DB (not recommended for large datasets)
+  max_face_size: [224, 224]  # Maximum face image dimensions
+  auto_cleanup_old_faces: true  # Automatically clean up old/low-quality faces
 detection:
+  # Common settings
   confidence_threshold: 0.5
-  iou_threshold: 0.45
-  model: yolov8n.pt
+  detection_interval: 1  # Run detection every N frames
+  
+  # Person detection settings (YOLO)
+  person:
+    iou_threshold: 0.45
+    model: yolov8n.pt
+    device: cpu
+    image_size: 640
+  
+  # Face detection settings (InsightFace)
+  face:
+    model_name: buffalo_l
+    model_dir: ./models
+    min_face_size: 30
+    max_face_size: 1000
+    det_size: [640, 640]
+    ctx_id: 0  # GPU context ID (-1 for CPU)
+    enable_quality_check: true
+    min_quality_score: 0.3
 heatmap:
   decay_factor: 0.1
   grid_size: 0.5
 logging:
   level: INFO
 tracking:
-  confirmation_frames: 12
-  demographic_consistency_threshold: 0.8
-  distance_threshold: 120
-  feature_similarity_threshold: 0.85
-  feature_weight: 0.4
-  iou_threshold: 0.2
-  max_age: 45
-  min_confidence_for_db: 0.75
-  min_frames_for_db: 12
-  min_hits: 8
-  min_track_confidence: 0.4
-  position_weight: 0.6
-  reid_distance_threshold: 250
+  # Common tracking settings
   reid_enabled: true
-  reid_feature_threshold: 0.75
-  reid_max_age: 120
-  spatial_threshold: 100
-  temporal_window: 30.0
+  
+  # Person tracking settings
+  person:
+    confirmation_frames: 8  # Reduced for faster person confirmation
+    demographic_consistency_threshold: 0.75  # Slightly lowered for better matching
+    distance_threshold: 120
+    feature_similarity_threshold: 0.8  # Slightly lowered for better matching
+    feature_weight: 0.4
+    iou_threshold: 0.2
+    max_age: 45
+    min_confidence_for_db: 0.65  # Lowered for faster database entry
+    min_frames_for_db: 8  # Reduced for faster person addition
+    min_hits: 6  # Reduced for faster tracking confirmation
+    min_track_confidence: 0.3  # Lowered for better detection
+    position_weight: 0.6
+    reid_distance_threshold: 250
+    reid_feature_threshold: 0.7  # Slightly lowered for better matching
+    reid_max_age: 120
+    spatial_threshold: 100
+    temporal_window: 30.0
+    # Enhanced re-identification settings
+    reid_similarity_threshold: 0.7  # Face/feature similarity threshold for re-ID
+    reid_temporal_window: 300.0  # 5 minute window for re-identification
+    reid_spatial_threshold: 200  # Larger spatial threshold for re-ID
+    reid_confidence_boost: 0.1  # Confidence boost for re-identified persons
+    reid_demographic_weight: 0.25  # Weight for demographic similarity in re-ID
+    enable_face_embedding_reid: true  # Use face embeddings for re-ID
+    face_embedding_threshold: 0.65  # Face embedding similarity threshold
+    enable_progressive_reid: true  # Progressive re-identification
+    enable_cached_reid: true  # Use cached results for re-identification
+  
+  # Face tracking settings (optimized for face boxes)
+  face:
+    max_age: 30  # Shorter for faces
+    min_hits: 3  # Lower for faces
+    iou_threshold: 0.3  # Higher for face boxes
+    distance_threshold: 100  # Smaller for faces
+    embedding_weight: 0.7  # Higher weight for embeddings
+    position_weight: 0.3  # Lower weight for position
+    min_track_confidence: 0.4  # Higher for faces
+    confirmation_frames: 5  # Lower for faces
+    reid_distance_threshold: 200  # Max distance for face re-identification
+    reid_embedding_threshold: 0.6  # Face similarity threshold
+    reid_max_age: 60  # Max age for re-identification attempts
+    min_face_quality: 0.3  # Minimum quality for tracking
+    embedding_update_rate: 0.2  # Rate for embedding updates
+    face_size_weight: 0.1  # Weight for face size in matching
 web:
   create_default_admin: true
   debug: true
@@ -95,3 +205,23 @@ web:
   port: 5000
   secret_key: abcdefghijklmnopqrstuvwxyz1234
   session_timeout_hours: 2
+# Performance optimization settings to prevent RTSP overload
+performance:
+  # Frame analysis optimization
+  frame_analysis:
+    min_interval_ms: 100  # Minimum 100ms between frame analyses (prevents 429 errors)
+    cache_duration_ms: 1000  # Cache results for 1 second
+    enable_motion_detection: true  # Skip processing when no motion detected
+    motion_threshold: 1000  # Increased threshold for better stability
+    frame_skip_factor: 3  # Process every 3rd frame for better performance
+  # YOLO detection optimization  
+  yolo:
+    confidence_threshold: 0.4  # Slightly higher for fewer false positives
+    iou_threshold: 0.5  # Higher IOU for better tracking
+    input_size: 416  # Smaller input size for faster processing
+  # Demographic analysis optimization
+  demographics:
+    async_processing: true  # Enable async demographic processing
+    cache_enabled: true  # Cache demographic results
+    skip_factor: 10  # Analyze demographics less frequently
+    max_processing_time: 2.0  # Maximum time allowed for demographic analysis

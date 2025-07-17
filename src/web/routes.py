@@ -12,11 +12,9 @@ from flask import Blueprint, render_template, request, jsonify, current_app, Res
 import logging
 from datetime import datetime
 import json
-import os
 from pathlib import Path
 import time
 import cv2
-import numpy as np
 
 # Create logger early so it can be used in import exception handlers
 logger = logging.getLogger(__name__)
@@ -26,36 +24,9 @@ from camera import get_camera, stop_camera
 from .services import analysis_service
 from utils.config import ConfigManager
 
-# Import the dwell time analyzer if available
-try:
-    from analysis.dwell import DwellTimeAnalyzer
-except ImportError:
-    logger.warning("DwellTimeAnalyzer not available, using mock interface")
-    class DwellTimeAnalyzer:
-        """Mock dwell time analyzer for testing"""
-        def __init__(self, config):
-            pass
-        
-        def generate_mock_data(self):
-            return {"message": "Dwell time analyzer not available"}
-
-# Import the heatmap generator if available
-try:
-    from analysis.heatmap import HeatmapGenerator
-except ImportError:
-    logger.warning("HeatmapGenerator not available, using mock interface")
-    class HeatmapGenerator:
-        """Mock heatmap generator for testing"""
-        def __init__(self, config=None):
-            pass
-        
-        def get_available_colormaps(self):
-            return [
-                {"name": "jet", "category": "sequential"},
-                {"name": "viridis", "category": "perceptual"},
-                {"name": "plasma", "category": "perceptual"},
-                {"name": "hot", "category": "sequential"}
-            ]
+# Import analysis modules
+from analysis.dwell import DwellTimeAnalyzer
+from analysis.heatmap import HeatmapGenerator
 
 # Import authentication
 from .auth import require_auth, require_admin, require_manager
@@ -70,7 +41,6 @@ def get_config_manager():
     Returns:
         ConfigManager: Configured instance pointing to the correct config.yaml
     """
-    from utils.config import ConfigManager
     config_path = Path(__file__).parent.parent / 'config.yaml'
     return ConfigManager(config_dir=str(config_path.parent))
 
@@ -353,10 +323,24 @@ def get_demographics_data():
         logger.error(f"Error getting demographics data: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
+@web_bp.route('/api/analytics/demographic-trends', methods=['GET'])
+@require_auth()
+def get_demographic_trends():
+    """
+    Get demographic trends over time for charts
+    """
+    try:
+        hours = int(request.args.get('hours', 24))
+        trends_data = analysis_service.get_demographic_trends(hours=hours)
+        return jsonify(trends_data)
+    except Exception as e:
+        logger.error(f"Error getting demographic trends: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
 @web_bp.route('/api/analyze_frame', methods=['POST'])
 def analyze_frame():
     """
-    Analyze a video frame and return detection results
+    Analyze a video frame and return detection results with rate limiting
     This endpoint processes image data and returns detected objects, demographics, etc.
     """
     try:
@@ -364,10 +348,13 @@ def analyze_frame():
         if not data or 'image_data' not in data:
             return jsonify({"error": "Missing image data"}), 400
         
-        # Use the frame analysis service
+        # Use the frame analysis service with built-in rate limiting
         result = analysis_service.analyze_frame(data['image_data'])
         
+        # Handle rate limiting errors by returning 429 status
         if "error" in result:
+            if "rate limited" in result["error"].lower() or "in progress" in result["error"].lower():
+                return jsonify(result), 429  # Too Many Requests
             return jsonify(result), 400
         
         return jsonify(result)
@@ -375,6 +362,99 @@ def analyze_frame():
         logger.error(f"Error analyzing frame: {e}")
         return jsonify({"error": str(e)}), 500
 
+
+@web_bp.route('/api/face_thumbnail/<int:person_id>', methods=['GET'])
+def get_face_thumbnail(person_id):
+    """Get face thumbnail for a person"""
+    try:
+        size = request.args.get('size', '64x64')
+        width, height = map(int, size.split('x'))
+        
+        # Get face thumbnail from the analysis service
+        if hasattr(analysis_service, 'face_snapshot_manager') and analysis_service.face_snapshot_manager:
+            thumbnail_base64 = analysis_service.face_snapshot_manager.get_face_thumbnail_base64(
+                person_id, (width, height)
+            )
+            
+            if thumbnail_base64:
+                return jsonify({
+                    'success': True,
+                    'thumbnail': thumbnail_base64,
+                    'person_id': person_id,
+                    'size': f"{width}x{height}"
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'No face image found for person',
+                    'person_id': person_id
+                }), 404
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Face snapshot manager not available'
+            }), 503
+            
+    except ValueError:
+        return jsonify({
+            'success': False,
+            'error': 'Invalid size format. Use format: WIDTHxHEIGHT (e.g., 64x64)'
+        }), 400
+    except Exception as e:
+        logger.error(f"Error getting face thumbnail for person {person_id}: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@web_bp.route('/api/person/<int:person_id>/face_info', methods=['GET'])
+def get_person_face_info(person_id):
+    """Get face snapshot information for a person"""
+    try:
+        if not hasattr(analysis_service, 'face_snapshot_manager') or not analysis_service.face_snapshot_manager:
+            return jsonify({
+                'success': False,
+                'error': 'Face snapshot manager not available'
+            }), 503
+        
+        # Get face snapshot info from database
+        db = current_app.db
+        primary_face = db.get_primary_face_snapshot(person_id)
+        
+        if primary_face:
+            face_info = {
+                'person_id': person_id,
+                'has_face': True,
+                'quality_score': primary_face.get('quality_score', 0.0),
+                'quality_grade': analysis_service.face_snapshot_manager.quality_scorer.get_quality_grade(
+                    primary_face.get('quality_score', 0.0)
+                ),
+                'confidence': primary_face.get('confidence', 0.0),
+                'timestamp': primary_face.get('timestamp'),
+                'analysis_method': primary_face.get('analysis_method', 'unknown'),
+                'face_size': f"{primary_face.get('face_width', 0)}x{primary_face.get('face_height', 0)}",
+                'is_primary': primary_face.get('is_primary', False)
+            }
+        else:
+            face_info = {
+                'person_id': person_id,
+                'has_face': False,
+                'quality_score': 0.0,
+                'quality_grade': 'N/A'
+            }
+        
+        return jsonify({
+            'success': True,
+            'face_info': face_info
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting face info for person {person_id}: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 @web_bp.route('/api/camera_feed', methods=['GET'])
@@ -936,19 +1016,29 @@ def populate_sample_data():
 
             # Store in database
             try:
-                # Insert person record
-                person_id = db.store_person_detection(
-                    timestamp=timestamp,
+                # Insert detection record first
+                detection_id = db.store_detection(
+                    person_id=i,  # Use loop index as person_id
                     bbox=[x1, y1, x2, y2],
                     confidence=confidence,
+                    timestamp=timestamp
+                )
+                
+                # Insert demographics record
+                demo_id = db.store_demographics(
+                    person_id=i,
                     demographics={
                         'age': age,
                         'gender': gender,
                         'race': race,
                         'emotion': emotion,
                         'confidence': confidence
-                    }
+                    },
+                    timestamp=timestamp,
+                    detection_id=detection_id
                 )
+                
+                person_id = i
 
                 if person_id:
                     sample_data.append({

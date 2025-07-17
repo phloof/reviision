@@ -40,6 +40,10 @@ def create_app(config, db):
     # Store database reference for route handlers
     app.db = db
     
+    # Set database reference on analysis service for direct access
+    from .services import analysis_service
+    analysis_service.set_database(db)
+    
     # Initialize authentication service
     app.auth_service = AuthService(db)
     

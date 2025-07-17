@@ -178,6 +178,103 @@
         color: #dee2e6;
     }
     
+    /* Notification Popup Styles */
+    .notification-popup {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+    }
+    
+    .notification-popup.show {
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
+    }
+    
+    .notification-popup.fade-out {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    
+    .notification-content {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 16px 20px;
+        min-width: 300px;
+        max-width: 400px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        border: 1px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+    
+    .notification-success {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border-color: #27ae60;
+        color: #155724;
+    }
+    
+    .notification-success .notification-icon {
+        color: #27ae60;
+    }
+    
+    .notification-error {
+        background: linear-gradient(135deg, #f8d7da 0%, #f1b0b7 100%);
+        border-color: #e74c3c;
+        color: #721c24;
+    }
+    
+    .notification-error .notification-icon {
+        color: #e74c3c;
+    }
+    
+    .notification-icon {
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.8);
+        flex-shrink: 0;
+    }
+    
+    .notification-message {
+        font-weight: 500;
+        font-size: 0.95rem;
+        line-height: 1.4;
+        flex-grow: 1;
+    }
+    
+    /* Animation for icon */
+    .notification-success .notification-icon i {
+        animation: checkmark 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    @keyframes checkmark {
+        0% {
+            transform: scale(0.8);
+            opacity: 0;
+        }
+        50% {
+            transform: scale(1.1);
+            opacity: 1;
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
     @media (max-width: 768px) {
         .stats-grid {
             grid-template-columns: 1fr;
@@ -185,6 +282,17 @@
         
         .chart-container {
             height: 300px;
+        }
+        
+        .notification-popup {
+            top: 10px;
+            right: 10px;
+            left: 10px;
+        }
+        
+        .notification-content {
+            min-width: auto;
+            max-width: none;
         }
     }
 </style>
@@ -483,7 +591,7 @@ class HistoricalDataManager {
         document.getElementById('total-visitors').textContent = (data.total_visitors || 0).toLocaleString();
         document.getElementById('avg-dwell-time').textContent = this.formatDwellTime(data.avg_dwell_time || 0);
         document.getElementById('peak-hour').textContent = data.peak_hour || '--:--';
-        document.getElementById('conversion-rate').textContent = `${data.conversion_rate || 0}%`;
+        document.getElementById('conversion-rate').textContent = data.conversion_rate ? `${data.conversion_rate}%` : '--';
     }
     
     updateCharts(data) {
@@ -725,32 +833,45 @@ class HistoricalDataManager {
     }
     
     showError(message) {
-        this.showToast('danger', `Error: ${message}`);
+        this.showNotificationPopup('error', `Error: ${message}`);
     }
     
     showSuccessMessage(message) {
-        this.showToast('success', message);
+        this.showNotificationPopup('success', message);
     }
     
-    showToast(type, message) {
-        const toast = document.createElement('div');
-        toast.className = `alert alert-${type} position-fixed`;
-        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        toast.innerHTML = `
-            <div class="d-flex align-items-center">
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
-                <div style="flex-grow: 1;">${message}</div>
-                <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+    showNotificationPopup(type, message) {
+        // Remove any existing notifications
+        const existingNotifications = document.querySelectorAll('.notification-popup');
+        existingNotifications.forEach(notification => notification.remove());
+        
+        const popup = document.createElement('div');
+        popup.className = 'notification-popup';
+        popup.innerHTML = `
+            <div class="notification-content notification-${type}">
+                <div class="notification-icon">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                </div>
+                <div class="notification-message">${message}</div>
             </div>
         `;
         
-        document.body.appendChild(toast);
+        document.body.appendChild(popup);
         
+        // Trigger animation
         setTimeout(() => {
-            if (toast.parentNode) {
-                toast.remove();
-            }
-        }, 5000);
+            popup.classList.add('show');
+        }, 100);
+        
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            popup.classList.add('fade-out');
+            setTimeout(() => {
+                if (popup.parentNode) {
+                    popup.remove();
+                }
+            }, 300);
+        }, 3000);
     }
     
     showNoDataState() {

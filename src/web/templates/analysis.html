@@ -258,17 +258,6 @@
                 <div>
                     <button class="btn btn-sm btn-outline-primary" id="start-analysis">Start Analysis</button>
                     <button class="btn btn-sm btn-outline-danger" id="stop-analysis" disabled>Stop</button>
-                    <select class="form-select form-select-sm d-inline-block ml-2" style="width: auto;" id="camera-select">
-                        <option value="main">Main Entrance</option>
-                        <option value="checkout">Checkout Area</option>
-                        <option value="electronics">Electronics Section</option>
-                        <option value="clothing">Clothing Section</option>
-                    </select>
-                    <select class="form-select form-select-sm d-inline-block ml-2" style="width: auto;" id="video-source">
-                        <option value="asian-store">Asian Store - Multi Customer</option>
-                        <option value="trolley-multi">Man with Trolley - Multi Scene</option>
-                        <option value="trolley-single">Man with Trolley - Single Scene</option>
-                    </select>
                 </div>
             </div>
         </div>
@@ -403,7 +392,6 @@
                             <p class="text-muted small">No specific options for this overlay.</p>
                         </div>
                     </div>
->>>>>>> Stashed changes
                 </div>
             </div>
         </div>
@@ -450,12 +438,11 @@
 {% block scripts %}
 <script>
     let analysisActive = false;
-    let captureInterval = null;
-    let selectedVideo = 'asian-store';
+    let frameInterval = null;
+    let abortController = null;
     let selectedOverlay = 'none';
     let detectedObjects = [];
     let movementHistory = [];
-    let lastAnalysisTime = 0;
     let analysisDelay = 500; // milliseconds between analyses
     
     // Initialize on document ready
@@ -463,14 +450,6 @@
         // Set up event listeners
         document.getElementById('start-analysis').addEventListener('click', startAnalysis);
         document.getElementById('stop-analysis').addEventListener('click', stopAnalysis);
-        document.getElementById('video-source').addEventListener('change', function() {
-            selectedVideo = this.value;
-            if (analysisActive) {
-                resetFeedPlaceholders();
-                initializeVideoFeeds();
-                captureVideoFrames();
-            }
-        });
         
         // Overlay selection
         document.querySelectorAll('input[name="overlay"]').forEach(radio => {
@@ -503,15 +482,6 @@
                     updateAnalysisView();
                 }
             });
-        });
-        
-        // Camera selector
-        document.getElementById('camera-select').addEventListener('change', function() {
-            if (analysisActive) {
-                resetFeedPlaceholders();
-                initializeVideoFeeds();
-                captureVideoFrames();
-            }
         });
         
         // Auto-start analysis by default
@@ -580,21 +550,24 @@
     }
     
     function stopAnalysis() {
-                    if (window.DEBUG_MODE) {
-                console.log('Stopping analysis...');
-            }
+        if (window.DEBUG_MODE) {
+            console.log('Stopping analysis...');
+        }
         
         // Set flag to false first to stop new operations
         analysisActive = false;
         
-        // Cancel any pending frame processing
-        if (captureInterval) {
-            cancelAnimationFrame(captureInterval);
-            captureInterval = null;
+        // Cancel frame capture interval
+        if (frameInterval) {
+            clearInterval(frameInterval);
+            frameInterval = null;
         }
         
-        // Clear any other timeouts/intervals that might be running
-        clearTimeout(captureInterval);
+        // Cancel any ongoing fetch requests
+        if (abortController) {
+            abortController.abort();
+            abortController = null;
+        }
         
         // Update UI
         document.getElementById('start-analysis').disabled = false;
@@ -613,9 +586,9 @@
         // Reset feeds
         resetFeedPlaceholders();
         
-                    if (window.DEBUG_MODE) {
-                console.log('Analysis stopped successfully');
-            }
+        if (window.DEBUG_MODE) {
+            console.log('Analysis stopped successfully');
+        }
     }
     
     function initializeVideoFeeds() {
@@ -718,32 +691,26 @@
             if (window.DEBUG_MODE) {
                 console.log('Analysis stopped, ending frame capture');
             }
-            captureInterval = null;
             return;
         }
         
-        const feedImage = document.getElementById('original-feed-image');
-        if (!feedImage || !feedImage.complete) {
-            // Image not loaded yet, retry only if analysis is still active
-            if (analysisActive) {
-                captureInterval = requestAnimationFrame(captureVideoFrames);
+        // Use setInterval for more reliable timing control
+        frameInterval = setInterval(() => {
+            if (!analysisActive) {
+                clearInterval(frameInterval);
+                frameInterval = null;
+                return;
             }
-            return;
-        }
-        
-        // Process current frame (only if enough time has passed since last analysis)
-        const now = Date.now();
-        if (now - lastAnalysisTime >= analysisDelay) {
-            lastAnalysisTime = now;
+            
+            const feedImage = document.getElementById('original-feed-image');
+            if (!feedImage || !feedImage.complete) {
+                // Image not loaded yet, skip this iteration
+                return;
+            }
+            
+            // Process current frame
             processVideoFrame(feedImage);
-        }
-        
-        // Schedule next frame capture only if analysis is still active
-        if (analysisActive) {
-            captureInterval = requestAnimationFrame(captureVideoFrames);
-        } else {
-            captureInterval = null;
-        }
+        }, analysisDelay);
     }
 
     async function processVideoFrame(feedImage) {
@@ -797,9 +764,9 @@
     async function detectObjectsInFrame(imageData, width, height) {
         // Early return if analysis has been stopped
         if (!analysisActive) {
-                            if (window.DEBUG_MODE) {
-                    console.log('Analysis stopped, skipping frame detection');
-                }
+            if (window.DEBUG_MODE) {
+                console.log('Analysis stopped, skipping frame detection');
+            }
             return;
         }
         
@@ -815,6 +782,9 @@
                 console.log('Sending frame for analysis...', { width, height, selectedOverlay });
             }
             
+            // Create AbortController for this request
+            abortController = new AbortController();
+            
             // Send the frame to the server for analysis
             const response = await fetch('/api/analyze_frame', {
                 method: 'POST',
@@ -826,7 +796,8 @@
                     width: width,
                     height: height,
                     selected_overlay: selectedOverlay
-                })
+                }),
+                signal: abortController.signal
             });
             
             // Check again if analysis is still active after the async operation
@@ -968,6 +939,12 @@
             updateAnalysisView();
         }
         catch (error) {
+            if (error.name === 'AbortError') {
+                if (window.DEBUG_MODE) {
+                    console.log('Frame analysis request was cancelled');
+                }
+                return;
+            }
             console.error('Error analyzing frame:', error);
             console.error('Error stack:', error.stack);
         }
@@ -1717,33 +1694,156 @@
             element.style.background = 'none';
         }
         
-        // Update or remove label
-        const existingLabel = element.querySelector('.person-label:not(.facial-label):not(.dwell-label)');
+        // Update or remove enhanced label
+        const existingLabelContainer = element.querySelector('.person-label-container');
         if (showLabels) {
-            if (existingLabel) {
-                existingLabel.textContent = `Person ${obj.id} (${Math.round(obj.confidence * 100)}%)`;
+            if (existingLabelContainer) {
+                // Update existing enhanced label
+                const demographics = obj.demographics || {};
+                const gender = demographics.gender && demographics.gender !== 'unknown' && demographics.gender !== 'analyzing...' ? demographics.gender : 'Unknown';
+                const ageGroup = demographics.age_group && demographics.age_group !== 'unknown' && demographics.age_group !== 'analyzing...' ? demographics.age_group : 'Unknown';
+                const emotion = demographics.emotion || 'neutral';
+                const confidence = Math.round((demographics.confidence || 0.1) * 100);
+                const analysisMethod = demographics.analysis_method || 'standard';
+                
+                const primaryInfo = existingLabelContainer.querySelector('.person-info > div:first-child');
+                const secondaryInfo = existingLabelContainer.querySelector('.person-info > div:last-child');
+                
+                if (primaryInfo) primaryInfo.textContent = `ID: ${obj.id} | ${gender}, ${ageGroup}`;
+                if (secondaryInfo) secondaryInfo.textContent = `${emotion} (${confidence}%) | ${analysisMethod}`;
+                
+                // Update face thumbnail if needed
+                const faceThumbnail = existingLabelContainer.querySelector('.face-thumbnail');
+                if (faceThumbnail && !faceThumbnailCache.has(obj.id)) {
+                    loadFaceThumbnail(obj.id, faceThumbnail);
+                }
             } else {
-                const label = document.createElement('div');
-                label.className = 'person-label';
-                label.style.position = 'absolute';
-                label.style.top = '-25px';
-                label.style.left = '0';
-                label.style.background = 'rgba(0, 0, 0, 0.8)';
-                label.style.color = 'white';
-                label.style.padding = '2px 6px';
-                label.style.borderRadius = '3px';
-                label.style.fontSize = '11px';
-                label.style.fontWeight = 'bold';
-                label.style.whiteSpace = 'nowrap';
-                label.style.zIndex = '30';
-                label.style.pointerEvents = 'none';
-                label.textContent = `Person ${obj.id} (${Math.round(obj.confidence * 100)}%)`;
-                element.appendChild(label);
+                // Create new enhanced label (same as in createPersonElement)
+                const labelContainer = document.createElement('div');
+                labelContainer.className = 'person-label-container';
+                labelContainer.style.position = 'absolute';
+                labelContainer.style.top = '-45px';
+                labelContainer.style.left = '0';
+                labelContainer.style.display = 'flex';
+                labelContainer.style.alignItems = 'center';
+                labelContainer.style.background = 'rgba(0, 0, 0, 0.85)';
+                labelContainer.style.color = 'white';
+                labelContainer.style.padding = '3px 6px';
+                labelContainer.style.borderRadius = '5px';
+                labelContainer.style.fontSize = '11px';
+                labelContainer.style.fontWeight = 'bold';
+                labelContainer.style.whiteSpace = 'nowrap';
+                labelContainer.style.zIndex = '30';
+                labelContainer.style.pointerEvents = 'none';
+                labelContainer.style.maxWidth = '200px';
+                
+                // Face thumbnail
+                const faceThumbnail = document.createElement('img');
+                faceThumbnail.className = 'face-thumbnail';
+                faceThumbnail.style.width = '24px';
+                faceThumbnail.style.height = '24px';
+                faceThumbnail.style.borderRadius = '3px';
+                faceThumbnail.style.marginRight = '6px';
+                faceThumbnail.style.objectFit = 'cover';
+                faceThumbnail.style.border = '1px solid rgba(255,255,255,0.3)';
+                faceThumbnail.style.display = 'none';
+                
+                // Demographics info
+                const infoText = document.createElement('div');
+                infoText.className = 'person-info';
+                infoText.style.display = 'flex';
+                infoText.style.flexDirection = 'column';
+                infoText.style.lineHeight = '1.2';
+                
+                const primaryInfo = document.createElement('div');
+                primaryInfo.style.fontSize = '11px';
+                primaryInfo.style.fontWeight = 'bold';
+                
+                const secondaryInfo = document.createElement('div');
+                secondaryInfo.style.fontSize = '9px';
+                secondaryInfo.style.opacity = '0.8';
+                secondaryInfo.style.marginTop = '1px';
+                
+                const demographics = obj.demographics || {};
+                const gender = demographics.gender && demographics.gender !== 'unknown' && demographics.gender !== 'analyzing...' ? demographics.gender : 'Unknown';
+                const ageGroup = demographics.age_group && demographics.age_group !== 'unknown' && demographics.age_group !== 'analyzing...' ? demographics.age_group : 'Unknown';
+                const emotion = demographics.emotion || 'neutral';
+                const confidence = Math.round((demographics.confidence || 0.1) * 100);
+                const analysisMethod = demographics.analysis_method || 'standard';
+                
+                primaryInfo.textContent = `ID: ${obj.id} | ${gender}, ${ageGroup}`;
+                secondaryInfo.textContent = `${emotion} (${confidence}%) | ${analysisMethod}`;
+                
+                infoText.appendChild(primaryInfo);
+                infoText.appendChild(secondaryInfo);
+                
+                labelContainer.appendChild(faceThumbnail);
+                labelContainer.appendChild(infoText);
+                element.appendChild(labelContainer);
+                
+                loadFaceThumbnail(obj.id, faceThumbnail);
             }
-        } else if (existingLabel) {
-            existingLabel.remove();
+        } else if (existingLabelContainer) {
+            existingLabelContainer.remove();
         }
     }
+    
+    // Cache for face thumbnails to avoid repeated requests
+    const faceThumbnailCache = new Map();
+    
+    function loadFaceThumbnail(personId, imgElement) {
+        // Check cache first
+        if (faceThumbnailCache.has(personId)) {
+            const cachedData = faceThumbnailCache.get(personId);
+            if (cachedData.thumbnail) {
+                imgElement.src = cachedData.thumbnail;
+                imgElement.style.display = 'block';
+            }
+            return;
+        }
+        
+        // Load from API
+        fetch(`/api/face_thumbnail/${personId}?size=32x32`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.thumbnail) {
+                    imgElement.src = data.thumbnail;
+                    imgElement.style.display = 'block';
+                    
+                    // Cache the result
+                    faceThumbnailCache.set(personId, {
+                        thumbnail: data.thumbnail,
+                        timestamp: Date.now()
+                    });
+                } else {
+                    // Cache negative result to avoid repeated requests
+                    faceThumbnailCache.set(personId, {
+                        thumbnail: null,
+                        timestamp: Date.now()
+                    });
+                }
+            })
+            .catch(error => {
+                console.debug(`No face thumbnail for person ${personId}:`, error);
+                // Cache negative result
+                faceThumbnailCache.set(personId, {
+                    thumbnail: null,
+                    timestamp: Date.now()
+                });
+            });
+    }
+    
+    // Clean up old cache entries every 5 minutes
+    setInterval(() => {
+        const now = Date.now();
+        const maxAge = 5 * 60 * 1000; // 5 minutes
+        
+        for (const [personId, data] of faceThumbnailCache.entries()) {
+            if (now - data.timestamp > maxAge) {
+                faceThumbnailCache.delete(personId);
+            }
+        }
+    }, 60000); // Run every minute
     
     function createPersonElement(obj, showBoxes, showLabels) {
         const personElement = document.createElement('div');
@@ -1775,24 +1875,75 @@
             personElement.style.background = 'none';
         }
         
-        // Add label if needed
+        // Add enhanced label with face thumbnail if needed
         if (showLabels) {
-            const label = document.createElement('div');
-            label.className = 'person-label';
-            label.style.position = 'absolute';
-            label.style.top = '-25px';
-            label.style.left = '0';
-            label.style.background = 'rgba(0, 0, 0, 0.8)';
-            label.style.color = 'white';
-            label.style.padding = '2px 6px';
-            label.style.borderRadius = '3px';
-            label.style.fontSize = '11px';
-            label.style.fontWeight = 'bold';
-            label.style.whiteSpace = 'nowrap';
-            label.style.zIndex = '30';
-            label.style.pointerEvents = 'none';
-            label.textContent = `Person ${obj.id} (${Math.round(obj.confidence * 100)}%)`;
-            personElement.appendChild(label);
+            const labelContainer = document.createElement('div');
+            labelContainer.className = 'person-label-container';
+            labelContainer.style.position = 'absolute';
+            labelContainer.style.top = '-45px';
+            labelContainer.style.left = '0';
+            labelContainer.style.display = 'flex';
+            labelContainer.style.alignItems = 'center';
+            labelContainer.style.background = 'rgba(0, 0, 0, 0.85)';
+            labelContainer.style.color = 'white';
+            labelContainer.style.padding = '3px 6px';
+            labelContainer.style.borderRadius = '5px';
+            labelContainer.style.fontSize = '11px';
+            labelContainer.style.fontWeight = 'bold';
+            labelContainer.style.whiteSpace = 'nowrap';
+            labelContainer.style.zIndex = '30';
+            labelContainer.style.pointerEvents = 'none';
+            labelContainer.style.maxWidth = '200px';
+            
+            // Face thumbnail (32x32)
+            const faceThumbnail = document.createElement('img');
+            faceThumbnail.className = 'face-thumbnail';
+            faceThumbnail.style.width = '24px';
+            faceThumbnail.style.height = '24px';
+            faceThumbnail.style.borderRadius = '3px';
+            faceThumbnail.style.marginRight = '6px';
+            faceThumbnail.style.objectFit = 'cover';
+            faceThumbnail.style.border = '1px solid rgba(255,255,255,0.3)';
+            faceThumbnail.style.display = 'none'; // Initially hidden
+            
+            // Demographics info
+            const infoText = document.createElement('div');
+            infoText.className = 'person-info';
+            infoText.style.display = 'flex';
+            infoText.style.flexDirection = 'column';
+            infoText.style.lineHeight = '1.2';
+            
+            // Primary info line
+            const primaryInfo = document.createElement('div');
+            primaryInfo.style.fontSize = '11px';
+            primaryInfo.style.fontWeight = 'bold';
+            
+            // Secondary info line
+            const secondaryInfo = document.createElement('div');
+            secondaryInfo.style.fontSize = '9px';
+            secondaryInfo.style.opacity = '0.8';
+            secondaryInfo.style.marginTop = '1px';
+            
+            // Set initial content
+            const demographics = obj.demographics || {};
+            const gender = demographics.gender && demographics.gender !== 'unknown' && demographics.gender !== 'analyzing...' ? demographics.gender : 'Unknown';
+            const ageGroup = demographics.age_group && demographics.age_group !== 'unknown' && demographics.age_group !== 'analyzing...' ? demographics.age_group : 'Unknown';
+            const emotion = demographics.emotion || 'neutral';
+            const confidence = Math.round((demographics.confidence || 0.1) * 100);
+            const analysisMethod = demographics.analysis_method || 'standard';
+            
+            primaryInfo.textContent = `ID: ${obj.id} | ${gender}, ${ageGroup}`;
+            secondaryInfo.textContent = `${emotion} (${confidence}%) | ${analysisMethod}`;
+            
+            infoText.appendChild(primaryInfo);
+            infoText.appendChild(secondaryInfo);
+            
+            labelContainer.appendChild(faceThumbnail);
+            labelContainer.appendChild(infoText);
+            personElement.appendChild(labelContainer);
+            
+            // Load face thumbnail asynchronously
+            loadFaceThumbnail(obj.id, faceThumbnail);
         }
         
         // Fade in new elements

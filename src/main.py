@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ #!/usr/bin/env python3
 """
 ReViision - Retail Vision + Reiterative Improvement
 Main entry point for the application
@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from utils.config import ConfigManager
 from camera import get_camera, stop_camera
-from detection import PersonDetector, PersonTracker
+from detection import get_detector, get_tracker, PersonDetector, PersonTracker
 from analysis import DemographicAnalyzer, DwellTimeAnalyzer, HeatmapGenerator
 from database import get_database
 from web import create_app
@@ -188,16 +188,30 @@ def main():
         camera_config['credential_manager'] = config_manager.get_credential_manager()
         camera = get_camera(camera_config)
         
-        # Download model if needed
+        # Download model if needed (only for person detection mode)
         project_root = Path(__file__).parent.parent
         model_path = project_root / 'models' / 'yolov8n.pt'
-        download_model_if_needed(str(model_path))
         
-        # Initialize detection and tracking
+        # Initialize detection and tracking based on mode
+        detection_mode = config.get('mode', 'face')  # Default to face detection
         detection_config = config['detection'].copy()
-        detection_config['model_path'] = str(model_path)  # Set absolute path for model
-        detector = PersonDetector(detection_config)
-        tracker = PersonTracker(config['tracking'])
+        tracking_config = config['tracking'].copy()
+        
+        # Set detection mode in both configs
+        detection_config['mode'] = detection_mode
+        tracking_config['mode'] = detection_mode
+        
+        if detection_mode.lower() == 'person':
+            # Only download YOLO model for person detection
+            download_model_if_needed(str(model_path))
+            detection_config['model_path'] = str(model_path)
+        elif detection_mode.lower() == 'face':
+            # Set model directory for InsightFace models
+            detection_config['model_dir'] = str(project_root / 'models')
+        
+        # Get detector and tracker based on mode
+        detector = get_detector(detection_config)
+        tracker = get_tracker(tracking_config)
         
         # Initialize analysis modules
         demographic_analyzer = DemographicAnalyzer(config['analysis']['demographics'])

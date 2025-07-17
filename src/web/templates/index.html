@@ -227,6 +227,7 @@
 
         .card-header {
             padding: 1rem 1.5rem;
+            color: white;
             font-size: 1.1rem;
         }
 
@@ -497,8 +498,8 @@
      */
     function updateDashboardStats(data) {
         document.getElementById('total-visitors').textContent = data.totalVisitors.toLocaleString();
-        document.getElementById('avg-dwell-time').textContent = data.avgDwellTime;
-        document.getElementById('conversion-rate').textContent = data.conversionRate + '%';
+        document.getElementById('avg-dwell-time').textContent = data.avgDwellTime || '--';
+        document.getElementById('conversion-rate').textContent = data.conversionRate ? data.conversionRate + '%' : '--';
         document.getElementById('gender-ratio').textContent = data.genderRatio;
     }
 
@@ -805,4 +806,4 @@
         document.getElementById('fps-counter').textContent = fps;
     }
 </script>
-{% endblock %} 
+{% endblock %}
