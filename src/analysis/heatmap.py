@@ -38,6 +38,15 @@ class HeatmapGenerator:
         self.point_decay = config.get('point_decay', 0.99)  # Decay factor for accumulated points
         self.max_accumulate_frames = config.get('max_accumulate_frames', 300)  # Maximum frames to accumulate
         
+        # Enhanced opacity controls
+        self.dynamic_opacity = config.get('dynamic_opacity', True)
+        self.opacity_presets = config.get('opacity_presets', {
+            'subtle': 0.3,
+            'moderate': 0.6,
+            'strong': 0.9
+        })
+        self.current_opacity_preset = config.get('default_opacity_preset', 'moderate')
+        
         # Load colormap configuration
         self.colormap_config = self._load_colormap_config()
         self.colormap = self.colormap_config.get('default_colormap', 'jet')  # Default from config or fallback to jet
@@ -349,12 +358,17 @@ class HeatmapGenerator:
         mask_3channel = cv2.merge([mask, mask, mask])
         
         # Apply heatmap only to masked regions with transparency
-        cv2.addWeighted(
-            heatmap_bgr, self.alpha,
-            output_frame, 1 - self.alpha,
-            0, output_frame, mask_3channel
-        )
-        
+        try:
+            # Create blended image
+            blended = cv2.addWeighted(heatmap_bgr, self.alpha,
+                                       output_frame, 1 - self.alpha, 0)
+            # Apply mask manually
+            output_frame[mask == 1] = blended[mask == 1]
+        except Exception as e:
+            # Fallback without mask if OpenCV version mismatches
+            output_frame = cv2.addWeighted(heatmap_bgr, self.alpha,
+                                           output_frame, 1 - self.alpha, 0)
+ 
         return output_frame
     
     def generate_comparison_heatmap(self, frame):
@@ -451,4 +465,87 @@ class HeatmapGenerator:
                 {"name": "hot", "category": "sequential"}
             ]
         
-        return self.colormap_config['available_colormaps'] 
+        return self.colormap_config['available_colormaps']
+    
+    def set_opacity(self, opacity_value):
+        """
+        Set heatmap opacity dynamically
+        
+        Args:
+            opacity_value (float): Opacity value between 0.0 and 1.0
+        """
+        if 0.0 <= opacity_value <= 1.0:
+            self.alpha = opacity_value
+            logger.debug(f"Heatmap opacity set to {opacity_value}")
+        else:
+            logger.warning(f"Invalid opacity value: {opacity_value}. Must be between 0.0 and 1.0")
+    
+    def set_opacity_preset(self, preset_name):
+        """
+        Set opacity using a preset name
+        
+        Args:
+            preset_name (str): Preset name ('subtle', 'moderate', 'strong')
+        """
+        if preset_name in self.opacity_presets:
+            self.alpha = self.opacity_presets[preset_name]
+            self.current_opacity_preset = preset_name
+            logger.debug(f"Heatmap opacity preset set to '{preset_name}' ({self.alpha})")
+        else:
+            logger.warning(f"Unknown opacity preset: {preset_name}")
+    
+    def get_opacity_settings(self):
+        """
+        Get current opacity settings and available presets
+        
+        Returns:
+            dict: Opacity configuration
+        """
+        return {
+            'current_opacity': self.alpha,
+            'current_preset': self.current_opacity_preset,
+            'available_presets': self.opacity_presets,
+            'dynamic_opacity_enabled': self.dynamic_opacity
+        }
+    
+    def generate_path_heatmap(self, frame, path_data):
+        """
+        Generate path overlay heatmap
+        
+        Args:
+            frame (numpy.ndarray): Input frame
+            path_data (list): List of path points with coordinates and metadata
+            
+        Returns:
+            numpy.ndarray: Frame with path heatmap overlay
+        """
+        if frame is None or not path_data:
+            return frame
+        
+        # Create path visualization
+        height, width = frame.shape[:2]
+        path_map = np.zeros((height, width), dtype=np.float32)
+        
+        # Draw paths
+        for path_point in path_data:
+            x = int(path_point.get('x', 0))
+            y = int(path_point.get('y', 0))
+            intensity = path_point.get('confidence', 0.5)
+            
+            # Ensure coordinates are within bounds
+            if 0 <= x < width and 0 <= y < height:
+                # Add path point with trail effect
+                cv2.circle(path_map, (x, y), 3, intensity, -1)
+        
+        # Apply Gaussian blur for smooth trails
+        if np.max(path_map) > 0:
+            path_map = cv2.GaussianBlur(path_map, (9, 9), 0)
+        
+        # Get path-specific opacity
+        path_opacity = self.alpha
+        if self.colormap_config and 'colormaps' in self.colormap_config:
+            path_config = self.colormap_config['colormaps'].get('paths', {})
+            path_opacity = path_config.get('default_opacity', self.alpha)
+        
+        # Apply path heatmap to frame
+        return self._apply_heatmap_to_frame(frame, path_map, 'viridis') 

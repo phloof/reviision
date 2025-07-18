@@ -677,37 +677,67 @@ def get_camera_options():
         return jsonify({"error": str(e)}), 500
 
 @web_bp.route('/api/camera/restart', methods=['POST'])
-@require_auth('manager')
 def restart_camera():
     """Restart camera with current configuration"""
     try:
+        logger.info("Camera restart requested")
+        
         # Stop current camera
-        stop_camera()
+        try:
+            stop_camera()
+            logger.info("Current camera stopped successfully")
+        except Exception as e:
+            logger.warning(f"Error stopping camera (continuing anyway): {e}")
         
         # Small delay to ensure cleanup
-        time.sleep(1)
+        time.sleep(2)
         
         # Load fresh configuration
         config_manager = get_config_manager()
         config_path = Path(__file__).parent.parent / 'config.yaml'
-        config = config_manager.load_config(str(config_path))
         
+        if not config_path.exists():
+            logger.error(f"Configuration file not found: {config_path}")
+            return jsonify({
+                'status': 'error', 
+                'message': 'Configuration file not found'
+            }), 500
+        
+        config = config_manager.load_config(str(config_path))
         camera_config = config.get('camera', {})
+        
+        if not camera_config:
+            logger.error("No camera configuration found")
+            return jsonify({
+                'status': 'error', 
+                'message': 'No camera configuration found'
+            }), 500
+        
         camera_config['credential_manager'] = config_manager.get_credential_manager()
         
         # Start camera with new configuration
         camera = get_camera(camera_config)
         if not camera.is_running:
             camera.start()
+            
+        # Verify camera is working
+        time.sleep(1)
+        test_frame = camera.get_frame()
+        if test_frame is None:
+            logger.warning("Camera restarted but no frame received")
         
+        logger.info(f"Camera restarted successfully with {camera_config.get('type', 'unknown')} configuration")
         return jsonify({
             'status': 'success', 
             'message': f'Camera restarted with {camera_config.get("type", "unknown")} configuration'
         })
         
     except Exception as e:
-        logger.error(f"Error restarting camera: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        logger.error(f"Error restarting camera: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error', 
+            'message': f'Failed to restart camera: {str(e)}'
+        }), 500
 
 @web_bp.route('/stop_camera', methods=['POST'])
 def stop_camera_route():

@@ -26,10 +26,66 @@ analysis:
   dwell_time:
     enabled: true
     min_duration: 5
+    min_dwell_time: 2.0
+    max_inactive_time: 10.0
+    
   heatmap:
     decay_factor: 0.1
     enabled: true
     grid_size: 0.5
+    resolution: [640, 480]
+    alpha: 0.6
+    blur_radius: 15
+    point_decay: 0.99
+    max_accumulate_frames: 300
+    enable_path_overlay: true
+    path_opacity: 0.7
+    direction_arrows: true
+    temporal_comparison: true
+  
+  path:
+    enabled: true
+    min_path_length: 5
+    max_path_gap: 2.0
+    storage_interval: 1.0
+    retention_days: 30
+    enable_pattern_detection: true
+    enable_clustering: true
+    simplification_tolerance: 5.0
+    speed_window: 3
+    min_movement_threshold: 10
+    cluster_eps: 50.0
+    min_cluster_size: 3
+    batch_size: 100
+    enable_db_storage: true
+    enable_zone_detection: true
+    zones:
+      entrance:
+        name: "Entrance Area"
+        bounds: [0, 0, 200, 150]
+      checkout:
+        name: "Checkout Area"
+        bounds: [400, 300, 640, 480]
+      products:
+        name: "Product Area"
+        bounds: [200, 150, 400, 300]
+  
+  correlation:
+    enabled: true
+    methods: ['pearson', 'spearman', 'chi_square']
+    significance_threshold: 0.05
+    min_sample_size: 10
+    confidence_level: 0.95
+    temporal_windows: [1, 6, 24, 168]
+    day_comparison: true
+    seasonal_analysis: true
+    trend_detection: true
+    demographic_correlations: true
+    zone_analysis: true
+    path_analysis: true
+    behavioral_segmentation: true
+    cache_results: true
+    cache_expiry: 3600
 camera:
   backend: pyav
   buffer_size: 1  # Reduced for lower latency

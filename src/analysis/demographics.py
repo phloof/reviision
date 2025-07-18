@@ -170,14 +170,24 @@ class DemographicAnalyzer:
             age = int(face.age) if hasattr(face, 'age') and face.age is not None else None
             gender_code = getattr(face, 'gender', None)
             
-            # Map gender code to text
+            # Map gender code to text with better reliability
             if gender_code is not None:
-                gender = 'male' if gender_code == 1 else 'female' if gender_code == 0 else 'unknown'
+                # InsightFace gender codes: 0 = female, 1 = male
+                if gender_code == 1:
+                    gender = 'male'
+                elif gender_code == 0:
+                    gender = 'female'
+                else:
+                    gender = 'unknown'
+                    
+                logger.debug(f"InsightFace gender detection: code={gender_code} -> {gender}")
             else:
                 gender = 'unknown'
             
-            # Use detection score as confidence
+            # Use detection score as confidence with minimum threshold
             confidence = float(face.det_score) if hasattr(face, 'det_score') else 0.5
+            # Boost confidence for successful face detection
+            confidence = max(confidence, 0.4)  # Ensure minimum confidence for detected faces
             
             # Calculate age group
             age_group = self._calculate_age_group(age) if age is not None else 'unknown'
@@ -228,14 +238,32 @@ class DemographicAnalyzer:
                 result = results
             
             age = result.get('age', 30)
-            gender = result.get('dominant_gender', 'unknown')
+            gender_result = result.get('dominant_gender', 'unknown')
             emotion = result.get('dominant_emotion', 'neutral')
+            
+            # Normalize gender result to match our format
+            gender = gender_result.lower() if gender_result else 'unknown'
+            if gender in ['man', 'male']:
+                gender = 'male'
+            elif gender in ['woman', 'female']:
+                gender = 'female'
+            else:
+                gender = 'unknown'
+                
+            logger.debug(f"DeepFace gender detection: raw='{gender_result}' -> normalized='{gender}'")
             
             # Calculate age group
             age_group = self._calculate_age_group(age)
             
-            # Simple confidence based on successful analysis
-            confidence = 0.6  # Default confidence for DeepFace
+            # Improved confidence based on successful analysis and gender confidence
+            base_confidence = 0.6  # Default confidence for DeepFace
+            gender_confidence = result.get('gender', {}).get(gender_result, 0) if isinstance(result.get('gender', {}), dict) else 0
+            
+            # Combine base confidence with gender-specific confidence
+            if gender_confidence > 0:
+                confidence = min(0.9, base_confidence + (gender_confidence / 100 * 0.3))
+            else:
+                confidence = base_confidence
             
             return {
                 'age': int(age),

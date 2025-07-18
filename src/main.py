@@ -218,6 +218,20 @@ def main():
         dwell_time_analyzer = DwellTimeAnalyzer(config['analysis']['dwell_time'])
         heatmap_generator = HeatmapGenerator(config['analysis']['heatmap'])
         
+        # Initialize new analysis modules if enabled
+        path_analyzer = None
+        correlation_analyzer = None
+        
+        if config['analysis'].get('path', {}).get('enabled', True):
+            from analysis import PathAnalyzer
+            path_analyzer = PathAnalyzer(config['analysis']['path'], db)
+            logger.info("PathAnalyzer initialized")
+        
+        if config['analysis'].get('correlation', {}).get('enabled', True):
+            from analysis import CorrelationAnalyzer
+            correlation_analyzer = CorrelationAnalyzer(config['analysis']['correlation'], db)
+            logger.info("CorrelationAnalyzer initialized")
+        
         # Initialize Flask web application
         app = create_app(config, db)
         

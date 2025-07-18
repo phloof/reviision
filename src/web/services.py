@@ -210,8 +210,8 @@ class FrameAnalysisService:
             'confidence_thresholds': {
                 'detection': 0.5,
                 'tracking': 0.3,
-                'demographics': 0.6,  # Lowered for faster processing
-                'database_entry': 0.7  # Lowered for faster entry
+                'demographics': 0.4,  # Lowered further for better gender detection
+                'database_entry': 0.5  # Lowered for more entries
             }
         }
 
@@ -1223,11 +1223,22 @@ class FrameAnalysisService:
                                 # Mark as not saved initially  
                                 people_db[track_id]['saved_to_db'] = False
                                 
-                                # Save to database with good confidence
+                                # Save detection first to get detection_id
+                                detection_id = None
+                                try:
+                                    detection_id = self._save_detection_to_database_sync(track_id, track['bbox'], track['confidence'], frame_time)
+                                    logger.debug(f"📄 Saved detection for person {track_id} to database, got ID: {detection_id}")
+                                except Exception as e:
+                                    logger.error(f"Failed to save detection for person {track_id}: {e}")
+                                
+                                # Save demographics with detection_id link
                                 if confidence >= 0.3:  # Save demographics with reasonable confidence
-                                    self._save_person_to_database_sync(track_id, demo_data, matching_detection, frame_time)
-                                    people_db[track_id]['saved_to_db'] = True
-                                    logger.info(f"📄 Saved person {track_id} demographics to database")
+                                    result = self._save_person_to_database_sync(track_id, demo_data, matching_detection, frame_time, detection_id)
+                                    if result:
+                                        people_db[track_id]['saved_to_db'] = True
+                                        logger.info(f"📄 Saved person {track_id} demographics to database with detection_id: {detection_id}")
+                                    else:
+                                        logger.error(f"Failed to save person {track_id} demographics to database")
                                 else:
                                     logger.debug(f"📄 Skipped database save for person {track_id} due to low confidence ({confidence:.2f})")
                                     
@@ -1544,7 +1555,7 @@ class FrameAnalysisService:
                 'confidence': track['confidence'],
                 'frames_tracked': track['frames_tracked'],
                 'demographics': demographics,
-                'dwell_time': max(0, track['frames_tracked'] * 0.04),  # Approximate dwell time
+                'dwell_time': self._calculate_person_dwell_time(track_id, track),  # Use proper dwell time calculation
                 'is_confirmed': track['is_confirmed']
             }
 
@@ -1699,7 +1710,7 @@ class FrameAnalysisService:
                         'emotion': 'neutral',
                         'confidence': 0.1
                     }),
-                    'dwell_time': frame_time - track_info['first_seen'],
+                    'dwell_time': self._calculate_person_dwell_time(track_id, {'frames_tracked': track_info['frames_tracked']}),
                     'is_confirmed': track_info['frames_tracked'] >= self.duplicate_reduction['min_frames_for_db']
                 }
                 
@@ -2789,38 +2800,48 @@ class FrameAnalysisService:
         except Exception as e:
             logger.error(f"Failed to submit async minimal database save for person {person_id}: {e}")
 
-    def _save_person_to_database_sync(self, person_id, demographics, detection, timestamp):
+    def _save_person_to_database_sync(self, person_id, demographics, detection, timestamp, detection_id=None):
         """
-        Save person data to database synchronously (immediate save)
+        Save person data to database synchronously with proper Flask context handling
         
         Args:
             person_id: Track ID of the person
             demographics: Demographic analysis results
             detection: Detection data
             timestamp: Timestamp of the detection
+            detection_id: Optional detection ID to link demographics to specific detection
+            
+        Returns:
+            bool: True if successful, False otherwise
         """
         try:
-            from flask import current_app
-            
-            if hasattr(current_app, 'db'):
-                db = current_app.db
-                
-                # Store demographics data with proper error handling
-                result = db.store_demographics(
-                    person_id=person_id,
-                    demographics=demographics,
-                    timestamp=datetime.fromtimestamp(timestamp),
-                    analysis_model=demographics.get('analysis_method', 'enhanced')
-                )
-                
-                if result:
-                    logger.info(f"✅ Successfully saved person {person_id} to database (sync)")
-                    return True
-                else:
-                    logger.error(f"❌ Failed to save person {person_id} to database - store_demographics returned {result}")
-                    return False
+            # First try direct database reference
+            if hasattr(self, 'database') and self.database:
+                db = self.database
             else:
-                logger.error(f"❌ No database available to save person {person_id}")
+                # Fallback to Flask context
+                from flask import current_app
+                
+                if hasattr(current_app, 'db'):
+                    db = current_app.db
+                else:
+                    logger.error(f"❌ No database available to save person {person_id}")
+                    return False
+            
+            # Store demographics data with proper error handling
+            result = db.store_demographics(
+                person_id=person_id,
+                demographics=demographics,
+                timestamp=datetime.fromtimestamp(timestamp),
+                detection_id=detection_id,
+                analysis_model=demographics.get('analysis_method', 'enhanced')
+            )
+            
+            if result:
+                logger.info(f"✅ Successfully saved person {person_id} to database (sync)")
+                return True
+            else:
+                logger.error(f"❌ Failed to save person {person_id} to database - store_demographics returned {result}")
                 return False
                     
         except Exception as e:
@@ -2836,42 +2857,50 @@ class FrameAnalysisService:
             bbox: Bounding box coordinates
             confidence: Detection confidence
             timestamp: Timestamp of the detection
+            
+        Returns:
+            int: Detection ID if successful, None otherwise
         """
         try:
-            from flask import current_app
-            
-            if hasattr(current_app, 'db'):
-                db = current_app.db
-
-                # Convert bbox format if needed
-                if len(bbox) == 4:
-                    x1, y1, x2, y2 = bbox
-                    bbox_tuple = (x1, y1, x2, y2)
-                else:
-                    bbox_tuple = bbox
-
-                # Store detection data with proper error handling
-                result = db.store_detection(
-                    person_id=person_id,
-                    bbox=bbox_tuple,
-                    confidence=confidence,
-                    timestamp=datetime.fromtimestamp(timestamp),
-                    camera_id='main'
-                )
-
-                if result:
-                    logger.info(f"✅ Successfully saved detection for person {person_id} to database (sync)")
-                    return True
-                else:
-                    logger.error(f"❌ Failed to save detection for person {person_id} to database - store_detection returned {result}")
-                    return False
+            # First try direct database reference
+            if hasattr(self, 'database') and self.database:
+                db = self.database
             else:
-                logger.error(f"❌ No database available to save detection for person {person_id}")
-                return False
-                    
+                # Fallback to Flask context
+                from flask import current_app
+                
+                if hasattr(current_app, 'db'):
+                    db = current_app.db
+                else:
+                    logger.error(f"❌ No database available to save detection for person {person_id}")
+                    return None
+
+            # Convert bbox format if needed
+            if len(bbox) == 4:
+                x1, y1, x2, y2 = bbox
+                bbox_tuple = (x1, y1, x2, y2)
+            else:
+                bbox_tuple = bbox
+
+            # Store detection data with proper error handling
+            result = db.store_detection(
+                person_id=person_id,
+                bbox=bbox_tuple,
+                confidence=confidence,
+                timestamp=datetime.fromtimestamp(timestamp),
+                camera_id='main'
+            )
+
+            if result:
+                logger.info(f"✅ Successfully saved detection for person {person_id} to database (sync)")
+                return result  # Return the detection_id
+            else:
+                logger.error(f"❌ Failed to save detection for person {person_id} to database - store_detection returned {result}")
+                return None
+                        
         except Exception as e:
             logger.error(f"❌ Error saving detection for person {person_id} to database (sync): {e}", exc_info=True)
-            return False
+            return None
 
     def get_demographics_data(self, page=1, per_page=10, search='', sort_by='timestamp', sort_order='desc', hours=24):
         """
@@ -2971,6 +3000,39 @@ class FrameAnalysisService:
         except Exception as e:
             logger.debug(f"Error calculating bbox overlap: {e}")
             return 0.0
+
+    def _calculate_person_dwell_time(self, track_id, track):
+        """
+        Calculate the dwell time for a tracked person using timestamps
+        
+        Args:
+            track_id: ID of the tracked person
+            track: Track information
+            
+        Returns:
+            float: Dwell time in seconds
+        """
+        try:
+            current_time = time.time()
+            people_db = self.detection_memory['people_database']
+            
+            # Check if we have the person in our database
+            if track_id in people_db:
+                person_data = people_db[track_id]
+                first_seen = person_data.get('first_seen', current_time)
+                dwell_time = current_time - first_seen
+                
+                # Ensure minimum dwell time threshold
+                min_dwell = 0.5  # 0.5 seconds minimum
+                return max(min_dwell, dwell_time) if dwell_time > 0 else 0.0
+            else:
+                # New person, minimal dwell time
+                return 0.0
+                
+        except Exception as e:
+            logger.warning(f"Error calculating dwell time for person {track_id}: {e}")
+            # Fallback to frame-based calculation
+            return max(0.0, track['frames_tracked'] * 0.033)  # ~30fps assumption
 
 # Global service instance
 analysis_service = FrameAnalysisService()

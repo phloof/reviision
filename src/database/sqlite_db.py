@@ -9,6 +9,7 @@ import threading
 from pathlib import Path
 from datetime import datetime
 import json
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -38,32 +39,94 @@ class SQLiteDatabase:
         self._init_db()
         
     def _get_connection(self):
-        """Get a thread-safe database connection"""
+        """Get a thread-safe database connection with retry mechanism"""
         if not hasattr(self._local, 'conn') or self._local.conn is None:
-            self._local.conn = sqlite3.connect(
-                self.db_path,
-                check_same_thread=False,
-                timeout=20.0
-            )
+            # For in-memory databases, reuse the main connection so that schema persists
+            if self.db_path == ':memory:':
+                self._local.conn = self.conn
+            else:
+                max_retries = 3
+                retry_count = 0
+                while retry_count < max_retries:
+                    try:
+                        self._local.conn = sqlite3.connect(
+                            self.db_path,
+                            check_same_thread=False,
+                            timeout=30.0  # Increased timeout
+                        )
+                        break
+                    except sqlite3.OperationalError as e:
+                        if "database is locked" in str(e).lower() and retry_count < max_retries - 1:
+                            retry_count += 1
+                            logger.warning(f"Database locked, retrying ({retry_count}/{max_retries})...")
+                            time.sleep(0.1 * retry_count)  # Exponential backoff
+                            continue
+                        else:
+                            logger.error(f"Failed to connect to database after {max_retries} retries: {e}")
+                            raise
+                    except Exception as e:
+                        logger.error(f"Unexpected database connection error: {e}")
+                        raise
+                        
             self._local.conn.row_factory = sqlite3.Row
             # Enable WAL mode for better concurrency
             self._local.conn.execute('PRAGMA journal_mode=WAL')
             self._local.conn.execute('PRAGMA synchronous=NORMAL')
             self._local.conn.execute('PRAGMA cache_size=10000')
             self._local.conn.execute('PRAGMA temp_store=memory')
+            self._local.conn.execute('PRAGMA busy_timeout=30000')  # 30 second busy timeout
         return self._local.conn
+    
+    def _execute_with_retry(self, operation_func, *args, **kwargs):
+        """Execute database operation with retry mechanism for handling locks"""
+        max_retries = 3
+        retry_count = 0
+        
+        while retry_count < max_retries:
+            try:
+                return operation_func(*args, **kwargs)
+            except sqlite3.OperationalError as e:
+                if "database is locked" in str(e).lower() and retry_count < max_retries - 1:
+                    retry_count += 1
+                    logger.warning(f"Database operation failed (locked), retrying ({retry_count}/{max_retries})...")
+                    time.sleep(0.1 * retry_count)  # Exponential backoff
+                    continue
+                else:
+                    logger.error(f"Database operation failed after {max_retries} retries: {e}")
+                    raise
+            except Exception as e:
+                logger.error(f"Unexpected database operation error: {e}")
+                raise
     
     def _init_db(self):
         """Initialize database tables with 3NF-compliant schema"""
         try:
             # Use the main connection for initialization
-            self.conn = sqlite3.connect(
-                self.db_path,
-                check_same_thread=False,
-                timeout=20.0
-            )
+            max_retries = 3
+            retry_count = 0
+            
+            while retry_count < max_retries:
+                try:
+                    self.conn = sqlite3.connect(
+                        self.db_path,
+                        check_same_thread=False,
+                        timeout=30.0
+                    )
+                    break
+                except sqlite3.OperationalError as e:
+                    if "database is locked" in str(e).lower() and retry_count < max_retries - 1:
+                        retry_count += 1
+                        logger.warning(f"Database locked during initialization, retrying ({retry_count}/{max_retries})...")
+                        time.sleep(0.5 * retry_count)
+                        continue
+                    else:
+                        logger.error(f"Failed to initialize database after {max_retries} retries: {e}")
+                        raise
+                        
             self.conn.execute('PRAGMA foreign_keys = ON')  # Enable foreign key constraints
             self.cursor = self.conn.cursor()
+            
+            logger.info(f"Initializing SQLite database at: {self.db_path}")
             
             # Create lookup tables first (for foreign key references)
             
@@ -176,6 +239,65 @@ class SQLiteDatabase:
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE CASCADE,
                     FOREIGN KEY (detection_id) REFERENCES detections(id) ON DELETE SET NULL
+                )
+            ''')
+            
+            # Customer paths table for path tracking and analysis
+            self.cursor.execute('''
+                CREATE TABLE IF NOT EXISTS customer_paths (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    person_id INTEGER NOT NULL,
+                    session_id VARCHAR(50) NOT NULL,
+                    sequence_number INTEGER NOT NULL,
+                    x_position INTEGER NOT NULL,
+                    y_position INTEGER NOT NULL,
+                    timestamp DATETIME NOT NULL,
+                    confidence REAL NOT NULL CHECK (confidence >= 0 AND confidence <= 1),
+                    movement_type VARCHAR(20) DEFAULT 'walking',
+                    speed REAL DEFAULT 0.0,
+                    direction_angle REAL,
+                    zone_name VARCHAR(50),
+                    path_complexity REAL DEFAULT 0.0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE CASCADE
+                )
+            ''')
+            
+            # Path segments table for storing simplified path segments
+            self.cursor.execute('''
+                CREATE TABLE IF NOT EXISTS path_segments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    person_id INTEGER NOT NULL,
+                    session_id VARCHAR(50) NOT NULL,
+                    start_time DATETIME NOT NULL,
+                    end_time DATETIME NOT NULL,
+                    start_x INTEGER NOT NULL,
+                    start_y INTEGER NOT NULL,
+                    end_x INTEGER NOT NULL,
+                    end_y INTEGER NOT NULL,
+                    total_distance REAL NOT NULL,
+                    avg_speed REAL NOT NULL,
+                    segment_type VARCHAR(20) DEFAULT 'linear',
+                    point_count INTEGER DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE CASCADE
+                )
+            ''')
+            
+            # Correlation cache table for storing analysis results
+            self.cursor.execute('''
+                CREATE TABLE IF NOT EXISTS correlation_cache (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    analysis_type VARCHAR(50) NOT NULL,
+                    analysis_key VARCHAR(255) NOT NULL,
+                    parameters_hash VARCHAR(64) NOT NULL,
+                    result_data TEXT NOT NULL,
+                    confidence_level REAL,
+                    p_value REAL,
+                    sample_size INTEGER,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    expires_at DATETIME NOT NULL,
+                    UNIQUE(analysis_type, analysis_key, parameters_hash)
                 )
             ''')
             
@@ -333,7 +455,25 @@ class SQLiteDatabase:
                 'CREATE INDEX IF NOT EXISTS idx_login_attempts_username ON login_attempts(username)',
                 'CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip_address)',
                 'CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token)',
-                'CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)'
+                'CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)',
+                
+                # Customer paths indexes for performance
+                'CREATE INDEX IF NOT EXISTS idx_paths_person_session ON customer_paths(person_id, session_id)',
+                'CREATE INDEX IF NOT EXISTS idx_paths_timestamp ON customer_paths(timestamp)',
+                'CREATE INDEX IF NOT EXISTS idx_paths_sequence ON customer_paths(session_id, sequence_number)',
+                'CREATE INDEX IF NOT EXISTS idx_paths_zone ON customer_paths(zone_name)',
+                'CREATE INDEX IF NOT EXISTS idx_paths_movement_type ON customer_paths(movement_type)',
+                
+                # Path segments indexes
+                'CREATE INDEX IF NOT EXISTS idx_segments_person ON path_segments(person_id)',
+                'CREATE INDEX IF NOT EXISTS idx_segments_session ON path_segments(session_id)',
+                'CREATE INDEX IF NOT EXISTS idx_segments_time ON path_segments(start_time, end_time)',
+                'CREATE INDEX IF NOT EXISTS idx_segments_type ON path_segments(segment_type)',
+                
+                # Correlation cache indexes
+                'CREATE INDEX IF NOT EXISTS idx_correlation_type_key ON correlation_cache(analysis_type, analysis_key)',
+                'CREATE INDEX IF NOT EXISTS idx_correlation_expires ON correlation_cache(expires_at)',
+                'CREATE INDEX IF NOT EXISTS idx_correlation_created ON correlation_cache(created_at)'
             ]
             
             for index_sql in indexes:
@@ -456,10 +596,12 @@ class SQLiteDatabase:
             timestamp (datetime): Detection timestamp
             camera_id (str): Camera identifier
         """
-        if timestamp is None:
-            timestamp = datetime.now()
-            
-        try:
+        def _detection_operation():
+            if timestamp is None:
+                operation_timestamp = datetime.now()
+            else:
+                operation_timestamp = timestamp
+                
             conn = self._get_connection()
             cursor = conn.cursor()
             
@@ -470,25 +612,27 @@ class SQLiteDatabase:
                 cursor.execute('''
                     INSERT INTO persons (id, first_detected, last_detected, total_visits)
                     VALUES (?, ?, ?, 1)
-                ''', (person_id, timestamp, timestamp))
+                ''', (person_id, operation_timestamp, operation_timestamp))
             else:
                 # Update last detected time and increment visits
                 cursor.execute('''
                     UPDATE persons 
                     SET last_detected = ?, total_visits = total_visits + 1, updated_at = CURRENT_TIMESTAMP
                     WHERE id = ?
-                ''', (timestamp, person_id))
+                ''', (operation_timestamp, person_id))
             
             # Insert detection record
             cursor.execute('''
                 INSERT INTO detections (person_id, timestamp, x1, y1, x2, y2, confidence, camera_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (person_id, timestamp, bbox[0], bbox[1], bbox[2], bbox[3], confidence, camera_id))
+            ''', (person_id, operation_timestamp, bbox[0], bbox[1], bbox[2], bbox[3], confidence, camera_id))
             
             detection_id = cursor.lastrowid
             conn.commit()
             return detection_id
-            
+        
+        try:
+            return self._execute_with_retry(_detection_operation)
         except Exception as e:
             logger.error(f"Error storing detection: {e}")
             return None
@@ -504,10 +648,12 @@ class SQLiteDatabase:
             detection_id (int): Related detection ID
             analysis_model (str): Analysis model used
         """
-        if timestamp is None:
-            timestamp = datetime.now()
-            
-        try:
+        def _store_operation():
+            if timestamp is None:
+                operation_timestamp = datetime.now()
+            else:
+                operation_timestamp = timestamp
+                
             conn = self._get_connection()
             cursor = conn.cursor()
             
@@ -524,8 +670,22 @@ class SQLiteDatabase:
                     age_group_id = age_group_result[0]
             
             # Get gender ID
-            gender_name = demographics.get('gender', 'unknown').lower()
-            cursor.execute('SELECT id FROM genders WHERE gender_name = ?', (gender_name,))
+            gender_name = demographics.get('gender', 'unknown').lower().strip()
+            
+            # Normalize gender names to match database entries
+            gender_mapping = {
+                'male': 'male',
+                'man': 'male', 
+                'female': 'female',
+                'woman': 'female',
+                'unknown': 'unknown',
+                'analyzing...': 'unknown'
+            }
+            
+            normalized_gender = gender_mapping.get(gender_name, 'unknown')
+            logger.debug(f"Gender mapping: '{gender_name}' -> '{normalized_gender}'")
+            
+            cursor.execute('SELECT id FROM genders WHERE gender_name = ?', (normalized_gender,))
             gender_result = cursor.fetchone()
             gender_id = gender_result[0] if gender_result else None
             
@@ -534,6 +694,7 @@ class SQLiteDatabase:
                 cursor.execute('SELECT id FROM genders WHERE gender_name = ?', ('unknown',))
                 gender_result = cursor.fetchone()
                 gender_id = gender_result[0] if gender_result else 3  # fallback
+                logger.warning(f"Gender '{normalized_gender}' not found in database, using unknown (ID: {gender_id})")
             
             # Get race ID
             race_name = demographics.get('race', 'unknown').lower()
@@ -555,7 +716,7 @@ class SQLiteDatabase:
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-                person_id, detection_id, timestamp, age, age_group_id,
+                person_id, detection_id, operation_timestamp, age, age_group_id,
                 gender_id, race_id, emotion_id, 
                 demographics.get('confidence', 0.0), analysis_model
             ))
@@ -563,7 +724,9 @@ class SQLiteDatabase:
             demographic_id = cursor.lastrowid
             conn.commit()
             return demographic_id
-            
+        
+        try:
+            return self._execute_with_retry(_store_operation)
         except Exception as e:
             logger.error(f"Error storing demographics: {e}")
             return None
@@ -1609,6 +1772,406 @@ class SQLiteDatabase:
         except Exception as e:
             logger.error(f"Error creating user session: {e}")
             return False
+    
+    # Customer Path Storage Methods
+    
+    def store_path_points(self, path_points):
+        """
+        Store multiple path points efficiently using batch insert
+        
+        Args:
+            path_points (list): List of path point dictionaries
+            
+        Returns:
+            bool: Success status
+        """
+        if not path_points:
+            return True
+            
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            # Prepare data for batch insert
+            insert_data = []
+            for point in path_points:
+                insert_data.append((
+                    point['person_id'],
+                    point['session_id'],
+                    point['sequence_number'],
+                    point['x_position'],
+                    point['y_position'],
+                    point['timestamp'],
+                    point['confidence'],
+                    point.get('movement_type', 'walking'),
+                    point.get('speed', 0.0),
+                    point.get('direction_angle'),
+                    point.get('zone_name'),
+                    point.get('path_complexity', 0.0)
+                ))
+            
+            # Batch insert
+            cursor.executemany('''
+                INSERT INTO customer_paths (
+                    person_id, session_id, sequence_number, x_position, y_position,
+                    timestamp, confidence, movement_type, speed, direction_angle,
+                    zone_name, path_complexity
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', insert_data)
+            
+            conn.commit()
+            logger.debug(f"Stored {len(path_points)} path points")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error storing path points: {e}")
+            return False
+    
+    def store_path_segment(self, person_id, session_id, start_time, end_time, 
+                          start_x, start_y, end_x, end_y, total_distance, 
+                          avg_speed, segment_type='linear', point_count=0):
+        """
+        Store a simplified path segment
+        
+        Args:
+            person_id (int): Person track ID
+            session_id (str): Session identifier
+            start_time (datetime): Segment start time
+            end_time (datetime): Segment end time
+            start_x, start_y (int): Starting coordinates
+            end_x, end_y (int): Ending coordinates
+            total_distance (float): Total distance in pixels
+            avg_speed (float): Average speed in pixels/second
+            segment_type (str): Type of segment (linear, curved, stationary)
+            point_count (int): Number of original points in segment
+            
+        Returns:
+            int: Segment ID or None if failed
+        """
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT INTO path_segments (
+                    person_id, session_id, start_time, end_time,
+                    start_x, start_y, end_x, end_y, total_distance,
+                    avg_speed, segment_type, point_count
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (person_id, session_id, start_time, end_time,
+                  start_x, start_y, end_x, end_y, total_distance,
+                  avg_speed, segment_type, point_count))
+            
+            segment_id = cursor.lastrowid
+            conn.commit()
+            return segment_id
+            
+        except Exception as e:
+            logger.error(f"Error storing path segment: {e}")
+            return None
+    
+    def get_person_paths(self, person_id, session_id=None, hours=24):
+        """
+        Get path data for a specific person
+        
+        Args:
+            person_id (int): Person track ID
+            session_id (str, optional): Specific session ID
+            hours (int): Hours to look back
+            
+        Returns:
+            list: List of path points
+        """
+        try:
+            from datetime import timedelta
+            
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            # Calculate time range
+            end_time = datetime.now()
+            start_time = end_time - timedelta(hours=hours)
+            
+            if session_id:
+                cursor.execute('''
+                    SELECT person_id, session_id, sequence_number, x_position, y_position,
+                           timestamp, confidence, movement_type, speed, direction_angle,
+                           zone_name, path_complexity
+                    FROM customer_paths
+                    WHERE person_id = ? AND session_id = ?
+                    ORDER BY sequence_number
+                ''', (person_id, session_id))
+            else:
+                cursor.execute('''
+                    SELECT person_id, session_id, sequence_number, x_position, y_position,
+                           timestamp, confidence, movement_type, speed, direction_angle,
+                           zone_name, path_complexity
+                    FROM customer_paths
+                    WHERE person_id = ? AND timestamp >= ? AND timestamp <= ?
+                    ORDER BY timestamp, sequence_number
+                ''', (person_id, start_time, end_time))
+            
+            paths = []
+            for row in cursor.fetchall():
+                paths.append({
+                    'person_id': row[0],
+                    'session_id': row[1],
+                    'sequence_number': row[2],
+                    'x': row[3],
+                    'y': row[4],
+                    'timestamp': row[5],
+                    'confidence': row[6],
+                    'movement_type': row[7],
+                    'speed': row[8],
+                    'direction_angle': row[9],
+                    'zone_name': row[10],
+                    'path_complexity': row[11]
+                })
+            
+            return paths
+            
+        except Exception as e:
+            logger.error(f"Error getting person paths: {e}")
+            return []
+    
+    def get_common_paths(self, hours=24, min_similarity=0.7):
+        """
+        Get common path patterns using spatial clustering
+        
+        Args:
+            hours (int): Hours to analyze
+            min_similarity (float): Minimum similarity threshold
+            
+        Returns:
+            list: List of common path patterns
+        """
+        try:
+            from datetime import timedelta
+            
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            # Calculate time range
+            end_time = datetime.now()
+            start_time = end_time - timedelta(hours=hours)
+            
+            # Get path segments for analysis
+            cursor.execute('''
+                SELECT session_id, start_x, start_y, end_x, end_y, 
+                       total_distance, avg_speed, segment_type
+                FROM path_segments
+                WHERE start_time >= ? AND end_time <= ?
+                ORDER BY start_time
+            ''', (start_time, end_time))
+            
+            segments = cursor.fetchall()
+            
+            # Simple clustering based on start/end positions
+            clusters = {}
+            for segment in segments:
+                session_id, start_x, start_y, end_x, end_y, distance, speed, seg_type = segment
+                
+                # Create a simple cluster key based on rounded coordinates
+                cluster_key = f"{start_x//50}_{start_y//50}_{end_x//50}_{end_y//50}"
+                
+                if cluster_key not in clusters:
+                    clusters[cluster_key] = []
+                clusters[cluster_key].append({
+                    'session_id': session_id,
+                    'start_x': start_x,
+                    'start_y': start_y,
+                    'end_x': end_x,
+                    'end_y': end_y,
+                    'distance': distance,
+                    'speed': speed,
+                    'type': seg_type
+                })
+            
+            # Filter clusters with sufficient size
+            common_paths = []
+            for cluster_key, segments in clusters.items():
+                if len(segments) >= 3:  # Minimum 3 similar paths
+                    # Calculate average path properties
+                    avg_start_x = sum(s['start_x'] for s in segments) / len(segments)
+                    avg_start_y = sum(s['start_y'] for s in segments) / len(segments)
+                    avg_end_x = sum(s['end_x'] for s in segments) / len(segments)
+                    avg_end_y = sum(s['end_y'] for s in segments) / len(segments)
+                    avg_distance = sum(s['distance'] for s in segments) / len(segments)
+                    avg_speed = sum(s['speed'] for s in segments) / len(segments)
+                    
+                    common_paths.append({
+                        'cluster_id': cluster_key,
+                        'frequency': len(segments),
+                        'avg_start': (avg_start_x, avg_start_y),
+                        'avg_end': (avg_end_x, avg_end_y),
+                        'avg_distance': avg_distance,
+                        'avg_speed': avg_speed,
+                        'segments': segments
+                    })
+            
+            # Sort by frequency
+            common_paths.sort(key=lambda x: x['frequency'], reverse=True)
+            
+            return common_paths
+            
+        except Exception as e:
+            logger.error(f"Error getting common paths: {e}")
+            return []
+    
+    def cleanup_old_paths(self, retention_days=30):
+        """
+        Clean up old path data based on retention policy
+        
+        Args:
+            retention_days (int): Number of days to retain data
+            
+        Returns:
+            int: Number of records deleted
+        """
+        try:
+            from datetime import timedelta
+            
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            # Calculate cutoff date
+            cutoff_date = datetime.now() - timedelta(days=retention_days)
+            
+            # Delete old path points
+            cursor.execute('''
+                DELETE FROM customer_paths WHERE timestamp < ?
+            ''', (cutoff_date,))
+            
+            paths_deleted = cursor.rowcount
+            
+            # Delete old path segments
+            cursor.execute('''
+                DELETE FROM path_segments WHERE end_time < ?
+            ''', (cutoff_date,))
+            
+            segments_deleted = cursor.rowcount
+            
+            conn.commit()
+            
+            total_deleted = paths_deleted + segments_deleted
+            if total_deleted > 0:
+                logger.info(f"Cleaned up {total_deleted} old path records (paths: {paths_deleted}, segments: {segments_deleted})")
+            
+            return total_deleted
+            
+        except Exception as e:
+            logger.error(f"Error cleaning up old paths: {e}")
+            return 0
+    
+    # Correlation Analysis Methods
+    
+    def store_correlation_result(self, analysis_type, analysis_key, parameters_hash, 
+                               result_data, confidence_level=None, p_value=None, 
+                               sample_size=None, cache_hours=24):
+        """
+        Store correlation analysis result in cache
+        
+        Args:
+            analysis_type (str): Type of analysis
+            analysis_key (str): Unique key for analysis
+            parameters_hash (str): Hash of parameters
+            result_data (str): JSON encoded result data
+            confidence_level (float): Statistical confidence level
+            p_value (float): P-value of statistical test
+            sample_size (int): Sample size used
+            cache_hours (int): Hours to cache result
+            
+        Returns:
+            bool: Success status
+        """
+        try:
+            from datetime import timedelta
+            
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            expires_at = datetime.now() + timedelta(hours=cache_hours)
+            
+            cursor.execute('''
+                INSERT OR REPLACE INTO correlation_cache (
+                    analysis_type, analysis_key, parameters_hash, result_data,
+                    confidence_level, p_value, sample_size, expires_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (analysis_type, analysis_key, parameters_hash, result_data,
+                  confidence_level, p_value, sample_size, expires_at))
+            
+            conn.commit()
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error storing correlation result: {e}")
+            return False
+    
+    def get_correlation_result(self, analysis_type, analysis_key, parameters_hash):
+        """
+        Get cached correlation analysis result
+        
+        Args:
+            analysis_type (str): Type of analysis
+            analysis_key (str): Unique key for analysis
+            parameters_hash (str): Hash of parameters
+            
+        Returns:
+            dict: Cached result or None if not found/expired
+        """
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT result_data, confidence_level, p_value, sample_size, created_at
+                FROM correlation_cache
+                WHERE analysis_type = ? AND analysis_key = ? AND parameters_hash = ?
+                AND expires_at > CURRENT_TIMESTAMP
+            ''', (analysis_type, analysis_key, parameters_hash))
+            
+            result = cursor.fetchone()
+            if result:
+                return {
+                    'result_data': result[0],
+                    'confidence_level': result[1],
+                    'p_value': result[2],
+                    'sample_size': result[3],
+                    'created_at': result[4]
+                }
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error getting correlation result: {e}")
+            return None
+    
+    def cleanup_expired_correlations(self):
+        """
+        Clean up expired correlation cache entries
+        
+        Returns:
+            int: Number of records deleted
+        """
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                DELETE FROM correlation_cache WHERE expires_at <= CURRENT_TIMESTAMP
+            ''')
+            
+            deleted_count = cursor.rowcount
+            conn.commit()
+            
+            if deleted_count > 0:
+                logger.info(f"Cleaned up {deleted_count} expired correlation cache entries")
+            
+            return deleted_count
+            
+        except Exception as e:
+            logger.error(f"Error cleaning up expired correlations: {e}")
+            return 0
     
     def get_session(self, session_token):
         """Get session by token"""
