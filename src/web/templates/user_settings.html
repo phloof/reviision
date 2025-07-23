@@ -46,11 +46,11 @@
                             <div class="col-12"><div id="passwordAlertContainer"></div></div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold" for="currentPassword"><i class="fas fa-key me-1"></i>Current Password</label>
-                                <input type="password" class="form-control" id="currentPassword" required>
+                                <input type="password" class="form-control" id="currentPassword" name="current_password" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold" for="newPassword"><i class="fas fa-lock me-1"></i>New Password</label>
-                                <input type="password" class="form-control" id="newPassword" required>
+                                <input type="password" class="form-control" id="newPassword" name="new_password" required>
                                 <div class="password-requirements border rounded p-3 mt-2 bg-light small" id="pwd-req" style="display:none;">
                                     <div id="req-length" class="mb-1"><i class="fas fa-times text-danger me-1"></i> At least 8 characters</div>
                                     <div id="req-upper" class="mb-1"><i class="fas fa-times text-danger me-1"></i> One uppercase letter</div>
@@ -61,12 +61,20 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold" for="confirmPassword"><i class="fas fa-check-double me-1"></i>Confirm New Password</label>
-                                <input type="password" class="form-control" id="confirmPassword" required>
+                                <input type="password" class="form-control" id="confirmPassword" name="confirm_password" required>
                             </div>
                             <div class="col-12 text-start mt-3">
                                 <button type="submit" class="btn modern-btn modern-btn-primary" id="savePwdBtn"><i class="fas fa-save me-2"></i>Save Password</button>
                             </div>
                         </form>
+                        <!-- Success Message Area -->
+                        <div id="pwd-success-area" style="display:none;">
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <span id="pwd-success-text">Password updated successfully</span>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -106,7 +114,10 @@ class SettingsPage{
         btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
         this.alert('','');
         const res = await fetch('/change_password',{method:'POST',body:data,headers:{'X-Requested-With':'XMLHttpRequest'}}).then(r=>r.json()).catch(()=>({success:false,message:'Network error'}));
-        if(res.success){this.alert('Password updated!','success');form.reset();}
+        if(res.success){
+            this.alert('','');form.reset();
+            document.getElementById('pwd-success-area').style.display='block';
+        }
         else{this.alert(res.message||'Error','danger');}
         btn.disabled=false;btn.innerHTML='<i class="fas fa-save me-2"></i>Save Password';
     }

@@ -688,9 +688,14 @@
                     });
 
                     console.log('Response status:', response.status);
-                    
+
+                    // Friendly handling for auth errors
                     if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                        let errData = {};
+                        try { errData = await response.json(); } catch { /* ignore parse errors */ }
+                        const msg = errData.message || 'Login failed. Please check your credentials.';
+                        this.showAlert(msg, 'danger');
+                        return; // stop further processing
                     }
 
                     const data = await response.json();

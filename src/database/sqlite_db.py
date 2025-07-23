@@ -1700,8 +1700,10 @@ class SQLiteDatabase:
     def get_user_by_id(self, user_id):
         """Get user by ID"""
         try:
-            self.cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))
-            return self.cursor.fetchone()
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))
+            return cursor.fetchone()
         except Exception as e:
             logger.error(f"Error getting user by ID: {e}")
             return None

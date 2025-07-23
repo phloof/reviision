@@ -50,7 +50,9 @@ class AuthService:
         )
         
         self.max_login_attempts = 5
-        self.lockout_duration = timedelta(minutes=15)
+        # Lockout duration after too many failed login attempts
+        # Reduced from 15 minutes to 30 seconds per user request
+        self.lockout_duration = timedelta(seconds=30)
         self.session_timeout = timedelta(hours=2)
         self.password_min_length = 8
         
@@ -371,17 +373,22 @@ class AuthService:
             bool: True if user is using default password, False otherwise
         """
         try:
-            # Only check for admin user with default password
-            if username == "admin":
-                user = self.db.get_user_by_username(username)
-                if user:
-                    # Check if still using default password "admin"
-                    try:
-                        self.ph.verify(user["password_hash"], "admin")
-                        return True
-                    except:
-                        return False
-            return False
+            user = self.db.get_user_by_username(username)
+            if not user:
+                return False
+
+            # Determine the default password for this user.
+            # For the built-in accounts that ship with the system we simply set the
+            # default password equal to the username (e.g. viewer -> "viewer").
+            # The administrator account keeps the canonical default password "admin".
+            default_password = "admin" if username == "admin" else username
+
+            try:
+                # Verify whether the stored hash matches the default password.
+                self.ph.verify(user["password_hash"], default_password)
+                return True
+            except Exception:
+                return False
         except Exception as e:
             logger.error(f"Error checking default password for user {username}: {e}")
             return False

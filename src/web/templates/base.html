@@ -632,6 +632,50 @@
     
     <!-- Page-specific scripts -->
     {% block scripts %}{% endblock %}
+
+    {% if request.endpoint == 'web.index' %}
+    <!-- Default Password Warning Script (Dashboard only) -->
+    <script defer>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Ask backend if the current user is still on the default password
+            fetch('/api/auth/me')
+                .then(r => r.json())
+                .then(data => {
+                    if (!(data.success && data.user && data.user.is_default_password)) return;
+
+                    // Build custom full-screen overlay (avoids layout shifts and ensures backdrop)
+                    const overlayHtml = `
+                        <div id="defaultPwdOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1080;">
+                            <div class="card border-0 shadow-lg" style="max-width:500px;width:90%;border:none;border-radius:1rem;">
+                                <div class="card-header bg-warning text-dark border-0" style="border:none;border-top-left-radius:1rem;border-top-right-radius:1rem;">
+                                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Security Notice</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-4">You are currently using the <strong>default password</strong>. For your security, please change it now.</p>
+                                    <div class="text-end">
+                                        <a href="/user-settings#passwordSection" class="btn btn-primary me-2" id="changePwdBtn"><i class="fas fa-key me-1"></i>Change Password</a>
+                                        <button class="btn btn-secondary" id="dismissPwdBtn"><i class="fas fa-times me-1"></i>Dismiss</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+
+                    document.body.insertAdjacentHTML('beforeend', overlayHtml);
+
+                    const overlay = document.getElementById('defaultPwdOverlay');
+                        // Dismiss handlers
+                        overlay.querySelector('#dismissPwdBtn').addEventListener('click', () => {
+                            overlay.remove(); // Will reappear on next navigation until password truly changed
+                        });
+
+                    overlay.querySelector('#changePwdBtn').addEventListener('click', () => {
+                        // Navigate away; overlay removed automatically when page unloads. No persistence.
+                    });
+                })
+                .catch(() => {/* quietly ignore if endpoint fails */});
+        });
+    </script>
+    {% endif %}
     
     <!-- Service Worker for caching (optional) -->
     {% if config.get('ENABLE_SERVICE_WORKER', False) %}
