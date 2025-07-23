@@ -126,6 +126,12 @@
         font-weight: 500;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        line-height: 1.2;
+        padding: 0 0.5rem;
     }
 
     /* Chart Container Enhancement */
@@ -216,6 +222,36 @@
     }
 
     /* Responsive Enhancements */
+    
+    /* Medium screens and small laptops */
+    @media (max-width: 1199px) and (min-width: 992px) {
+        .stat-label {
+            font-size: 0.9rem;
+            letter-spacing: 0.3px;
+        }
+        
+        .stat-value {
+            font-size: 2.2rem;
+        }
+    }
+    
+    /* Tablets */
+    @media (max-width: 991px) and (min-width: 769px) {
+        .stat-label {
+            font-size: 0.85rem;
+            letter-spacing: 0.2px;
+            padding: 0 0.25rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+        }
+        
+        .stat-card .card-body {
+            padding: 1.8rem 1.2rem;
+        }
+    }
+
     @media (max-width: 768px) {
         .dashboard-container {
             padding: 1rem;
@@ -237,6 +273,16 @@
 
         .stat-value {
             font-size: 2rem;
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            letter-spacing: 0.2px;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: unset;
+            line-height: 1.3;
+            text-align: center;
         }
 
         .chart-container {
@@ -265,7 +311,10 @@
         }
 
         .stat-label {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
+            white-space: normal;
+            line-height: 1.4;
+            letter-spacing: 0.1px;
         }
     }
 </style>
@@ -377,58 +426,6 @@
     </div>
 </div>
 
-<!-- Camera Analysis Row -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="mb-0">Live Camera Analysis</h3>
-                <div class="tooltip">
-                    <i class="fas fa-info-circle"></i>
-                    <span class="tooltip-text">Real-time camera feed with analytics overlays</span>
-                </div>
-            </div>
-            <div class="card-body">
-                <div id="cameraPreview" class="video-container">
-                    <!-- Main analysed feed -->
-                    <div id="analysedFeed" class="main-video">
-                        <div class="video-overlay">
-                            <div class="overlay-info">
-                                <span class="camera-label">Main Entrance - Analysed Feed</span>
-                                <span class="status-indicator" id="feed-status">
-                                    <i class="fas fa-circle" id="status-icon"></i> <span id="status-text">Stopped</span>
-                                </span>
-                            </div>
-                        </div>
-                        <div class="placeholder-content">
-                            <i class="fas fa-eye fa-3x mb-3"></i>
-                            <h5 id="feed-title">Camera Analysis Paused</h5>
-                            <p class="text-muted" id="feed-description">Click Start to begin analysing the camera feed</p>
-                            <div class="detection-stats mt-3">
-                                <span class="badge bg-primary me-2">People: <span id="people-count">0</span></span>
-                                <span class="badge bg-success me-2">Active Tracks: <span id="active-tracks">0</span></span>
-                                <span class="badge bg-info">FPS: <span id="fps-counter">0</span></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer d-flex justify-content-between align-items-center">
-                    <div class="feed-controls">
-                        <button class="btn btn-success me-2" id="startFeedBtn" onclick="startAnalysisFeed()">
-                            <i class="fas fa-play"></i> Start Analysis
-                        </button>
-                        <button class="btn btn-warning me-2" id="stopFeedBtn" onclick="stopAnalysisFeed()" disabled>
-                            <i class="fas fa-pause"></i> Stop Analysis
-                        </button>
-                    </div>
-                    <a href="/analysis" class="btn btn-primary">
-                        <i class="fas fa-chart-line me-2"></i>View Detailed Analysis
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-    </div>
 </div> <!-- Close page-container -->
 {% endblock %}
 
@@ -443,7 +440,6 @@
      */
     document.addEventListener('DOMContentLoaded', function() {
         fetchDashboardData();
-        initializeFeedControls();
     });
 
     /**
@@ -710,100 +706,6 @@
         });
     }
 
-    // ====================================
-    // Analysis Feed Control Functions
-    // ====================================
 
-    let isAnalysisFeedRunning = false;
-    let analysisInterval = null;
-
-    /**
-     * Initialize feed control state
-     */
-    function initializeFeedControls() {
-        updateFeedStatus(false);
-    }
-
-    /**
-     * Start the analysis feed simulation
-     */
-    function startAnalysisFeed() {
-        if (isAnalysisFeedRunning) return;
-        
-        isAnalysisFeedRunning = true;
-        updateFeedStatus(true);
-        
-        // Start simulated analysis with updates every 2 seconds
-        simulateAnalysis();
-        analysisInterval = setInterval(simulateAnalysis, 2000);
-        
-        // Update button states
-        document.getElementById('startFeedBtn').disabled = true;
-        document.getElementById('stopFeedBtn').disabled = false;
-    }
-
-    /**
-     * Stop the analysis feed simulation
-     */
-    function stopAnalysisFeed() {
-        if (!isAnalysisFeedRunning) return;
-        
-        isAnalysisFeedRunning = false;
-        updateFeedStatus(false);
-        
-        // Stop analysis simulation
-        if (analysisInterval) {
-            clearInterval(analysisInterval);
-            analysisInterval = null;
-        }
-        
-        // Reset statistics display
-        document.getElementById('people-count').textContent = '0';
-        document.getElementById('active-tracks').textContent = '0';
-        document.getElementById('fps-counter').textContent = '0';
-        
-        // Update button states
-        document.getElementById('startFeedBtn').disabled = false;
-        document.getElementById('stopFeedBtn').disabled = true;
-    }
-
-    /**
-     * Update feed status indicators
-     */
-    function updateFeedStatus(isRunning) {
-        const statusIcon = document.getElementById('status-icon');
-        const statusText = document.getElementById('status-text');
-        const feedTitle = document.getElementById('feed-title');
-        const feedDescription = document.getElementById('feed-description');
-        
-        if (isRunning) {
-            statusIcon.className = 'fas fa-circle text-success';
-            statusText.textContent = 'Running';
-            feedTitle.textContent = 'Camera Analysis Active';
-            feedDescription.textContent = 'Analysing live camera feed and detecting people';
-        } else {
-            statusIcon.className = 'fas fa-circle text-danger';
-            statusText.textContent = 'Stopped';
-            feedTitle.textContent = 'Camera Analysis Paused';
-            feedDescription.textContent = 'Click Start to begin analysing the camera feed';
-        }
-    }
-
-    /**
-     * Simulate real-time analysis data
-     */
-    function simulateAnalysis() {
-        if (!isAnalysisFeedRunning) return;
-        
-        // Generate realistic simulation data
-        const peopleCount = Math.floor(Math.random() * 8) + 1;
-        const activeTracks = Math.floor(Math.random() * peopleCount) + 1;
-        const fps = Math.floor(Math.random() * 5) + 28; // 28-32 FPS range
-        
-        // Update statistics display
-        document.getElementById('people-count').textContent = peopleCount;
-        document.getElementById('active-tracks').textContent = activeTracks;
-        document.getElementById('fps-counter').textContent = fps;
-    }
 </script>
 {% endblock %}

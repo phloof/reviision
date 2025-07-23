@@ -381,6 +381,79 @@
         }
 
         /* Responsive Design */
+        /* 14-inch laptop screens (1366x768 to 1600x900) */
+        @media (max-width: 1400px) and (min-width: 1200px) {
+            .login-card {
+                max-width: 750px;
+                min-height: 520px;
+            }
+            
+            .brand-panel {
+                padding: 2.5rem;
+            }
+            
+            .form-panel {
+                padding: 2.5rem;
+            }
+            
+            .brand-logo {
+                font-size: 3.5rem;
+            }
+            
+            .brand-title {
+                font-size: 2.2rem;
+            }
+        }
+
+        /* Smaller desktop screens */
+        @media (max-width: 1199px) and (min-width: 992px) {
+            .login-card {
+                max-width: 700px;
+                min-height: 500px;
+            }
+            
+            .brand-panel {
+                padding: 2rem;
+            }
+            
+            .form-panel {
+                padding: 2rem;
+            }
+            
+            .brand-logo {
+                font-size: 3rem;
+            }
+            
+            .brand-title {
+                font-size: 2rem;
+            }
+            
+            .brand-subtitle {
+                font-size: 1.1rem;
+            }
+        }
+
+        /* Tablet landscape */
+        @media (max-width: 991px) and (min-width: 769px) {
+            .login-card {
+                max-width: 650px;
+                min-height: 480px;
+            }
+            
+            .brand-panel {
+                padding: 1.8rem;
+            }
+            
+            .form-panel {
+                padding: 1.8rem;
+            }
+            
+            .brand-features li {
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Tablet portrait and mobile */
         @media (max-width: 768px) {
             .login-container {
                 padding: 1rem;
@@ -392,6 +465,7 @@
                 min-height: auto;
                 max-height: 95vh;
                 overflow-y: auto;
+                max-width: 100%;
             }
 
             .brand-panel {
@@ -426,6 +500,7 @@
             }
         }
 
+        /* Small mobile devices */
         @media (max-width: 480px) {
             .login-container {
                 padding: 0.5rem;
@@ -440,6 +515,10 @@
             .btn-login {
                 height: 55px;
                 font-size: 1rem;
+            }
+            
+            .login-card {
+                border-radius: 12px;
             }
         }
     </style>

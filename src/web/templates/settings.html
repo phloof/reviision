@@ -5,6 +5,7 @@
 {% block header %}System Settings{% endblock %}
 
 {% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-page-styles.css') }}">
 <style>
     .settings-nav {
         background: white;
@@ -825,10 +826,30 @@ async function insertInitialData() {
         const result = await response.json();
         
         if (result.status === 'success') {
-            feedback.innerHTML = `<div class="alert alert-success"><strong>Success:</strong> ${result.message}</div>`;
+            feedback.innerHTML = `
+                <div class="modern-card">
+                    <div class="modern-card-header green">
+                        <i class="fas fa-check-circle"></i>
+                        Success
+                    </div>
+                    <div class="modern-card-body">
+                        <p class="mb-0">${result.message}</p>
+                    </div>
+                </div>
+            `;
             showToast('success', 'Initial data inserted successfully!');
         } else {
-            feedback.innerHTML = `<div class="alert alert-danger"><strong>Error:</strong> ${result.message}</div>`;
+            feedback.innerHTML = `
+                <div class="modern-card">
+                    <div class="modern-card-header red">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Error
+                    </div>
+                    <div class="modern-card-body">
+                        <p class="mb-0">${result.message}</p>
+                    </div>
+                </div>
+            `;
             showToast('error', 'Failed to insert initial data');
         }
     } catch (error) {
@@ -859,10 +880,30 @@ async function clearAllData() {
         const result = await response.json();
         
         if (result.status === 'success') {
-            feedback.innerHTML = `<div class="alert alert-success"><strong>Success:</strong> ${result.message}</div>`;
+            feedback.innerHTML = `
+                <div class="modern-card">
+                    <div class="modern-card-header green">
+                        <i class="fas fa-check-circle"></i>
+                        Success
+                    </div>
+                    <div class="modern-card-body">
+                        <p class="mb-0">${result.message}</p>
+                    </div>
+                </div>
+            `;
             showToast('success', 'All data cleared successfully!');
         } else {
-            feedback.innerHTML = `<div class="alert alert-danger"><strong>Error:</strong> ${result.message}</div>`;
+            feedback.innerHTML = `
+                <div class="modern-card">
+                    <div class="modern-card-header red">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Error
+                    </div>
+                    <div class="modern-card-body">
+                        <p class="mb-0">${result.message}</p>
+                    </div>
+                </div>
+            `;
             showToast('error', 'Failed to clear data');
         }
     } catch (error) {

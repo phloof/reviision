@@ -957,6 +957,7 @@ header {
     flex-wrap: wrap;
     justify-content: space-between;
     gap: 1rem;
+    margin-bottom: 2rem;
 }
 
 /* Desktop: 4 columns side by side */
@@ -975,8 +976,20 @@ header {
     }
 }
 
+/* Small tablets: 2 columns with better spacing */
+@media (min-width: 576px) and (max-width: 767.98px) {
+    .stats-grid {
+        gap: 0.75rem;
+    }
+    
+    .stats-grid .col-md-6 {
+        flex: 0 0 calc(50% - 0.375rem);
+        max-width: calc(50% - 0.375rem);
+    }
+}
+
 /* Mobile: Single column (stack vertically) */
-@media (max-width: 767.98px) {
+@media (max-width: 575.98px) {
     .stats-grid {
         flex-direction: column;
         gap: 1rem;
@@ -1023,6 +1036,11 @@ header {
     color: var(--text-muted);
     font-size: var(--font-size-sm);
     font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    line-height: 1.2;
 }
 
 /* Chart Cards */
@@ -1030,10 +1048,12 @@ header {
     background: var(--card-background);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
+    margin-bottom: 1.5rem;
 }
 
 .chart-card:hover {
     box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
 }
 
 .chart-card .card-body {
@@ -1044,6 +1064,15 @@ header {
     background: transparent;
     border-bottom: 1px solid var(--border-color);
     padding: 1.25rem 2rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.chart-card .card-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.3;
 }
 
 /* Charts and Visualizations */
@@ -1086,6 +1115,7 @@ header {
     box-shadow: var(--shadow);
     margin-bottom: 1.5rem;
     transition: var(--transition);
+    overflow: hidden;
 }
 
 .card:hover {
@@ -1095,6 +1125,8 @@ header {
 
 .card-body {
     padding: 1.5rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .card-header {
@@ -1102,12 +1134,17 @@ header {
     border-bottom: 1px solid var(--border-color);
     padding: 1.25rem 1.5rem;
     font-weight: 600;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .card-header h3 {
     margin: 0;
     font-size: 1.25rem;
     font-weight: 600;
+    line-height: 1.3;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 /* ====================================
@@ -1732,6 +1769,9 @@ header {
     
     .page-title h1 {
         font-size: 1.25rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     
     .header-actions .dropdown-toggle {
@@ -1749,25 +1789,43 @@ header {
         gap: 12px;
     }
     
+    .card {
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
     .card-body {
-        padding: 1.5rem 1rem;
+        padding: 1.25rem;
     }
     
     .card-header {
         padding: 1rem;
-        font-size: 0.9rem;
+        font-size: 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .card-header h3 {
+        font-size: 1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
     }
     
     .stat-card .card-body {
-        padding: 2rem 1.5rem;
+        padding: 1.5rem 1rem;
     }
     
     .stat-value {
-        font-size: 2.5rem;
+        font-size: 2rem;
+        line-height: 1.1;
     }
     
     .stat-label {
-        font-size: 0.875rem;
+        font-size: 0.8rem;
+        line-height: 1.3;
+        margin-top: 0.5rem;
     }
     
     .chart-card .card-body {
@@ -1793,12 +1851,34 @@ header {
         font-size: 16px;
         padding: 0.875rem;
         border-width: 2px;
+        height: auto;
+        min-height: 48px;
     }
     
     .btn {
-        padding: 1rem;
+        padding: 0.875rem 1rem;
         min-height: 48px;
         font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    /* Improved text handling for mobile */
+    .tooltip-text {
+        width: 150px;
+        margin-left: -75px;
+        font-size: 0.8rem;
+    }
+    
+    /* Better spacing for mobile */
+    .row {
+        margin-left: -0.5rem;
+        margin-right: -0.5rem;
+    }
+    
+    .col,
+    [class*="col-"] {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
     }
 }
 
