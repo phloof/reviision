@@ -5,348 +5,6 @@
 {% block header %}Historical Data{% endblock %}
 
 {% block styles %}
-<style>
-    .historical-nav {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        padding: 1rem;
-        margin-bottom: 2rem;
-    }
-    
-    .historical-nav .nav-link {
-        border-radius: 8px;
-        color: #6c757d;
-        font-weight: 500;
-        padding: 0.75rem 1rem;
-        margin-bottom: 0.5rem;
-        transition: all 0.3s ease;
-    }
-    
-    .historical-nav .nav-link:hover {
-        background: #f8f9fa;
-        color: #495057;
-    }
-    
-    .historical-nav .nav-link.active {
-        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-        color: white;
-    }
-    
-    .historical-section {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        padding: 2rem;
-        margin-bottom: 2rem;
-    }
-    
-    .section-title {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #2c3e50;
-        margin-bottom: 1.5rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid #e9ecef;
-    }
-    
-    .form-group {
-        margin-bottom: 1.5rem;
-    }
-    
-    .form-label {
-        font-weight: 500;
-        color: #495057;
-        margin-bottom: 0.5rem;
-    }
-    
-    .form-control, .form-select {
-        border-radius: 8px;
-        border: 1px solid #dee2e6;
-        padding: 0.75rem;
-        transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    }
-    
-    .form-control:focus, .form-select:focus {
-        border-color: #3498db;
-        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
-    }
-    
-    .btn {
-        border-radius: 8px;
-        padding: 0.75rem 1.5rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-    
-    .btn-primary {
-        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-        border: none;
-    }
-    
-    .btn-success {
-        background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
-        border: none;
-    }
-    
-    .btn-danger {
-        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-        border: none;
-    }
-    
-    .btn-warning {
-        background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
-        border: none;
-        color: white;
-    }
-    
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-    
-    .stat-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        padding: 1.5rem;
-        text-align: center;
-        transition: transform 0.3s ease;
-    }
-    
-    .stat-card:hover {
-        transform: translateY(-5px);
-    }
-    
-    .stat-value {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #2c3e50;
-        margin-bottom: 0.5rem;
-    }
-    
-    .stat-label {
-        color: #6c757d;
-        font-size: 0.875rem;
-        font-weight: 500;
-    }
-    
-    .chart-container {
-        position: relative;
-        height: 400px;
-        margin-bottom: 1rem;
-    }
-    
-    .chart-container canvas {
-        max-height: 400px;
-    }
-    
-    .alert {
-        border-radius: 8px;
-        border: none;
-    }
-    
-    .spinner-border-sm {
-        width: 1rem;
-        height: 1rem;
-    }
-    
-    .loading-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(255, 255, 255, 0.8);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10;
-    }
-    
-    .no-data-message {
-        text-align: center;
-        padding: 3rem;
-        color: #6c757d;
-    }
-    
-    .no-data-message i {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        color: #dee2e6;
-    }
-    
-    /* Notification Popup Styles */
-    .notification-popup {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 10000;
-        opacity: 0;
-        transform: translateX(100%);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        pointer-events: none;
-    }
-    
-    .notification-popup.show {
-        opacity: 1;
-        transform: translateX(0);
-        pointer-events: auto;
-    }
-    
-    .notification-popup.fade-out {
-        opacity: 0;
-        transform: translateX(100%);
-    }
-    
-    .notification-content {
-        background: #ffffff;
-        border-radius: 12px;
-        padding: 16px 20px;
-        min-width: 300px;
-        max-width: 400px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-        border: 1px solid #e9ecef;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-    }
-    
-    .notification-success {
-        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-        border-color: #27ae60;
-        color: #155724;
-    }
-    
-    .notification-success .notification-icon {
-        color: #27ae60;
-    }
-    
-    .notification-error {
-        background: linear-gradient(135deg, #f8d7da 0%, #f1b0b7 100%);
-        border-color: #e74c3c;
-        color: #721c24;
-    }
-    
-    .notification-error .notification-icon {
-        color: #e74c3c;
-    }
-    
-    .notification-icon {
-        font-size: 1.5rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.8);
-        flex-shrink: 0;
-    }
-    
-    .notification-message {
-        font-weight: 500;
-        font-size: 0.95rem;
-        line-height: 1.4;
-        flex-grow: 1;
-    }
-    
-    /* Animation for icon */
-    .notification-success .notification-icon i {
-        animation: checkmark 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    @keyframes checkmark {
-        0% {
-            transform: scale(0.8);
-            opacity: 0;
-        }
-        50% {
-            transform: scale(1.1);
-            opacity: 1;
-        }
-        100% {
-            transform: scale(1);
-            opacity: 1;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .stats-grid {
-            grid-template-columns: 1fr;
-        }
-        
-        .chart-container {
-            height: 300px;
-        }
-        
-        .notification-popup {
-            top: 10px;
-            right: 10px;
-            left: 10px;
-        }
-        
-        .notification-content {
-            min-width: auto;
-            max-width: none;
-        }
-    }
-    
-    /* Notification Popup Styles */
-    .notification-popup {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1060;
-        opacity: 0;
-        transform: translateX(100%);
-        transition: all 0.3s ease;
-    }
-    
-    .notification-popup.show {
-        opacity: 1;
-        transform: translateX(0);
-    }
-    
-    .notification-popup.fade-out {
-        opacity: 0;
-        transform: translateX(100%);
-    }
-    
-    .notification-content {
-        display: flex;
-        align-items: center;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        min-width: 300px;
-        max-width: 400px;
-    }
-    
-    .notification-success {
-        background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-        color: white;
-    }
-    
-    .notification-error {
-        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-        color: white;
-    }
-    
-    .notification-icon {
-        margin-right: 1rem;
-        font-size: 1.5rem;
-    }
-    
-    .notification-message {
-        flex: 1;
-        font-weight: 500;
-    }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -434,7 +92,7 @@
                     <!-- Quick Charts -->
                     <div class="historical-section">
                         <h3 class="section-title">
-                            <i class="fas fa-chart-area me-2"></i>Traffic Overview
+                            <span><i class="fas fa-chart-area me-2"></i>Traffic Overview</span>
                         </h3>
                         <div class="chart-container">
                             <canvas id="overview-chart"></canvas>
@@ -446,7 +104,7 @@
                 <div class="tab-pane fade" id="v-pills-traffic" role="tabpanel">
                     <div class="historical-section">
                         <h3 class="section-title">
-                            <i class="fas fa-users me-2"></i>Visitor Traffic Analysis
+                            <span><i class="fas fa-users me-2"></i>Visitor Traffic Analysis</span>
                         </h3>
                         <div class="chart-container">
                             <canvas id="traffic-chart"></canvas>
@@ -455,7 +113,7 @@
                     
                     <div class="historical-section">
                         <h3 class="section-title">
-                            <i class="fas fa-calendar-week me-2"></i>Weekly Patterns
+                            <span><i class="fas fa-calendar-week me-2"></i>Weekly Patterns</span>
                         </h3>
                         <div class="chart-container">
                             <canvas id="weekly-chart"></canvas>
@@ -469,7 +127,7 @@
                         <div class="col-md-6">
                             <div class="historical-section">
                                 <h3 class="section-title">
-                                    <i class="fas fa-venus-mars me-2"></i>Gender Distribution
+                                    <span><i class="fas fa-venus-mars me-2"></i>Gender Distribution</span>
                                 </h3>
                                 <div class="chart-container">
                                     <canvas id="gender-chart"></canvas>
@@ -479,7 +137,7 @@
                         <div class="col-md-6">
                             <div class="historical-section">
                                 <h3 class="section-title">
-                                    <i class="fas fa-birthday-cake me-2"></i>Age Groups
+                                    <span><i class="fas fa-birthday-cake me-2"></i>Age Groups</span>
                                 </h3>
                                 <div class="chart-container">
                                     <canvas id="age-chart"></canvas>
@@ -490,7 +148,7 @@
                     
                     <div class="historical-section">
                         <h3 class="section-title">
-                            <i class="fas fa-clock me-2"></i>Dwell Time Distribution
+                            <span><i class="fas fa-clock me-2"></i>Dwell Time Distribution</span>
                         </h3>
                         <div id="dwell-content">
                             <div class="no-data-message">
@@ -506,7 +164,7 @@
                 <div class="tab-pane fade" id="v-pills-patterns" role="tabpanel">
                     <div class="historical-section">
                         <h3 class="section-title">
-                            <i class="fas fa-route me-2"></i>Customer Journey Patterns
+                            <span><i class="fas fa-route me-2"></i>Customer Journey Patterns</span>
                         </h3>
                         <div id="patterns-content">
                             <div class="no-data-message">
@@ -517,21 +175,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Loading Modal -->
-<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-body text-center p-4">
-                <div class="spinner-border text-primary mb-3" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <h5>Loading Analytics Data...</h5>
-                <p class="text-muted mb-0">Please wait while we fetch the latest historical data.</p>
             </div>
         </div>
     </div>
@@ -957,6 +600,17 @@ class HistoricalDataManager {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
+    // Ensure Bootstrap pills activate correctly when the side buttons are clicked
+    document.querySelectorAll('.historical-nav .nav-link').forEach(function(el) {
+        el.addEventListener('click', function () {
+            const tab = bootstrap.Tab.getOrCreateInstance(this);
+            tab.show();
+            const targetPane = document.querySelector(this.getAttribute('data-bs-target'));
+            if (targetPane) {
+                targetPane.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
     new HistoricalDataManager();
 });
 </script>

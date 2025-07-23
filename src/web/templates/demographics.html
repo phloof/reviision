@@ -408,7 +408,7 @@
     </div>
 </div>
 
-<style>
+{#<style>
 /* Enhanced table styling */
 .table-modern {
     margin-bottom: 0;
@@ -630,7 +630,7 @@
         text-align: center;
     }
 }
-</style>
+</style>#}
 {% endblock %}
 
 {% block scripts %}
@@ -1080,18 +1080,6 @@ class DemographicsManager {
                         </span>
                     </td>
                     <td>
-                    </td>
-                    <td>
-                        <div class="fw-semibold">${record.age_group}</div>
-                        <small class="text-muted">${record.age} years old</small>
-                    </td>
-                    <td>
-                        <span class="badge bg-light text-dark border">
-                            <i class="fas fa-${this.getEmotionIcon(record.emotion)} me-1"></i>
-                            ${record.emotion}
-                        </span>
-                    </td>
-                    <td>
                         <span class="badge bg-info dwell-time-badge">
                             ${this.formatDwellTime(record.dwell_time)}
                         </span>
@@ -1299,6 +1287,18 @@ class DemographicsManager {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
+    /* Ensure Bootstrap pills activate correctly when the side buttons are clicked */
+    document.querySelectorAll('.demographics-nav .nav-link').forEach(function(el) {
+        el.addEventListener('click', function (e) {
+            const bsTab = bootstrap.Tab.getOrCreateInstance(this);
+            bsTab.show();
+            const targetPane = document.querySelector(this.getAttribute('data-bs-target'));
+            if (targetPane) {
+                targetPane.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+
     new DemographicsManager();
 });
 

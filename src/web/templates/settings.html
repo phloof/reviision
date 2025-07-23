@@ -6,147 +6,6 @@
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/shared-page-styles.css') }}">
-<style>
-    .settings-nav {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        padding: 1rem;
-    }
-    
-    .settings-nav .nav-link {
-        border-radius: 8px;
-        color: #6c757d;
-        font-weight: 500;
-        padding: 0.75rem 1rem;
-        margin-bottom: 0.5rem;
-        transition: all 0.3s ease;
-    }
-    
-    .settings-nav .nav-link:hover {
-        background: #f8f9fa;
-        color: #495057;
-    }
-    
-    .settings-nav .nav-link.active {
-        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-        color: white;
-    }
-    
-    .settings-section {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        padding: 2rem;
-        margin-bottom: 2rem;
-    }
-    
-    .section-title {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #2c3e50;
-        margin-bottom: 1.5rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid #e9ecef;
-    }
-    
-    .form-group {
-        margin-bottom: 1.5rem;
-    }
-    
-    .form-label {
-        font-weight: 500;
-        color: #495057;
-        margin-bottom: 0.5rem;
-    }
-    
-    .form-control, .form-select {
-        border-radius: 8px;
-        border: 1px solid #dee2e6;
-        padding: 0.75rem;
-        transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    }
-    
-    .form-control:focus, .form-select:focus {
-        border-color: #3498db;
-        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
-    }
-    
-    .btn {
-        border-radius: 8px;
-        padding: 0.75rem 1.5rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-    
-    .btn-primary {
-        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-        border: none;
-    }
-    
-    .btn-success {
-        background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
-        border: none;
-    }
-    
-    .btn-danger {
-        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-        border: none;
-    }
-    
-    .btn-warning {
-        background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
-        border: none;
-        color: white;
-    }
-    
-    .admin-only-section {
-        border: 2px solid #e74c3c;
-        border-radius: 12px;
-        padding: 1.5rem;
-        background: linear-gradient(135deg, rgba(231, 76, 60, 0.1) 0%, rgba(192, 57, 43, 0.1) 100%);
-    }
-    
-    .admin-badge {
-        background: #e74c3c;
-        color: white;
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.875rem;
-        font-weight: 500;
-    }
-    
-    .alert {
-        border-radius: 8px;
-        border: none;
-    }
-    
-    .spinner-border-sm {
-        width: 1rem;
-        height: 1rem;
-    }
-    
-    .data-management-buttons {
-        display: flex;
-        gap: 1rem;
-        flex-wrap: wrap;
-    }
-    
-    .data-management-buttons .btn {
-        flex: 1;
-        min-width: 200px;
-    }
-    
-    @media (max-width: 768px) {
-        .data-management-buttons {
-            flex-direction: column;
-        }
-        
-        .data-management-buttons .btn {
-            width: 100%;
-        }
-    }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -197,7 +56,7 @@
                 <div class="tab-pane fade show active" id="v-pills-camera" role="tabpanel">
                     <div class="settings-section">
                         <h3 class="section-title">
-                            <i class="fas fa-video me-2"></i>Camera Configuration
+                            <span><i class="fas fa-video me-2"></i>Camera Configuration</span>
                         </h3>
                         
                         <form id="camera-form">
@@ -290,7 +149,7 @@
                 <div class="tab-pane fade" id="v-pills-detection" role="tabpanel">
                     <div class="settings-section">
                         <h3 class="section-title">
-                            <i class="fas fa-search me-2"></i>Detection Configuration
+                            <span><i class="fas fa-search me-2"></i>Detection Configuration</span>
                         </h3>
                         
                         <form id="detection-form">
@@ -331,7 +190,7 @@
                 <div class="tab-pane fade" id="v-pills-tracking" role="tabpanel">
                     <div class="settings-section">
                         <h3 class="section-title">
-                            <i class="fas fa-route me-2"></i>Tracking Configuration
+                            <span><i class="fas fa-route me-2"></i>Tracking Configuration</span>
                         </h3>
                         
                         <form id="tracking-form">
@@ -367,7 +226,7 @@
                 <div class="tab-pane fade" id="v-pills-analysis" role="tabpanel">
                     <div class="settings-section">
                         <h3 class="section-title">
-                            <i class="fas fa-chart-line me-2"></i>Analysis Configuration
+                            <span><i class="fas fa-chart-line me-2"></i>Analysis Configuration</span>
                         </h3>
                         
                         <form id="analysis-form">
@@ -415,7 +274,7 @@
                 <div class="tab-pane fade" id="v-pills-database" role="tabpanel">
                     <div class="settings-section">
                         <h3 class="section-title">
-                            <i class="fas fa-database me-2"></i>Database Management
+                            <span><i class="fas fa-database me-2"></i>Database Management</span>
                         </h3>
                         
                         <!-- Admin Only Data Management -->
@@ -475,7 +334,7 @@
                 <div class="tab-pane fade" id="v-pills-system" role="tabpanel">
                     <div class="settings-section">
                         <h3 class="section-title">
-                            <i class="fas fa-cogs me-2"></i>System Configuration
+                            <span><i class="fas fa-cogs me-2"></i>System Configuration</span>
                         </h3>
                         
                         <form id="system-form">

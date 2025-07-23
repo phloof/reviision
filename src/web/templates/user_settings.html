@@ -5,953 +5,146 @@
 {% block header %}User Settings{% endblock %}
 
 {% block styles %}
-<style>
-    .user-settings-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 2rem;
-    }
-
-    .user-info-card {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-radius: 16px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        border: 1px solid #dee2e6;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    .user-info-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-    }
-
-    .user-info-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-        padding: 1rem;
-        background: rgba(255, 255, 255, 0.7);
-        border-radius: 12px;
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        transition: all 0.3s ease;
-    }
-
-    .user-info-item:hover {
-        background: rgba(255, 255, 255, 0.9);
-        transform: translateX(5px);
-    }
-
-    .user-info-item:last-child {
-        margin-bottom: 0;
-    }
-
-    .user-info-label {
-        font-weight: 600;
-        color: #2c3e50;
-        font-size: 1.1rem;
-        display: flex;
-        align-items: center;
-    }
-
-    .user-info-label i {
-        margin-right: 0.8rem;
-        color: #3498db;
-        font-size: 1.2rem;
-    }
-
-    .user-info-value {
-        color: #34495e;
-        font-weight: 500;
-        font-size: 1rem;
-        padding: 0.5rem 1rem;
-        background: rgba(52, 152, 219, 0.1);
-        border-radius: 8px;
-        border: 1px solid rgba(52, 152, 219, 0.2);
-    }
-
-    /* Enhanced Card Styling */
-    .card {
-        border: none;
-        border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        margin-bottom: 2rem;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        background: #ffffff;
-    }
-
-    .card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-    }
-
-    .card-header {
-        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-        color: white;
-        font-weight: 600;
-        font-size: 1.2rem;
-        padding: 1.5rem 2rem;
-        border-radius: 16px 16px 0 0 !important;
-        border: none;
-        display: flex;
-        align-items: center;
-    }
-
-    .card-header i {
-        margin-right: 0.8rem;
-        font-size: 1.3rem;
-    }
-
-    .card-body {
-        padding: 2rem;
-    }
-
-    /* Enhanced Form Controls */
-    .form-group {
-        margin-bottom: 2rem;
-        position: relative;
-    }
-
-    .form-group label {
-        font-weight: 600;
-        color: #2c3e50;
-        font-size: 1.1rem;
-        margin-bottom: 0.8rem;
-        display: flex;
-        align-items: center;
-        transition: color 0.3s ease;
-    }
-
-    .form-group label i {
-        margin-right: 0.8rem;
-        color: #3498db;
-        font-size: 1.2rem;
-    }
-
-    .form-control {
-        height: 60px;
-        border: 2px solid #e1e8ed;
-        border-radius: 12px;
-        padding: 1rem 1.5rem;
-        font-size: 1.1rem;
-        font-weight: 500;
-        color: #2c3e50;
-        background: #ffffff;
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    }
-
-    .form-control:focus {
-        outline: none;
-        border-color: #3498db;
-        box-shadow: 
-            0 2px 8px rgba(0, 0, 0, 0.05),
-            0 0 0 4px rgba(52, 152, 219, 0.15);
-        transform: translateY(-2px);
-        background: #f8fafe;
-    }
-
-    .form-control::placeholder {
-        color: #95a5a6;
-        font-weight: 400;
-    }
-
-    /* Password Requirements Styling */
-    .password-requirements {
-        background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 193, 7, 0.05) 100%);
-        border: 2px solid rgba(255, 193, 7, 0.3);
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin-top: 1rem;
-        font-size: 1rem;
-        display: none;
-        transition: all 0.3s ease;
-    }
-
-    .password-requirements.show {
-        display: block;
-        animation: slideDown 0.3s ease;
-    }
-
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .requirement {
-        margin: 0.8rem 0;
-        display: flex;
-        align-items: center;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-
-    .requirement-icon {
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 1rem;
-        font-weight: bold;
-        font-size: 0.9rem;
-        transition: all 0.3s ease;
-        background: #e74c3c;
-        color: white;
-    }
-
-    .requirement.valid .requirement-icon {
-        background: #27ae60;
-        transform: scale(1.1);
-    }
-
-    .requirement.valid {
-        color: #27ae60;
-    }
-
-    /* Override main CSS file ::before content to prevent duplication */
-    .requirement::before {
-        content: none !important;
-    }
-
-    .requirement.met::before {
-        content: none !important;
-    }
-
-    /* Enhanced Button Styling */
-    .btn-action {
-        height: 50px;
-        border-radius: 12px;
-        font-size: 1rem;
-        font-weight: 600;
-        padding: 0 1.5rem;
-        border: none;
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-transform: none;
-        letter-spacing: 0.025em;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-primary {
-        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-        color: white;
-        box-shadow: 0 4px 16px rgba(52, 152, 219, 0.3);
-    }
-
-    .btn-primary:hover:not(:disabled) {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
-        background: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
-    }
-
-    .btn-primary:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-        transform: none;
-        background: #95a5a6;
-    }
-
-    .loading-spinner {
-        width: 20px;
-        height: 20px;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        border-top-color: white;
-        animation: spin 1s linear infinite;
-        margin-right: 0.8rem;
-        display: none;
-    }
-
-    .loading-spinner.show {
-        display: block;
-    }
-
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    /* Alert Styling */
-    .alert {
-        border-radius: 12px;
-        border: none;
-        padding: 1.2rem 1.5rem;
-        margin-bottom: 1.5rem;
-        font-weight: 500;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    }
-
-    .alert-success {
-        background: linear-gradient(135deg, rgba(39, 174, 96, 0.15) 0%, rgba(39, 174, 96, 0.1) 100%);
-        color: #27ae60;
-        border: 2px solid rgba(39, 174, 96, 0.3);
-    }
-
-    .alert-danger {
-        background: linear-gradient(135deg, rgba(231, 76, 60, 0.15) 0%, rgba(231, 76, 60, 0.1) 100%);
-        color: #e74c3c;
-        border: 2px solid rgba(231, 76, 60, 0.3);
-    }
-
-    .alert-warning {
-        background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 193, 7, 0.1) 100%);
-        color: #f39c12;
-        border: 2px solid rgba(255, 193, 7, 0.3);
-    }
-
-    .modal-content {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-        border: none;
-        overflow: hidden;
-    }
-
-    .modal-header {
-        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-        color: white;
-        border: none;
-        padding: 2rem;
-    }
-
-    .modal-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-    }
-
-    .modal-title i {
-        margin-right: 1rem;
-        font-size: 1.8rem;
-    }
-
-    .modal-body {
-        padding: 2rem;
-        font-size: 1.1rem;
-        line-height: 1.6;
-        color: #2c3e50;
-    }
-
-    .modal-footer {
-        padding: 1.5rem 2rem;
-        border: none;
-        background: #f8f9fa;
-    }
-
-    /* Change Password Modal */
-    #changePasswordModal .modal-dialog {
-        max-width: 600px;
-        width: 90%;
-        margin: 1.75rem auto;
-    }
-
-    #changePasswordModal .modal-header {
-        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-        padding: 1.5rem 2rem;
-    }
-
-    #changePasswordModal .modal-title {
-        font-size: 1.25rem;
-        font-weight: 600;
-        margin: 0;
-    }
-
-    #changePasswordModal .modal-title i {
-        color: #fff;
-        margin-right: 0.75rem;
-        font-size: 1.3rem;
-    }
-
-    #changePasswordModal .modal-body {
-        max-height: 70vh;
-        overflow-y: auto;
-        padding: 2rem;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    #changePasswordModal .form-group {
-        margin-bottom: 1.5rem;
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-    }
-
-    #changePasswordModal .form-control {
-        height: 55px;
-        font-size: 1rem;
-        padding: 1rem 1.25rem;
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-    }
-
-    #changePasswordModal .password-requirements {
-        margin-top: 0.8rem;
-        padding: 1rem;
-        font-size: 0.9rem;
-    }
-
-    #changePasswordModal .modal-footer {
-        padding: 1.5rem 2rem;
-        border-top: 1px solid #dee2e6;
-        background: #f8f9fa;
-        justify-content: flex-end;
-        gap: 0.75rem;
-    }
-
-    /* Remove any pseudo-elements that might cause white dots */
-    #changePasswordModal *::before,
-    #changePasswordModal *::after {
-        content: none !important;
-    }
-
-    /* Ensure clean modal styling without artifacts */
-    #changePasswordModal .modal-content {
-        border: none;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-        overflow: hidden;
-    }
-
-    #changePasswordModal .modal-header .btn-close {
-        background: none;
-        border: none;
-        color: rgba(255, 255, 255, 0.8);
-        opacity: 1;
-        font-size: 1.1rem;
-        padding: 0.5rem;
-        margin: 0;
-    }
-
-    #changePasswordModal .modal-header .btn-close:hover {
-        color: white;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-    }
-
-    /* Form styling within modal */
-    #changePasswordModal .form-group {
-        margin-bottom: 1.5rem;
-    }
-
-    #changePasswordModal .form-control {
-        height: 50px;
-        font-size: 1rem;
-        padding: 0.75rem 1rem;
-        border: 2px solid #e1e8ed;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-    }
-
-    #changePasswordModal .form-control:focus {
-        border-color: #3498db;
-        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-        .user-settings-container {
-            padding: 1rem;
-        }
-
-        .card-body {
-            padding: 1.5rem;
-        }
-
-        .user-info-card {
-            padding: 1.5rem;
-        }
-
-        .form-control,
-        .btn-action {
-            height: 55px;
-            font-size: 1rem;
-        }
-
-        .user-info-item {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.5rem;
-        }
-
-        .user-info-label,
-        .user-info-value {
-            width: 100%;
-        }
-
-        /* Mobile modal adjustments */
-        #changePasswordModal .modal-dialog {
-            width: 95%;
-            margin: 1rem auto;
-        }
-
-        #changePasswordModal .modal-body {
-            padding: 1.5rem;
-        }
-
-        #changePasswordModal .modal-header {
-            padding: 1.25rem 1.5rem;
-        }
-
-        #changePasswordModal .modal-footer {
-            padding: 1.25rem 1.5rem;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        #changePasswordModal .btn {
-            width: 100%;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .user-settings-container {
-            padding: 0.5rem;
-        }
-
-        #changePasswordModal .modal-dialog {
-            width: 98%;
-            margin: 0.5rem auto;
-        }
-
-        #changePasswordModal .modal-body {
-            padding: 1rem;
-        }
-
-        #changePasswordModal .modal-header {
-            padding: 1rem;
-        }
-
-        #changePasswordModal .modal-footer {
-            padding: 1rem;
-        }
-
-        #changePasswordModal .modal-title {
-            font-size: 1.1rem;
-        }
-
-        .card-header {
-            padding: 1rem 1.5rem;
-            font-size: 1.1rem;
-        }
-
-        .card-body {
-            padding: 1rem;
-        }
-
-        .user-info-card {
-            padding: 1rem;
-        }
-    }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-page-styles.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="user-settings-container">
-    <div class="row">
-        <!-- Account Information Card -->
-        <div class="col-lg-6 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-user-circle"></i>
-                    Account Information
-                </div>
-                <div class="card-body">
-                    <div class="user-info-card">
-                        <div class="user-info-item">
-                            <span class="user-info-label">
-                                <i class="fas fa-user"></i>
-                                Username:
-                            </span>
-                            <span class="user-info-value" id="username">Loading...</span>
-                        </div>
-                        <div class="user-info-item">
-                            <span class="user-info-label">
-                                <i class="fas fa-shield-alt"></i>
-                                Role:
-                            </span>
-                            <span class="user-info-value" id="userRole">Loading...</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Account -->
+            <section id="accountSection" class="mb-4">
+                <div class="modern-card">
+                    <div class="modern-card-header white-header"><i class="fas fa-user-circle me-2"></i>Account Information</div>
+                    <div class="modern-card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold"><i class="fas fa-user me-1"></i>Username</label>
+                                <input type="text" class="form-control" id="username" disabled>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold"><i class="fas fa-shield-alt me-1"></i>Role</label>
+                                <input type="text" class="form-control" id="userRole" disabled>
+                            </div>
+                        </div> <!-- end row -->
 
-        <!-- Password Change Card -->
-        <div class="col-lg-6 mb-4">
-            <div class="card" id="passwordSection">
-                <div class="card-header">
-                    <i class="fas fa-lock"></i>
-                    Password Settings
-                </div>
-                <div class="card-body">
-                    <div class="user-info-card">
-                        <div class="user-info-item">
-                            <span class="user-info-label">
-                                <i class="fas fa-key"></i>
-                                Password:
-                            </span>
-                            <span class="user-info-value">••••••••••</span>
+                        <div class="text-start mt-3">
+                            <a href="{{ url_for('web.logout') }}" class="btn modern-btn modern-btn-danger">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </a>
                         </div>
-                        <div class="user-info-item">
-                            <span class="user-info-label">
-                                <i class="fas fa-clock"></i>
-                                Last Changed:
-                            </span>
-                            <span class="user-info-value">System managed</span>
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <button type="button" class="btn btn-primary btn-action w-100" onclick="openChangePasswordModal()">
-                            <i class="fas fa-lock me-2"></i>
-                            Change Password
-                        </button>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
+            </section>
 
-
-<!-- Change Password Modal -->
-<div id="changePasswordModal" class="modal fade" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="changePasswordModalLabel">
-                    <i class="fas fa-lock"></i>
-                    Change Password
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="passwordForm">
-                    <div id="passwordAlertContainer"></div>
-                    
-                    <div class="form-group">
-                        <label for="currentPassword">
-                            <i class="fas fa-key"></i>
-                            Current Password:
-                        </label>
-                        <input 
-                            type="password" 
-                            class="form-control" 
-                            id="currentPassword" 
-                            placeholder="Enter your current password"
-                            required
-                        >
+            <!-- Password -->
+            <section id="passwordSection">
+                <div class="modern-card">
+                    <div class="modern-card-header white-header"><i class="fas fa-lock me-2"></i>Password</div>
+                    <div class="modern-card-body">
+                        <form id="passwordForm" class="row g-3">
+                            <div class="col-12"><div id="passwordAlertContainer"></div></div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="currentPassword"><i class="fas fa-key me-1"></i>Current Password</label>
+                                <input type="password" class="form-control" id="currentPassword" required>
+                            </div>
+                            <div class="col-md-6"></div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="newPassword"><i class="fas fa-lock me-1"></i>New Password</label>
+                                <input type="password" class="form-control" id="newPassword" required>
+                                <div class="password-requirements border rounded p-3 mt-2 bg-light small" id="pwd-req" style="display:none;">
+                                    <div id="req-length" class="mb-1"><i class="fas fa-times text-danger me-1"></i> At least 8 characters</div>
+                                    <div id="req-upper" class="mb-1"><i class="fas fa-times text-danger me-1"></i> One uppercase letter</div>
+                                    <div id="req-lower" class="mb-1"><i class="fas fa-times text-danger me-1"></i> One lowercase letter</div>
+                                    <div id="req-digit" class="mb-1"><i class="fas fa-times text-danger me-1"></i> One number</div>
+                                    <div id="req-special"><i class="fas fa-times text-danger me-1"></i> One special character</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="confirmPassword"><i class="fas fa-check-double me-1"></i>Confirm New Password</label>
+                                <input type="password" class="form-control" id="confirmPassword" required>
+                            </div>
+                            <div class="col-12 text-start mt-3">
+                                <button type="submit" class="btn modern-btn modern-btn-primary" id="savePwdBtn"><i class="fas fa-save me-2"></i>Save Password</button>
+                            </div>
+                        </form>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="newPassword">
-                            <i class="fas fa-lock"></i>
-                            New Password:
-                        </label>
-                        <input 
-                            type="password" 
-                            class="form-control" 
-                            id="newPassword" 
-                            placeholder="Enter a strong new password"
-                            required
-                        >
-                        <div class="password-requirements" id="passwordRequirements">
-                            <div class="requirement" id="req-length">
-                                <span class="requirement-icon">×</span>
-                                <span>At least 8 characters</span>
-                            </div>
-                            <div class="requirement" id="req-uppercase">
-                                <span class="requirement-icon">×</span>
-                                <span>One uppercase letter</span>
-                            </div>
-                            <div class="requirement" id="req-lowercase">
-                                <span class="requirement-icon">×</span>
-                                <span>One lowercase letter</span>
-                            </div>
-                            <div class="requirement" id="req-digit">
-                                <span class="requirement-icon">×</span>
-                                <span>One number</span>
-                            </div>
-                            <div class="requirement" id="req-special">
-                                <span class="requirement-icon">×</span>
-                                <span>One special character</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="confirmPassword">
-                            <i class="fas fa-check-double"></i>
-                            Confirm New Password:
-                        </label>
-                        <input 
-                            type="password" 
-                            class="form-control" 
-                            id="confirmPassword" 
-                            placeholder="Confirm your new password"
-                            required
-                        >
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer justify-content-center">
-                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-2"></i>
-                    Cancel
-                </button>
-                <button type="submit" form="passwordForm" class="btn btn-primary" id="changePasswordBtn" disabled>
-                    <span class="loading-spinner" id="passwordSpinner"></span>
-                    <span id="passwordBtnText">
-                        <i class="fas fa-save me-2"></i>
-                        Change Password
-                    </span>
-                </button>
-            </div>
+                </div>
+            </section>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-class UserSettingsManager {
-    constructor() {
-        this.passwordForm = document.getElementById('passwordForm');
-        this.passwordAlertContainer = document.getElementById('passwordAlertContainer');
-        this.changePasswordBtn = document.getElementById('changePasswordBtn');
-        this.passwordSpinner = document.getElementById('passwordSpinner');
-        this.passwordBtnText = document.getElementById('passwordBtnText');
-        this.newPasswordInput = document.getElementById('newPassword');
-        this.confirmPasswordInput = document.getElementById('confirmPassword');
-        this.currentPasswordInput = document.getElementById('currentPassword');
-        
-        this.initializeEventListeners();
-        this.loadUserInfo();
+class SettingsPage{
+    constructor(){
+        this.alertCtn = document.getElementById('passwordAlertContainer');
+        this.initNav();
+        this.loadUser();
+        document.getElementById('passwordForm').addEventListener('submit',e=>this.changePwd(e));
+        // live password validation
+        const np=document.getElementById('newPassword');
+        const cp=document.getElementById('confirmPassword');
+        np.addEventListener('focus',()=>document.getElementById('pwd-req').style.display='block');
+        np.addEventListener('input',()=>this.checkPwd());
+        cp.addEventListener('input',()=>this.checkPwd());
     }
-
-    initializeEventListeners() {
-        // Password form submission
-        this.passwordForm.addEventListener('submit', (e) => this.handlePasswordChange(e));
-        
-        // Password validation
-        this.newPasswordInput.addEventListener('input', () => this.validatePassword());
-        this.confirmPasswordInput.addEventListener('input', () => this.validatePasswordMatch());
-        this.currentPasswordInput.addEventListener('input', () => this.validateForm());
-        
-        // Show/hide password requirements
-        this.newPasswordInput.addEventListener('focus', () => this.showPasswordRequirements());
-        this.newPasswordInput.addEventListener('blur', () => this.hidePasswordRequirements());
+    initNav(){
+        const links=document.querySelectorAll('#settings-nav .nav-link');
+        links.forEach(l=>l.addEventListener('click',ev=>{ev.preventDefault();links.forEach(x=>x.classList.remove('active'));l.classList.add('active');document.querySelector(l.getAttribute('href')).scrollIntoView({behavior:'smooth'});}));
     }
-
-    showPasswordRequirements() {
-        const requirements = document.getElementById('passwordRequirements');
-        requirements.classList.add('show');
+    async loadUser(){
+        const res=await fetch('/api/user_info').then(r=>r.json()).catch(()=>({}));
+        if(res.success){document.getElementById('username').value=res.username;document.getElementById('userRole').value=res.role;}
     }
-
-    hidePasswordRequirements() {
-        const requirements = document.getElementById('passwordRequirements');
-        if (!this.newPasswordInput.value) {
-            requirements.classList.remove('show');
-        }
-    }
-
-    validatePassword() {
-        const password = this.newPasswordInput.value;
-        const requirements = {
-            length: password.length >= 8,
-            uppercase: /[A-Z]/.test(password),
-            lowercase: /[a-z]/.test(password),
-            digit: /\d/.test(password),
-            special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
-        };
-
-        // Update requirement indicators
-        Object.keys(requirements).forEach(req => {
-            const element = document.getElementById(`req-${req}`);
-            const icon = element.querySelector('.requirement-icon');
-            
-            if (requirements[req]) {
-                element.classList.add('valid');
-                icon.textContent = '✓';
-            } else {
-                element.classList.remove('valid');
-                icon.textContent = '×';
-            }
-        });
-
-        this.validateForm();
-        return Object.values(requirements).every(Boolean);
-    }
-
-    validatePasswordMatch() {
-        const newPassword = this.newPasswordInput.value;
-        const confirmPassword = this.confirmPasswordInput.value;
-        
-        if (confirmPassword && newPassword !== confirmPassword) {
-            this.confirmPasswordInput.setCustomValidity('Passwords do not match');
-            this.confirmPasswordInput.style.borderColor = '#e74c3c';
-        } else {
-            this.confirmPasswordInput.setCustomValidity('');
-            this.confirmPasswordInput.style.borderColor = newPassword === confirmPassword && confirmPassword ? '#27ae60' : '#e1e8ed';
-        }
-        
-        this.validateForm();
-    }
-
-    validateForm() {
-        const currentPassword = this.currentPasswordInput.value;
-        const newPassword = this.newPasswordInput.value;
-        const confirmPassword = this.confirmPasswordInput.value;
-        
-        const isValid = currentPassword && 
-                       this.validatePassword() && 
-                       newPassword === confirmPassword && 
-                       newPassword !== currentPassword;
-        
-        this.changePasswordBtn.disabled = !isValid;
-    }
-
-    async handlePasswordChange(e) {
+    async changePwd(e){
         e.preventDefault();
-        
-        if (!this.validatePassword() || this.newPasswordInput.value !== this.confirmPasswordInput.value) {
-            this.showAlert('Please check all password requirements.', 'danger');
-            return;
-        }
-
-        this.setLoading(true);
-        this.clearAlerts();
-
-        try {
-            const formData = new FormData();
-            formData.append('current_password', this.currentPasswordInput.value);
-            formData.append('new_password', this.newPasswordInput.value);
-            formData.append('confirm_password', this.confirmPasswordInput.value);
-
-            const response = await fetch('/change_password', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                this.showAlert('Password changed successfully!', 'success');
-                this.passwordForm.reset();
-                this.validateForm();
-                
-                // Hide change password modal
-                const changePasswordModal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
-                if (changePasswordModal) {
-                    changePasswordModal.hide();
-                }
-                
-            } else {
-                this.showAlert(data.message || 'Failed to change password. Please try again.', 'danger');
+        const form = e.target;
+        const data = new FormData(form);
+        const btn = document.getElementById('savePwdBtn');
+        btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+        this.alert('','');
+        const res = await fetch('/change_password',{method:'POST',body:data,headers:{'X-Requested-With':'XMLHttpRequest'}}).then(r=>r.json()).catch(()=>({success:false,message:'Network error'}));
+        if(res.success){this.alert('Password updated!','success');form.reset();}
+        else{this.alert(res.message||'Error','danger');}
+        btn.disabled=false;btn.innerHTML='<i class="fas fa-save me-2"></i>Save Password';
+    }
+    alert(msg,type){
+        this.alertCtn.innerHTML = msg?`<div class="alert alert-${type} alert-dismissible fade show" role="alert">${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`:'';
+    }
+    checkPwd(){
+        const pwd=document.getElementById('newPassword').value;
+        const confirm=document.getElementById('confirmPassword').value;
+        const rules={
+            length:pwd.length>=8,
+            upper:/[A-Z]/.test(pwd),
+            lower:/[a-z]/.test(pwd),
+            digit:/\d/.test(pwd),
+            special:/[!@#$%^&*(),.?":{}|<>]/.test(pwd)
+        };
+        for(const [k,v] of Object.entries(rules)){
+            const row=document.getElementById(`req-${k==='length'? 'length':k}`);
+            if(!row) continue;
+            const icon=row.querySelector('i');
+            if(v){
+                icon.classList.remove('fa-times','text-danger');
+                icon.classList.add('fa-check','text-success');
+                row.classList.add('valid');
+            }else{
+                icon.classList.remove('fa-check','text-success');
+                icon.classList.add('fa-times','text-danger');
+                row.classList.remove('valid');
             }
-        } catch (error) {
-            console.error('Password change error:', error);
-            this.showAlert('Network error. Please try again.', 'danger');
-        } finally {
-            this.setLoading(false);
         }
+        const btn=document.getElementById('savePwdBtn');
+        btn.disabled=!(Object.values(rules).every(Boolean) && pwd===confirm && confirm.length>0);
+        const box=document.getElementById('pwd-req');
+        if(Object.values(rules).every(Boolean)) box.classList.add('all-valid'); else box.classList.remove('all-valid');
     }
-
-    setLoading(isLoading) {
-        this.changePasswordBtn.disabled = isLoading;
-        
-        if (isLoading) {
-            this.passwordSpinner.classList.add('show');
-            this.passwordBtnText.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Changing Password...';
-        } else {
-            this.passwordSpinner.classList.remove('show');
-            this.passwordBtnText.innerHTML = '<i class="fas fa-save me-2"></i>Change Password';
-        }
-    }
-
-    showAlert(message, type = 'danger') {
-        const alertHtml = `
-            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle'} me-2"></i>
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        `;
-        this.passwordAlertContainer.innerHTML = alertHtml;
-
-        // Auto-dismiss success alerts
-        if (type === 'success') {
-            setTimeout(() => this.clearAlerts(), 4000);
-        }
-    }
-
-    clearAlerts() {
-        this.passwordAlertContainer.innerHTML = '';
-    }
-
-    async loadUserInfo() {
-        try {
-            const response = await fetch('/api/user_info');
-            const data = await response.json();
-            
-            if (data.success) {
-                document.getElementById('username').textContent = data.username || 'Unknown';
-                document.getElementById('userRole').textContent = data.role || 'User';
-            } else {
-                console.error('Failed to load user info:', data.message);
-            }
-        } catch (error) {
-            console.error('Error loading user info:', error);
-        }
-    }
-
 }
 
-// Global functions for modals
-function openChangePasswordModal() {
-    const modal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
-    modal.show();
-    
-    // Clear form when opening
-    document.getElementById('passwordForm').reset();
-    const alertContainer = document.getElementById('passwordAlertContainer');
-    if (alertContainer) {
-        alertContainer.innerHTML = '';
-    }
-    
-    // Reset password requirements display
-    const requirements = document.getElementById('passwordRequirements');
-    if (requirements) {
-        requirements.classList.remove('show');
-    }
-    
-    // Focus on first input after modal is shown
-    setTimeout(() => {
-        document.getElementById('currentPassword').focus();
-    }, 300);
-}
-
-
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    new UserSettingsManager();
-});
+document.addEventListener('DOMContentLoaded',()=>new SettingsPage());
 </script>
 {% endblock %}

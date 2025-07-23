@@ -455,3 +455,63 @@
         line-height: 1.4;
     }
 }
+
+/* ====================================
+   Vertical Navigation Component
+   Reusable sidebar/section filter styling
+   ==================================== */
+.vertical-nav {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+    margin-bottom: 2rem;
+}
+
+.vertical-nav .nav-link {
+    border-radius: 8px;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.vertical-nav .nav-link:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.vertical-nav .nav-link.active {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: #ffffff;
+}
+
+/* ====================================
+   White Header Variant (Demographics-style)
+   ==================================== */
+.white-header{
+    background:#ffffff!important;
+    color:#2c3e50!important;
+    border-bottom:2px solid #e9ecef;
+}
+.white-header i{
+    color:#3498db!important;
+    margin-right:0.6rem;
+}
+
+/* Password requirement colours */
+.password-requirements div.valid{
+    color:#27ae60;
+}
+.password-requirements div.valid i{
+    color:#27ae60!important;
+}
+/* Password box border state */
+.password-requirements{
+    border:2px solid #e74c3c;
+}
+.password-requirements.all-valid{
+    border-color:#27ae60;
+    background:rgba(39,174,96,0.05);
+}

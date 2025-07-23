@@ -34,6 +34,15 @@ from .auth import require_auth, require_admin, require_manager
 # Create a Blueprint for web routes
 web_bp = Blueprint('web', __name__, template_folder='templates')
 
+# Favicon route
+@web_bp.route('/favicon.ico')
+def favicon():
+    """Serve favicon for browsers requesting /favicon.ico"""
+    from flask import send_from_directory
+    import os
+    icon_path = os.path.join(os.path.dirname(__file__), 'static', 'img')
+    return send_from_directory(icon_path, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
 def get_config_manager():
     """
     Get a properly configured ConfigManager instance

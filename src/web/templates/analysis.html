@@ -2,258 +2,17 @@
 
 {% block title %}Analysis{% endblock %}
 
-{% block extra_css %}
-<style>
-    .analysis-container {
-        height: calc(100vh - 100px);
-        overflow: hidden;
-    }
-    
-    .feed-container {
-        position: relative;
-        background: #000;
-        border-radius: 8px;
-        overflow: hidden;
-        min-height: 500px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid var(--border-color);
-    }
-    
-    .feed-placeholder {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
-        color: #666;
-        font-size: 18px;
-        position: relative;
-    }
-    
-    .feed-label {
-        position: absolute;
-        top: 8px;
-        left: 10px;
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        font-size: 0.8rem;
-        font-weight: 600;
-        padding: 4px 8px;
-        border-radius: 4px;
-        z-index: 21;
-        letter-spacing: 0.5px;
-    }
-    
-    /* Original feed as picture-in-picture */
-    .original-pip {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        width: 240px;
-        height: 160px;
-        background: #1f2937;
-        border: 3px solid rgba(255, 255, 255, 0.9);
-        border-radius: 8px;
-        z-index: 20;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0.95;
-        transition: var(--transition);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-        backdrop-filter: blur(5px);
-    }
-    
-    .original-pip:hover {
-        opacity: 1;
-        border-color: var(--accent-color);
-        transform: scale(1.05);
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
-    }
-    
-    .original-pip .feed-label {
-        top: 5px;
-        left: 8px;
-        font-size: 0.75rem;
-    }
-    
-    .video-frame {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    
-    .overlay-container {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 10;
-    }
-    
-    /* Person detection elements */
-    .person-element {
-        position: absolute;
-        box-sizing: border-box;
-        pointer-events: none;
-        z-index: 20;
-        transition: all 0.1s ease;
-    }
-    
-    .person-label {
-        position: absolute;
-        top: -25px;
-        left: 0;
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-size: 11px;
-        font-weight: bold;
-        white-space: nowrap;
-        z-index: 30;
-        pointer-events: none;
-    }
-    
-    .facial-label {
-        top: -50px;
-        background: rgba(255, 153, 0, 0.9);
-        color: white;
-    }
-    
-    .dwell-label {
-        background: rgba(255, 0, 255, 0.9);
-        color: white;
-    }
-    
-    /* Overlay elements */
-    .heatmap-canvas {
-        position: absolute;
-        top: 0;
-        left: 0;
-        pointer-events: none;
-        z-index: 5;
-    }
-    
-    .path-canvas {
-        position: absolute;
-        top: 0;
-        left: 0;
-        pointer-events: none;
-        z-index: 15;
-    }
-    
-    .demographic-overlay,
-    .path-legend,
-    .dwell-summary {
-        z-index: 25;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    
-    .timer-circle {
-        z-index: 35;
-        pointer-events: none;
-    }
-    
-    .controls-panel {
-        background: #f8f9fa;
-        border-radius: 8px;
-        padding: 15px;
-        margin-bottom: 20px;
-    }
-    
-    .stats-panel {
-        padding: 8px 0;
-        border-bottom: 1px solid #eee;
-    }
-    
-    .stats-panel:last-child {
-        border-bottom: none;
-    }
-    
-    .chart-container {
-        position: relative;
-        width: 100%;
-        height: 300px;
-    }
-    
-    .overlay-controls {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 15px;
-        align-items: center;
-    }
-    
-    .form-check-inline {
-        margin-right: 15px;
-    }
-    
-    #overlay-specific-options {
-        margin-top: 15px;
-        padding-top: 15px;
-        border-top: 1px solid #ddd;
-    }
-    
-    #overlay-specific-options h6 {
-        color: #495057;
-        margin-bottom: 10px;
-    }
-    
-    /* Responsive adjustments */
-    @media (max-width: 991.98px) {
-        .original-pip {
-            width: 200px;
-            height: 130px;
-        }
-        
-        .feed-container {
-            min-height: 450px;
-        }
-    }
-    
-    @media (max-width: 767.98px) {
-        .original-pip {
-            width: 160px;
-            height: 100px;
-            top: 15px;
-            right: 15px;
-        }
-        
-        .original-pip .feed-label {
-            font-size: 0.65rem;
-            padding: 2px 6px;
-        }
-        
-        .feed-container {
-            min-height: 350px;
-        }
-    }
-    
-    @media (max-width: 575.98px) {
-        .original-pip {
-            width: 120px;
-            height: 75px;
-            top: 10px;
-            right: 10px;
-        }
-        
-        .feed-container {
-            min-height: 300px;
-        }
-    }
-</style>
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-page-styles.css') }}">
 {% endblock %}
+
+{% block header %}Camera Analysis{% endblock %}
 
 {% block content %}
 <div class="row mb-3">
     <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="modern-card">
+            <div class="modern-card-header white-header d-flex justify-content-between align-items-center">
                 <span>Camera Feed Control</span>
                 <div>
                     <button class="btn btn-sm btn-outline-primary" id="start-analysis">Start Analysis</button>
@@ -270,11 +29,11 @@
 <!-- Single Video Container with Picture-in-Picture -->
 <div class="row">
     <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="modern-card">
+            <div class="modern-card-header white-header d-flex justify-content-between align-items-center">
                 <h3 class="mb-0">Live Analysis Feed</h3>
             </div>
-            <div class="card-body p-0">
+            <div class="modern-card-body p-0">
                 <div class="feed-container">
                     <!-- Original feed (small picture-in-picture) -->
                     <div id="original-feed" class="original-pip">
@@ -303,9 +62,9 @@
 
 <div class="row mt-3">
     <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">Overlay Controls</div>
-            <div class="card-body">
+        <div class="modern-card">
+            <div class="modern-card-header white-header">Overlay Controls</div>
+            <div class="modern-card-body">
                 <div class="overlay-controls">
                     <div class="mb-3">
                         <h6>Visualization Overlays</h6>
@@ -397,9 +156,9 @@
     </div>
     
     <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">Real-time Statistics</div>
-            <div class="card-body">
+        <div class="modern-card">
+            <div class="modern-card-header white-header">Real-time Statistics</div>
+            <div class="modern-card-body">
                 <div class="stats-panel">
                     <strong>Current View:</strong> <span id="current-camera">Main Entrance</span>
                 </div>
@@ -422,9 +181,9 @@
 
 <div class="row mt-3">
     <div class="col-12">
-        <div class="card">
-            <div class="card-header">Historical Data</div>
-            <div class="card-body">
+        <div class="modern-card">
+            <div class="modern-card-header white-header">Historical Data</div>
+            <div class="modern-card-body">
                 <div class="chart-container" style="height: 300px;">
                     <canvas id="historyChart"></canvas>
                 </div>

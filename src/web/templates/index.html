@@ -6,698 +6,197 @@
 
 {% block styles %}
 <style>
-    /* Enhanced Dashboard Styling */
-    .dashboard-container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 1.5rem;
-    }
-
-    /* Enhanced Card Styling */
-    .card {
-        border: none;
-        border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        margin-bottom: 2rem;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        background: #ffffff;
-        overflow: hidden;
-    }
-
-    .card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-    }
-
-    .card-header {
-        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
-        color: white;
-        font-weight: 600;
-        font-size: 1.2rem;
-        padding: 1.5rem 2rem;
-        border-radius: 16px 16px 0 0 !important;
-        border: none;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .card-header h3 {
-        margin: 0;
-        font-size: 1.2rem;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-    }
-
-    .card-header h3 i {
-        margin-right: 0.8rem;
-        font-size: 1.3rem;
-    }
-
-    .card-body {
-        padding: 2rem;
-    }
-
-    /* Enhanced Statistics Cards */
-    .stat-card {
-        border: none;
-        border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        border: 1px solid rgba(30, 58, 138, 0.1);
-        overflow: hidden;
-        position: relative;
-    }
-
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-    }
-
-    .stat-card:hover {
-        transform: translateY(-5px) scale(1.02);
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-        border-color: rgba(30, 58, 138, 0.2);
-    }
-
-    .stat-card .card-body {
-        padding: 2rem 1.5rem;
-        text-align: center;
-        position: relative;
-    }
-
-    .stat-card i {
-        margin-bottom: 1rem;
-        padding: 1rem;
-        border-radius: 50%;
-        background: linear-gradient(135deg, rgba(52, 152, 219, 0.1) 0%, rgba(52, 152, 219, 0.05) 100%);
-        width: 80px;
-        height: 80px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1.5rem;
-        transition: all 0.3s ease;
-    }
-
-    .stat-card:hover i {
-        transform: scale(1.1);
-        background: linear-gradient(135deg, rgba(52, 152, 219, 0.15) 0%, rgba(52, 152, 219, 0.1) 100%);
-    }
-
-    .stat-value {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #1e3a8a;
-        margin-bottom: 0.5rem;
-        line-height: 1;
-    }
-
-    .stat-label {
-        font-size: 1rem;
-        color: #6b7280;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-        line-height: 1.2;
-        padding: 0 0.5rem;
-    }
-
-    /* Chart Container Enhancement */
-    .chart-container {
-        position: relative;
-        width: 100%;
-        min-height: 400px;
-        padding: 1rem;
-        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    /* Reuse demographics selector styling */
+    .demographics-nav {
+        background: white;
         border-radius: 12px;
-        margin: 1rem 0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 1rem;
+        margin-bottom: 2rem;
     }
 
-    /* Enhanced Grid Layout */
-    .stats-grid {
-        margin-bottom: 3rem;
+    .form-label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 0.5rem;
     }
 
-    .stats-grid .col-xl-3,
-    .stats-grid .col-lg-6,
-    .stats-grid .col-md-6 {
-        margin-bottom: 1.5rem;
-    }
-
-    /* Enhanced Tooltips */
-    .tooltip {
-        position: relative;
-        display: inline-block;
-        cursor: help;
-    }
-
-    .tooltip i {
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 1.1rem;
-        transition: color 0.3s ease;
-    }
-
-    .tooltip:hover i {
-        color: white;
-    }
-
-    .tooltip-text {
-        visibility: hidden;
-        width: 200px;
-        background-color: rgba(0, 0, 0, 0.9);
-        color: white;
-        text-align: center;
+    .form-select {
         border-radius: 8px;
+        border: 1px solid #dee2e6;
         padding: 0.75rem;
-        position: absolute;
-        z-index: 1000;
-        bottom: 125%;
-        right: 0;
-        font-size: 0.9rem;
-        font-weight: 400;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        backdrop-filter: blur(10px);
-    }
-
-    .tooltip:hover .tooltip-text {
-        visibility: visible;
-        opacity: 1;
-    }
-
-    /* Enhanced Loading States */
-    .loading-state {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 200px;
-        color: #6b7280;
-        font-size: 1.1rem;
-    }
-
-    .loading-spinner {
-        width: 24px;
-        height: 24px;
-        border: 3px solid rgba(30, 58, 138, 0.3);
-        border-radius: 50%;
-        border-top-color: #1e3a8a;
-        animation: spin 1s linear infinite;
-        margin-right: 1rem;
-    }
-
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-
-    /* Responsive Enhancements */
-    
-    /* Medium screens and small laptops */
-    @media (max-width: 1199px) and (min-width: 992px) {
-        .stat-label {
-            font-size: 0.9rem;
-            letter-spacing: 0.3px;
-        }
-        
-        .stat-value {
-            font-size: 2.2rem;
-        }
-    }
-    
-    /* Tablets */
-    @media (max-width: 991px) and (min-width: 769px) {
-        .stat-label {
-            font-size: 0.85rem;
-            letter-spacing: 0.2px;
-            padding: 0 0.25rem;
-        }
-        
-        .stat-value {
-            font-size: 2rem;
-        }
-        
-        .stat-card .card-body {
-            padding: 1.8rem 1.2rem;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .dashboard-container {
-            padding: 1rem;
-        }
-
-        .card-body {
-            padding: 1.5rem;
-        }
-
-        .card-header {
-            padding: 1rem 1.5rem;
-            color: white;
-            font-size: 1.1rem;
-        }
-
-        .stat-card .card-body {
-            padding: 1.5rem 1rem;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-        }
-        
-        .stat-label {
-            font-size: 0.85rem;
-            letter-spacing: 0.2px;
-            white-space: normal;
-            overflow: visible;
-            text-overflow: unset;
-            line-height: 1.3;
-            text-align: center;
-        }
-
-        .chart-container {
-            min-height: 300px;
-            padding: 0.5rem;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .card-header h3 {
-            font-size: 1rem;
-        }
-
-        .card-header h3 i {
-            font-size: 1.1rem;
-        }
-
-        .stat-card i {
-            width: 60px;
-            height: 60px;
-            font-size: 1.5rem;
-        }
-
-        .stat-value {
-            font-size: 1.8rem;
-        }
-
-        .stat-label {
-            font-size: 0.8rem;
-            white-space: normal;
-            line-height: 1.4;
-            letter-spacing: 0.1px;
-        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="page-container">
-    <!-- Page Header -->
-    <div class="section-header">
-        <h1 class="section-title">
-            <i class="fas fa-tachometer-alt"></i>
-            Analytics Dashboard
-        </h1>
-        <p class="section-subtitle">Real-time customer insights and system monitoring</p>
-    </div>
-<!-- Statistics Cards Row -->
-<div class="row mb-4 stats-grid">
-    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
-        <div class="stats-card">
-            <div class="card-body text-center">
-                <i class="fas fa-users fa-2x mb-3" style="color: #3498db;"></i>
-                <div class="stat-value" id="total-visitors">--</div>
-                <div class="stat-label">Total Visitors</div>
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Stats Grid (card style) -->
+            {% set stats = [
+                {'icon':'users','label':'Total Visitors','id':'total-visitors','color':'#3498db'},
+                {'icon':'clock','label':'Avg. Dwell (min)','id':'avg-dwell-time','color':'#e74c3c'},
+                {'icon':'percentage','label':'Conversion Rate','id':'conversion-rate','color':'#2ecc71'},
+                {'icon':'venus-mars','label':'M/F Ratio','id':'gender-ratio','color':'#9b59b6'}
+            ] %}
+            <div class="stats-grid mb-4">
+                {% for s in stats %}
+                <div class="stat-card text-center">
+                    <i class="fas fa-{{ s.icon }} fa-2x mb-3" data-color="{{ s.color }}"></i>
+                    <div class="stat-value" id="{{ s.id }}">--</div>
+                    <div class="stat-label">{{ s.label }}</div>
+                </div>
+                {% endfor %}
             </div>
-        </div>
-    </div>
-    
-    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
-        <div class="stats-card">
-            <div class="card-body text-center">
-                <i class="fas fa-clock fa-2x mb-3" style="color: #e74c3c;"></i>
-                <div class="stat-value" id="avg-dwell-time">--</div>
-                <div class="stat-label">Avg. Dwell Time (min)</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
-        <div class="stats-card">
-            <div class="card-body text-center">
-                <i class="fas fa-percentage fa-2x mb-3" style="color: #2ecc71;"></i>
-                <div class="stat-value" id="conversion-rate">--</div>
-                <div class="stat-label">Conversion Rate</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
-        <div class="stats-card">
-            <div class="card-body text-center">
-                <i class="fas fa-venus-mars fa-2x mb-3" style="color: #9b59b6;"></i>
-                <div class="stat-value" id="gender-ratio">--</div>
-                <div class="stat-label">M/F Ratio</div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Traffic Chart Row -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h3>
-                    <i class="fas fa-chart-line"></i>
-                    Store Traffic Over Time
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="trafficChart"></canvas>
+            <!-- Time Range Selector -->
+            <div class="demographics-nav mb-4">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4 col-sm-6">
+                        <label for="time-range" class="form-label">Time Range</label>
+                        <select class="form-select" id="time-range">
+                            <option value="1h">Last Hour</option>
+                            <option value="6h">Last 6 Hours</option>
+                            <option value="24h" selected>Last 24 Hours</option>
+                            <option value="7d">Last 7 Days</option>
+                            <option value="30d">Last 30 Days</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 col-sm-6">
+                        <button class="btn btn-primary w-100 mt-sm-4" id="refreshButton"><i class="fas fa-sync-alt me-2"></i>Refresh Data</button>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
 
-<!-- Demographics Chart Row -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h3>
-                    <i class="fas fa-users"></i>
-                    Demographic Breakdown
-                </h3>
+            <!-- Traffic Chart (clickable to Historical page) -->
+            <div class="demographics-section mb-4 clickable-section" role="link" tabindex="0" data-href="{{ url_for('web.historical') }}" style="cursor:pointer;">
+                <h3 class="section-title"><span><i class="fas fa-chart-line me-2"></i>Store Traffic</span></h3>
+                <div class="chart-container"><canvas id="trafficChart"></canvas></div>
             </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <canvas id="ageChart"></canvas>
-                        </div>
-                        <div class="col-md-6">
-                            <canvas id="genderChart"></canvas>
-                        </div>
+
+            <!-- Demographics Chart (clickable to Demographics page) -->
+            <div class="demographics-section clickable-section" role="link" tabindex="0" data-href="{{ url_for('web.demographics') }}" style="cursor:pointer;">
+                <h3 class="section-title"><span><i class="fas fa-users me-2"></i>Demographics</span></h3>
+                <div class="row">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <div class="chart-container"><canvas id="ageChart"></canvas></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-container"><canvas id="genderChart"></canvas></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-</div> <!-- Close page-container -->
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // ====================================
-    // Dashboard Page JavaScript
-    // ====================================
+// ===== Dashboard Logic (clean version) =====
+const api = {
+    summary: (h) => `/api/analytics/summary?hours=${h}`,
+    traffic: (h) => `/api/analytics/traffic?hours=${h}`
+};
 
-    /**
-     * Initialize dashboard when DOM is loaded
-     */
-    document.addEventListener('DOMContentLoaded', function() {
-        fetchDashboardData();
+// Chart instances to allow destroy/redraw
+let trafficChartInstance, ageChartInstance, genderChartInstance;
+
+function getHours() {
+    const map = { '1h': 1, '6h': 6, '24h': 24, '7d': 168, '30d': 720 };
+    const range = document.getElementById('time-range').value || '24h';
+    return map[range] || 24;
+}
+
+async function refreshDashboard() {
+    const hours = getHours();
+    const [summaryRes, trafficRes] = await Promise.all([
+        fetch(api.summary(hours)).then(r=>r.json()).catch(()=>({success:false})),
+        fetch(api.traffic(hours)).then(r=>r.json()).catch(()=>({success:false}))
+    ]);
+
+    // Update stat cards
+    if (summaryRes.success) {
+        document.getElementById('total-visitors').textContent = (summaryRes.total_visitors||0).toLocaleString();
+        document.getElementById('avg-dwell-time').textContent = summaryRes.avg_dwell_time || '--';
+        document.getElementById('conversion-rate').textContent = summaryRes.conversion_rate ? summaryRes.conversion_rate+'%' : '--';
+        document.getElementById('gender-ratio').textContent = summaryRes.gender_ratio || '--';
+        drawDemographics(summaryRes.age_groups || {}, summaryRes.gender_distribution || {});
+    }
+    drawTraffic(trafficRes);
+}
+
+function drawTraffic(res){
+    const ctx = document.getElementById('trafficChart');
+    if (trafficChartInstance) trafficChartInstance.destroy();
+    const labels = res.success? res.labels : Array(24).fill('');
+    const data = res.success? res.data : Array(24).fill(0);
+    const config={
+        type:'line',
+        data:{labels,datasets:[{label:'Visitors',data,borderColor:'#3498db',backgroundColor:'rgba(52,152,219,.15)',tension:.4}]},
+        options:{responsive:true,maintainAspectRatio:false}
+    };
+    trafficChartInstance = new ChartManager(ctx,config,{filename:'traffic_overview'});
+    attachToolbar('trafficChart',trafficChartInstance);
+}
+function drawDemographics(ageData,genderData){
+    const ageCanvas = document.getElementById('ageChart');
+    const genderCanvas = document.getElementById('genderChart');
+    if(ageChartInstance) ageChartInstance.destroy();
+    if(genderChartInstance) genderChartInstance.destroy();
+    const ageCfg={
+        type:'bar',
+        data:{labels:Object.keys(ageData),datasets:[{label:'Age Groups',data:Object.values(ageData),backgroundColor:'#3498db'}]},
+        options:{responsive:true,maintainAspectRatio:false}
+    };
+    const genderCfg={
+        type:'doughnut',
+        data:{labels:Object.keys(genderData),datasets:[{data:Object.values(genderData),backgroundColor:['#3498db','#e74c3c','#95a5a6']}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}
+    };
+    ageChartInstance=new ChartManager(ageCanvas,ageCfg,{filename:'age_distribution'});
+    genderChartInstance=new ChartManager(genderCanvas,genderCfg,{filename:'gender_distribution'});
+    attachToolbar('ageChart',ageChartInstance);
+    attachToolbar('genderChart',genderChartInstance);
+}
+
+// Toolbar util copied from demographics page
+function attachToolbar(canvasId, chartManager){
+    const canvas=document.getElementById(canvasId);
+    if(!canvas) return;
+    const container=canvas.closest('.chart-container');
+    if(!container || container.querySelector('.chart-toolbar')) return;
+    const tb=document.createElement('div');
+    tb.className='chart-toolbar text-end mt-1';
+    tb.innerHTML=`<button class="btn btn-sm btn-outline-secondary me-1" data-action="png"><i class="fas fa-image"></i></button><button class="btn btn-sm btn-outline-secondary me-1" data-action="csv"><i class="fas fa-file-csv"></i></button><button class="btn btn-sm btn-outline-secondary" data-action="json"><i class="fas fa-code"></i></button>`;
+    container.appendChild(tb);
+    tb.addEventListener('click',ev=>{
+        const btn=ev.target.closest('button');
+        if(!btn) return;
+        const act=btn.getAttribute('data-action');
+        if(act==='png') chartManager.exportPNG();
+        if(act==='csv') chartManager.exportCSV();
+        if(act==='json') chartManager.exportJSON();
     });
+}
 
-    /**
-     * Fetch and display dashboard data
-     */
-    async function fetchDashboardData() {
-        try {
-            // Fetch real analytics data
-            const response = await fetch('/api/analytics/summary?hours=24');
-            const result = await response.json();
-            
-            if (result.success) {
-                // Update dashboard with real data
-                updateDashboardStats({
-                    totalVisitors: result.total_visitors,
-                    avgDwellTime: result.avg_dwell_time,
-                    conversionRate: result.conversion_rate,
-                    genderRatio: result.gender_ratio
-                });
-                
-                // Create charts with real data
-                await createTrafficChart();
-                createDemographicCharts(result.age_groups, result.gender_distribution);
-            } else {
-                // Fallback to placeholder data if API fails
-                console.warn('Failed to fetch real analytics data, using placeholder data');
-                updateDashboardStats({
-                    totalVisitors: 0,
-                    avgDwellTime: 0,
-                    conversionRate: 0,
-                    genderRatio: "0/0"
-                });
-                createTrafficChart();
-                createDemographicCharts();
-            }
-        } catch (error) {
-            console.error('Error fetching dashboard data:', error);
-            // Fallback to placeholder data on error
-            updateDashboardStats({
-                totalVisitors: 0,
-                avgDwellTime: 0,
-                conversionRate: 0,
-                genderRatio: "0/0"
-            });
-            createTrafficChart();
-            createDemographicCharts();
-        }
-    }
-
-    /**
-     * Update dashboard statistics cards
-     */
-    function updateDashboardStats(data) {
-        document.getElementById('total-visitors').textContent = data.totalVisitors.toLocaleString();
-        document.getElementById('avg-dwell-time').textContent = data.avgDwellTime || '--';
-        document.getElementById('conversion-rate').textContent = data.conversionRate ? data.conversionRate + '%' : '--';
-        document.getElementById('gender-ratio').textContent = data.genderRatio;
-    }
-
-    /**
-     * Create the main traffic chart
-     */
-    async function createTrafficChart() {
-        const ctx = document.getElementById('trafficChart').getContext('2d');
-        
-        try {
-            // Fetch real traffic data
-            const response = await fetch('/api/analytics/traffic?hours=24');
-            const result = await response.json();
-            
-            let labels = [];
-            let data = [];
-            
-            if (result.success && result.labels && result.data) {
-                // Use real data
-                labels = result.labels;
-                data = result.data;
-            } else {
-                // Fallback to placeholder data
-                console.warn('Using placeholder traffic data');
-                const now = new Date();
-                for (let i = 23; i >= 0; i--) {
-                    const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-                    labels.push(time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
-                    data.push(0); // Empty data
-                }
-            }
-            
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Visitors',
-                        data: data,
-                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
-                        borderColor: 'rgba(52, 152, 219, 1)',
-                        borderWidth: 2,
-                        tension: 0.4,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: 'rgba(52, 152, 219, 1)',
-                        pointBorderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Number of Visitors'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Time'
-                            }
-                        }
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('Error fetching traffic data:', error);
-            // Create empty chart on error
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['No Data Available'],
-                    datasets: [{
-                        label: 'Visitors',
-                        data: [0],
-                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
-                        borderColor: 'rgba(52, 152, 219, 1)',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Number of Visitors'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-    }
-
-    /**
-     * Create demographic distribution charts
-     */
-    function createDemographicCharts(ageGroups = {}, genderDistribution = {}) {
-        // Prepare age data
-        const defaultAgeGroups = ['18-24', '25-34', '35-44', '45-54', '55+'];
-        const ageLabels = [];
-        const ageData = [];
-        
-        // Use real data if available, otherwise show empty chart
-        if (Object.keys(ageGroups).length > 0) {
-            for (const group of defaultAgeGroups) {
-                if (ageGroups[group]) {
-                    ageLabels.push(group);
-                    ageData.push(ageGroups[group]);
-                }
-            }
-        } else {
-            ageLabels.push('No Data');
-            ageData.push(1);
-        }
-        
-        // Age Distribution Pie Chart
-        const ageCtx = document.getElementById('ageChart').getContext('2d');
-        new Chart(ageCtx, {
-            type: 'pie',
-            data: {
-                labels: ageLabels,
-                datasets: [{
-                    data: ageData,
-                    backgroundColor: [
-                        'rgba(52, 152, 219, 0.7)',
-                        'rgba(46, 204, 113, 0.7)',
-                        'rgba(155, 89, 182, 0.7)',
-                        'rgba(241, 196, 15, 0.7)',
-                        'rgba(230, 126, 34, 0.7)',
-                        'rgba(128, 128, 128, 0.7)' // Gray for "No Data"
-                    ],
-                    borderColor: '#fff',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right'
-                    },
-                    title: {
-                        display: true,
-                        text: 'Age Distribution'
-                    }
-                }
-            }
-        });
-        
-        // Prepare gender data
-        const genderLabels = [];
-        const genderData = [];
-        
-        if (Object.keys(genderDistribution).length > 0) {
-            for (const [gender, count] of Object.entries(genderDistribution)) {
-                if (count > 0) {
-                    genderLabels.push(gender);
-                    genderData.push(count);
-                }
-            }
-        }
-        
-        // Fallback if no gender data
-        if (genderLabels.length === 0) {
-            genderLabels.push('No Data');
-            genderData.push(1);
-        }
-        
-        // Gender Distribution Doughnut Chart
-        const genderCtx = document.getElementById('genderChart').getContext('2d');
-        new Chart(genderCtx, {
-            type: 'doughnut',
-            data: {
-                labels: genderLabels,
-                datasets: [{
-                    data: genderData,
-                    backgroundColor: [
-                        'rgba(52, 152, 219, 0.7)',
-                        'rgba(231, 76, 60, 0.7)',
-                        'rgba(128, 128, 128, 0.7)' // Gray for "No Data"
-                    ],
-                    borderColor: '#fff',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right'
-                    },
-                    title: {
-                        display: true,
-                        text: 'Gender Distribution'
-                    }
-                }
-            }
-        });
-    }
-
-
+document.addEventListener('DOMContentLoaded',()=>{
+    document.getElementById('refreshButton').addEventListener('click', refreshDashboard);
+    document.getElementById('time-range').addEventListener('change', refreshDashboard);
+    // set icon colours defined in data-color attrs
+    document.querySelectorAll('i[data-color]').forEach(el=>{el.style.color=el.dataset.color;});
+    refreshDashboard();
+});
+</script>
+<script>
+// Make summary sections act as links when clicked or focused and Enter pressed
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.clickable-section').forEach(sec => {
+        const go = () => window.location.href = sec.dataset.href;
+        sec.addEventListener('click', go);
+        sec.addEventListener('keypress', e => { if (e.key === 'Enter') go(); });
+    });
+});
 </script>
 {% endblock %}
