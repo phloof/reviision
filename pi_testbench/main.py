@@ -28,6 +28,12 @@ from src.utils.config_manager import ConfigManager
 from src.utils.system_monitor import SystemMonitor
 from src.utils.logger import setup_logging
 
+# Configure a basic logger early so messages before full setup are captured
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+
 class ReViisionPiTestBench:
     """Main application class for the Pi test bench"""
     
@@ -50,14 +56,14 @@ class ReViisionPiTestBench:
         try:
             config_file = Path(self.config_path)
             if not config_file.exists():
-                print(f"Configuration file not found: {config_file}")
+                logging.error("Configuration file not found: %s", config_file)
                 return False
                 
             with open(config_file, 'r') as f:
                 self.config = yaml.safe_load(f)
             return True
         except Exception as e:
-            print(f"Error loading configuration: {e}")
+            logging.error("Error loading configuration: %s", e)
             return False
     
     def setup_logging(self) -> bool:
@@ -79,7 +85,7 @@ class ReViisionPiTestBench:
             self.logger.info(f"Configuration loaded from: {self.config_path}")
             return True
         except Exception as e:
-            print(f"Error setting up logging: {e}")
+            logging.error("Error setting up logging: %s", e)
             return False
     
     def initialize_components(self) -> bool:
@@ -307,7 +313,7 @@ class ReViisionPiTestBench:
             if self.logger:
                 self.logger.error(f"Fatal error in main application: {e}")
             else:
-                print(f"Fatal error: {e}")
+                logging.error("Fatal error: %s", e)
             return 1
 
 def main():
@@ -319,10 +325,10 @@ def main():
         # Run the async application
         return asyncio.run(app.run())
     except KeyboardInterrupt:
-        print("\nReceived interrupt signal, shutting down...")
+        logging.info("Received interrupt signal, shutting down...")
         return 0
     except Exception as e:
-        print(f"Fatal error: {e}")
+        logging.error("Fatal error: %s", e)
         return 1
 
 if __name__ == "__main__":

@@ -12,6 +12,9 @@ from pathlib import Path
 import yaml
 from ultralytics import YOLO
 
+# Centralised logging utility
+from utils.logger import setup_logging as core_setup_logging
+
 # Add src directory to path for relative imports
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
@@ -22,21 +25,12 @@ from analysis import DemographicAnalyzer, DwellTimeAnalyzer, HeatmapGenerator
 from database import get_database
 from web import create_app
 
-# Configure logging
-def setup_logging(debug=False):
-    """Setup logging configuration"""
-    log_level = logging.DEBUG if debug else logging.INFO
+def setup_logging(debug: bool = False):
+    """Wrapper that delegates to :pyfunc:`utils.logger.setup_logging`."""
+    log_level = "DEBUG" if debug else "INFO"
     project_root = Path(__file__).parent.parent
     log_file = project_root / "reviision.log"
-    
-    logging.basicConfig(
-        level=log_level,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_file),
-            logging.StreamHandler()
-        ]
-    )
+    core_setup_logging(level=log_level, log_file=log_file)
 
 def parse_arguments():
     """Parse command line arguments"""

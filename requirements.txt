@@ -63,5 +63,12 @@ zeep>=4.2.1
 pytest>=7.4.0
 pytest-cov>=4.1.0
 
+# Code Quality & Tooling
+black>=24.3.0
+isort>=5.12.0
+flake8>=6.1.0
+mypy>=1.7.1
+pre-commit>=3.5.0
+
 # Note: For PyTorch with CUDA support on Windows:
 # pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
