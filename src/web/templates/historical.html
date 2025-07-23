@@ -295,6 +295,57 @@
             max-width: none;
         }
     }
+    
+    /* Notification Popup Styles */
+    .notification-popup {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1060;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+    }
+    
+    .notification-popup.show {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    
+    .notification-popup.fade-out {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    
+    .notification-content {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        min-width: 300px;
+        max-width: 400px;
+    }
+    
+    .notification-success {
+        background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+        color: white;
+    }
+    
+    .notification-error {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        color: white;
+    }
+    
+    .notification-icon {
+        margin-right: 1rem;
+        font-size: 1.5rem;
+    }
+    
+    .notification-message {
+        flex: 1;
+        font-weight: 500;
+    }
 </style>
 {% endblock %}
 
@@ -305,7 +356,7 @@
             <div class="d-flex align-items-center mb-4">
                 <div>
                     <h1 class="h2 mb-1">Historical Data</h1>
-                    <p class="text-muted mb-0">View and analyze historical visitor data and trends</p>
+                    <p class="text-muted mb-0">View and analyse historical visitor data and trends</p>
                 </div>
             </div>
         </div>
@@ -480,15 +531,24 @@
                     <span class="visually-hidden">Loading...</span>
                 </div>
                 <h5>Loading Analytics Data...</h5>
-                <p class="text-muted mb-0">Please wait while we fetch the latest data.</p>
+                <p class="text-muted mb-0">Please wait while we fetch the latest historical data.</p>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Success Message Area -->
+<div id="success-message-area" style="display: none;">
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i>
+        <span id="success-message-text">Data loaded successfully</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Chart.js is loaded globally via base.html -->
 <script>
 // Historical Data Page JavaScript
 class HistoricalDataManager {
@@ -614,7 +674,7 @@ class HistoricalDataManager {
         const labels = traffic.labels || [];
         const values = traffic.data || [];
         
-        this.charts.overview = new Chart(ctx, {
+        const overviewConfig = {
             type: 'line',
             data: {
                 labels: labels,
@@ -641,7 +701,8 @@ class HistoricalDataManager {
                     }
                 }
             }
-        });
+        };
+        this.charts.overview = new ChartManager(ctx, overviewConfig, { filename: 'overview_traffic' });
     }
     
     createTrafficChart(data) {
@@ -656,7 +717,7 @@ class HistoricalDataManager {
         const labels = traffic.labels || [];
         const values = traffic.data || [];
         
-        this.charts.traffic = new Chart(ctx, {
+        const trafficConfig = {
             type: 'bar',
             data: {
                 labels: labels,
@@ -677,7 +738,8 @@ class HistoricalDataManager {
                     }
                 }
             }
-        });
+        };
+        this.charts.traffic = new ChartManager(ctx, trafficConfig, { filename: 'traffic_by_hour' });
     }
     
     createWeeklyChart(data) {
@@ -698,7 +760,7 @@ class HistoricalDataManager {
             });
         }
         
-        this.charts.weekly = new Chart(ctx, {
+        const weeklyConfig = {
             type: 'bar',
             data: {
                 labels: days,
@@ -719,7 +781,8 @@ class HistoricalDataManager {
                     }
                 }
             }
-        });
+        };
+        this.charts.weekly = new ChartManager(ctx, weeklyConfig, { filename: 'weekly_patterns' });
     }
     
     createGenderChart(data) {
@@ -734,7 +797,7 @@ class HistoricalDataManager {
         const labels = Object.keys(genderData);
         const values = Object.values(genderData);
         
-        this.charts.gender = new Chart(ctx, {
+        const genderConfig = {
             type: 'doughnut',
             data: {
                 labels: labels,
@@ -752,7 +815,8 @@ class HistoricalDataManager {
                     }
                 }
             }
-        });
+        };
+        this.charts.gender = new ChartManager(ctx, genderConfig, { filename: 'gender_distribution_hist' });
     }
     
     createAgeChart(data) {
@@ -767,7 +831,7 @@ class HistoricalDataManager {
         const labels = Object.keys(ageData);
         const values = Object.values(ageData);
         
-        this.charts.age = new Chart(ctx, {
+        const ageConfig = {
             type: 'bar',
             data: {
                 labels: labels,
@@ -793,7 +857,8 @@ class HistoricalDataManager {
                     }
                 }
             }
-        });
+        };
+        this.charts.age = new ChartManager(ctx, ageConfig, { filename: 'age_distribution_hist' });
     }
     
     getHoursFromRange() {

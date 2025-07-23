@@ -152,6 +152,57 @@
             height: 300px;
         }
     }
+    
+    /* Notification Popup Styles */
+    .notification-popup {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1060;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+    }
+    
+    .notification-popup.show {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    
+    .notification-popup.fade-out {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    
+    .notification-content {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        min-width: 300px;
+        max-width: 400px;
+    }
+    
+    .notification-success {
+        background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+        color: white;
+    }
+    
+    .notification-error {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        color: white;
+    }
+    
+    .notification-icon {
+        margin-right: 1rem;
+        font-size: 1.5rem;
+    }
+    
+    .notification-message {
+        flex: 1;
+        font-weight: 500;
+    }
 </style>
 {% endblock %}
 
@@ -215,10 +266,6 @@
                             <div class="demographics-section">
                                 <h3 class="section-title">
                                     <span><i class="fas fa-users me-2"></i>Age Distribution</span>
-                                    <div class="tooltip">
-                                        <i class="fas fa-info-circle"></i>
-                                        <span class="tooltip-text">Age breakdown of store visitors</span>
-                                    </div>
                                 </h3>
                                 <div class="chart-container">
                                     <canvas id="ageChart"></canvas>
@@ -229,10 +276,6 @@
                             <div class="demographics-section">
                                 <h3 class="section-title">
                                     <span><i class="fas fa-venus-mars me-2"></i>Gender Distribution</span>
-                                    <div class="tooltip">
-                                        <i class="fas fa-info-circle"></i>
-                                        <span class="tooltip-text">Gender breakdown of store visitors</span>
-                                    </div>
                                 </h3>
                                 <div class="chart-container">
                                     <canvas id="genderChart"></canvas>
@@ -247,11 +290,7 @@
                     <div class="demographics-section">
                         <h3 class="section-title">
                             <span><i class="fas fa-chart-line me-2"></i>Demographic Trends Over Time</span>
-                            <div class="tooltip">
-                                <i class="fas fa-info-circle"></i>
-                                <span class="tooltip-text">Changes in demographics over time period</span>
-                            </div>
-                        </h3>
+                                </h3>
                         <div class="chart-container">
                             <canvas id="demographicTrends"></canvas>
                         </div>
@@ -263,10 +302,6 @@
                     <div class="demographics-section">
                         <h3 class="section-title">
                             <span><i class="fas fa-table me-2"></i>Detailed Demographics Data</span>
-                            <div class="tooltip">
-                                <i class="fas fa-info-circle"></i>
-                                <span class="tooltip-text">Individual demographic records from analysis</span>
-                            </div>
                         </h3>
                         
                         <!-- Table Controls -->
@@ -599,7 +634,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Chart.js is now globally loaded via base.html; plugins & ChartManager included there -->
 <script>
 // Demographics Page JavaScript
 class DemographicsManager {
@@ -648,8 +683,11 @@ class DemographicsManager {
         // Resize charts when tab becomes visible
         setTimeout(() => {
             Object.values(this.charts).forEach(chart => {
-                if (chart && typeof chart.resize === 'function') {
+                if (!chart) return;
+                if (typeof chart.resize === 'function') {
                     chart.resize();
+                } else if (chart.chart && typeof chart.chart.resize === 'function') {
+                    chart.chart.resize();
                 }
             });
         }, 100);
@@ -669,6 +707,7 @@ class DemographicsManager {
             if (data.success) {
                 this.currentData = data;
                 this.updateCharts(data);
+                this.showSuccessMessage('Demographic data loaded successfully');
             } else {
                 this.showNoDataState();
             }
@@ -676,6 +715,44 @@ class DemographicsManager {
             console.error('Error loading data:', error);
             this.showNoDataState();
         }
+    }
+    
+    showSuccessMessage(message) {
+        this.showNotificationPopup('success', message);
+    }
+    
+    showNotificationPopup(type, message) {
+        // Remove any existing notifications
+        const existingNotifications = document.querySelectorAll('.notification-popup');
+        existingNotifications.forEach(notification => notification.remove());
+        
+        const popup = document.createElement('div');
+        popup.className = 'notification-popup';
+        popup.innerHTML = `
+            <div class="notification-content notification-${type}">
+                <div class="notification-icon">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                </div>
+                <div class="notification-message">${message}</div>
+            </div>
+        `;
+        
+        document.body.appendChild(popup);
+        
+        // Trigger animation
+        setTimeout(() => {
+            popup.classList.add('show');
+        }, 100);
+        
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            popup.classList.add('fade-out');
+            setTimeout(() => {
+                if (popup.parentNode) {
+                    popup.remove();
+                }
+            }, 300);
+        }, 3000);
     }
     
     updateCharts(data) {
@@ -696,7 +773,7 @@ class DemographicsManager {
         const labels = Object.keys(ageData);
         const values = Object.values(ageData);
         
-        this.charts.age = new Chart(ctx, {
+        const ageConfig = {
             type: 'bar',
             data: {
                 labels: labels,
@@ -746,7 +823,10 @@ class DemographicsManager {
                     }
                 }
             }
-        });
+        };
+
+        this.charts.age = new ChartManager(ctx, ageConfig, { filename: 'age_distribution' });
+        this.attachToolbar('ageChart', this.charts.age);
     }
     
     createGenderChart(data) {
@@ -761,7 +841,7 @@ class DemographicsManager {
         const labels = Object.keys(genderData);
         const values = Object.values(genderData);
         
-        this.charts.gender = new Chart(ctx, {
+        const genderConfig = {
             type: 'doughnut',
             data: {
                 labels: labels,
@@ -779,7 +859,9 @@ class DemographicsManager {
                     }
                 }
             }
-        });
+        };
+        this.charts.gender = new ChartManager(ctx, genderConfig, { filename: 'gender_distribution' });
+        this.attachToolbar('genderChart', this.charts.gender);
     }
     
     createDemographicTrendsChart(data) {
@@ -803,7 +885,7 @@ class DemographicsManager {
         const maleData = totalTrafficData.map(total => Math.round(total * maleRatio));
         const femaleData = totalTrafficData.map(total => Math.round(total * femaleRatio));
         
-        this.charts.trends = new Chart(ctx, {
+        const trendsConfig = {
             type: 'line',
             data: {
                 labels: labels,
@@ -852,7 +934,9 @@ class DemographicsManager {
                     }
                 }
             }
-        });
+        };
+        this.charts.trends = new ChartManager(ctx, trendsConfig, { filename: 'demographic_trends' });
+        this.attachToolbar('demographicTrends', this.charts.trends);
     }
     
     getHoursFromRange() {
@@ -1181,6 +1265,36 @@ class DemographicsManager {
         if (confidence >= 0.6) return 'medium';
         return 'low';
     }
+
+    // ---- Chart toolbar utilities ---- //
+    attachToolbar(canvasId, chartManager) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const container = canvas.closest('.chart-container');
+        if (!container || container.querySelector('.chart-toolbar')) return;
+
+        const toolbar = document.createElement('div');
+        toolbar.className = 'chart-toolbar text-end mt-1';
+        toolbar.innerHTML = `
+            <button class="btn btn-sm btn-outline-secondary me-1" data-action="png" title="Download PNG"><i class="fas fa-image"></i></button>
+            <button class="btn btn-sm btn-outline-secondary me-1" data-action="csv" title="Download CSV"><i class="fas fa-file-csv"></i></button>
+            <button class="btn btn-sm btn-outline-secondary" data-action="json" title="Download JSON"><i class="fas fa-code"></i></button>
+        `;
+        container.appendChild(toolbar);
+
+        toolbar.addEventListener('click', (ev) => {
+            const btn = ev.target.closest('button');
+            if (!btn) return;
+            const action = btn.getAttribute('data-action');
+            if (action === 'png') {
+                chartManager.exportPNG();
+            } else if (action === 'csv') {
+                chartManager.exportCSV();
+            } else if (action === 'json') {
+                chartManager.exportJSON();
+            }
+        });
+    }
 }
 
 // Initialize when DOM is ready
@@ -1188,795 +1302,6 @@ document.addEventListener('DOMContentLoaded', function() {
     new DemographicsManager();
 });
 
-// Legacy function stubs for backward compatibility
-function setupEventHandlers() {
-    showNoDataState() 
-        // Clear charts
-        Object.values(this.charts).forEach(chart => {
-            if (chart) {
-                chart.destroy();
-            }
-        });
-        this.charts = {};
-    }
-
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-    new DemographicsManager();
-});
-        const timeRangeElement = document.getElementById('time-range');
-        if (timeRangeElement) {
-            timeRangeElement.addEventListener('change', function() {
-                fetchDemographicData();
-                // Also reload table data when time range changes
-                if (typeof loadTableData === 'function') {
-                    currentPage = 1; // Reset to first page
-                    loadTableData();
-                }
-            });
-        }
-        
-        // Refresh demographics button
-        const refreshBtn = document.getElementById('refresh-demographics');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', function() {
-                fetchDemographicData();
-                // Also reload table data when refreshing
-                if (typeof loadTableData === 'function') {
-                    loadTableData();
-                }
-            });
-        }
-
-    /**
-     * Fetch demographic data and create charts
-     */
-    async function fetchDemographicData() {
-        const timeRangeElement = document.getElementById('time-range');
-        const timeRange = timeRangeElement ? timeRangeElement.value : '24h';
-        const dates = getTimeRangeDates(timeRange);
-        
-        // Convert timeRange to hours for API
-        const hoursMap = {
-            '1h': 1,
-            '6h': 6,
-            '24h': 24,
-            '7d': 168,
-            '30d': 720
-        };
-        const hours = hoursMap[timeRange] || 24;
-        
-        try {
-            // Fetch real demographic data using the same endpoint as historical page
-            const response = await fetch(`/api/analytics/historical?hours=${hours}`, {
-                method: 'GET',
-                credentials: 'same-origin',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (!response.ok) {
-                if (response.status === 401) {
-                    window.location.href = '/login';
-                    return;
-                }
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                throw new Error('Invalid response format - expected JSON');
-            }
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                // Create charts with real data
-                createAgeChart(result.age_groups);
-                createGenderChart(result.gender_distribution);
-                createDemographicTrendsChart(dates.start, dates.end, result);
-            } else {
-                // Fallback to empty charts with error message
-                console.warn('Failed to fetch demographic data:', result.message || 'Unknown error');
-                createAgeChart();
-                createGenderChart();
-                createDemographicTrendsChart(dates.start, dates.end);
-            }
-        } catch (error) {
-            console.error('Error fetching demographic data:', error);
-            // Fallback to empty charts
-            createAgeChart();
-            createGenderChart();
-            createDemographicTrendsChart(dates.start, dates.end);
-        }
-    }
-
-    /**
-     * Calculate date range based on selection
-     */
-    function getTimeRangeDates(range) {
-        const end = new Date();
-        let start = new Date();
-        
-        switch(range) {
-            case '1h':
-                start.setHours(end.getHours() - 1);
-                break;
-            case '6h':
-                start.setHours(end.getHours() - 6);
-                break;
-            case '24h':
-                start.setDate(end.getDate() - 1);
-                break;
-            case '7d':
-                start.setDate(end.getDate() - 7);
-                break;
-            case '30d':
-                start.setDate(end.getDate() - 30);
-                break;
-            default:
-                start.setDate(end.getDate() - 1);
-        }
-        
-        return { start, end };
-    }
-
-    /**
-     * Create age distribution bar chart
-     */
-    function createAgeChart(ageGroups = {}) {
-        const ctx = document.getElementById('ageChart').getContext('2d');
-        
-        // Destroy existing chart if it exists
-        if (window.ageChart) {
-            window.ageChart.destroy();
-        }
-        
-        // Prepare age data
-        const defaultAgeGroups = ['18-24', '25-34', '35-44', '45-54', '55+'];
-        const labels = [];
-        const data = [];
-        
-        // Use real data if available
-        if (Object.keys(ageGroups).length > 0) {
-            for (const group of defaultAgeGroups) {
-                if (ageGroups[group]) {
-                    labels.push(group);
-                    data.push(ageGroups[group]);
-                }
-            }
-        }
-        
-        // Fallback if no data
-        if (labels.length === 0) {
-            labels.push('No Data Available');
-            data.push(0);
-        }
-        
-        window.ageChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Visitors by Age Group',
-                    data: data,
-                    backgroundColor: [
-                        'rgba(52, 152, 219, 0.7)',
-                        'rgba(46, 204, 113, 0.7)',
-                        'rgba(155, 89, 182, 0.7)',
-                        'rgba(241, 196, 15, 0.7)',
-                        'rgba(230, 126, 34, 0.7)',
-                        'rgba(231, 76, 60, 0.7)'
-                    ],
-                    borderColor: [
-                        'rgba(52, 152, 219, 1)',
-                        'rgba(46, 204, 113, 1)',
-                        'rgba(155, 89, 182, 1)',
-                        'rgba(241, 196, 15, 1)',
-                        'rgba(230, 126, 34, 1)',
-                        'rgba(231, 76, 60, 1)'
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const total = context.dataset.data.reduce((acc, data) => acc + data, 0);
-                                const percentage = total > 0 ? Math.round((context.raw / total) * 100) : 0;
-                                return `${context.label}: ${context.formattedValue} visitors (${percentage}%)`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Number of Visitors'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Age Group'
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    /**
-     * Create gender distribution pie chart
-     */
-    function createGenderChart(genderDistribution = {}) {
-        const ctx = document.getElementById('genderChart').getContext('2d');
-        
-        // Destroy existing chart if it exists
-        if (window.genderChart) {
-            window.genderChart.destroy();
-        }
-        
-        // Prepare gender data
-        const labels = [];
-        const data = [];
-        
-        // Use real data if available
-        if (Object.keys(genderDistribution).length > 0) {
-            for (const [gender, count] of Object.entries(genderDistribution)) {
-                if (count > 0) {
-                    labels.push(gender);
-                    data.push(count);
-                }
-            }
-        }
-        
-        // Fallback if no data
-        if (labels.length === 0) {
-            labels.push('No Data Available');
-            data.push(1);
-        }
-        
-        window.genderChart = new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: [
-                        'rgba(52, 152, 219, 0.7)',
-                        'rgba(231, 76, 60, 0.7)',
-                        'rgba(149, 165, 166, 0.7)'
-                    ],
-                    borderColor: '#fff',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.formattedValue || '';
-                                const dataset = context.dataset;
-                                const total = dataset.data.reduce((acc, data) => acc + data, 0);
-                                const percentage = total > 0 ? Math.round((context.raw / total) * 100) : 0;
-                                return `${label}: ${value} visitors (${percentage}%)`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    /**
-     * Create demographic trends line chart
-     */
-    function createDemographicTrendsChart(start, end, data = null) {
-        const ctx = document.getElementById('demographicTrends').getContext('2d');
-        
-        // Destroy existing chart if it exists
-        if (window.demographicTrendsChart) {
-            window.demographicTrendsChart.destroy();
-        }
-        
-        let labels = [];
-        let maleData = [];
-        let femaleData = [];
-        
-        // Use real data if available from API response
-        if (data && data.traffic && data.traffic.labels && data.gender_distribution) {
-            labels = data.traffic.labels;
-            const totalTrafficData = data.traffic.data || [];
-            const genderData = data.gender_distribution;
-            
-            // Calculate male/female ratios from total traffic
-            const maleRatio = (genderData.Male || 0) / (genderData.Male + genderData.Female || 1);
-            const femaleRatio = (genderData.Female || 0) / (genderData.Male + genderData.Female || 1);
-            
-            // Apply ratios to traffic data to get gender-specific trends
-            totalTrafficData.forEach(totalVisitors => {
-                maleData.push(Math.round(totalVisitors * maleRatio));
-                femaleData.push(Math.round(totalVisitors * femaleRatio));
-            });
-        } else {
-            // Fallback to sample data if no real data available
-            const diffTime = Math.abs(end - start);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            const step = Math.max(1, Math.ceil(diffDays / 7)); // Maximum 7 data points
-            
-            for (let i = 0; i <= diffDays; i += step) {
-                const date = new Date(start);
-                date.setDate(date.getDate() + i);
-                labels.push(date.toLocaleDateString());
-                
-                // Generate realistic sample data
-                maleData.push(Math.floor(Math.random() * 100) + 50);
-                femaleData.push(Math.floor(Math.random() * 80) + 40);
-            }
-        }
-        
-        // Handle case where no data is available
-        if (labels.length === 0) {
-            labels = ['No Data Available'];
-            maleData = [0];
-            femaleData = [0];
-        }
-        
-        window.demographicTrendsChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Male Visitors',
-                        data: maleData,
-                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
-                        borderColor: 'rgba(52, 152, 219, 1)',
-                        borderWidth: 2,
-                        tension: 0.3,
-                        fill: false,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: 'rgba(52, 152, 219, 1)',
-                        pointBorderWidth: 2
-                    },
-                    {
-                        label: 'Female Visitors',
-                        data: femaleData,
-                        backgroundColor: 'rgba(231, 76, 60, 0.2)',
-                        borderColor: 'rgba(231, 76, 60, 1)',
-                        borderWidth: 2,
-                        tension: 0.3,
-                        fill: false,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: 'rgba(231, 76, 60, 1)',
-                        pointBorderWidth: 2
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top'
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Number of Visitors'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Date'
-                        }
-                    }
-                },
-                interaction: {
-                    mode: 'nearest',
-                    axis: 'x',
-                    intersect: false
-                }
-            }
-        });
-    }
-
-    // ====================================
-    // Table Management Variables
-    // ====================================
-    let currentPage = 1;
-    let recordsPerPage = 10;
-    let currentSearch = '';
-    let currentSort = 'timestamp';
-    let currentSortOrder = 'desc';
-    let totalRecords = 0;
-    let totalPages = 0;
-
-    /**
-     * Initialize table functionality
-     */
-    function initializeTable() {
-        // Search functionality
-        const searchInput = document.getElementById('table-search');
-        let searchTimeout;
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                currentSearch = this.value.trim();
-                currentPage = 1; // Reset to first page
-                loadTableData();
-            }, 500);
-        });
-
-        // Records per page dropdown
-        const perPageSelect = document.getElementById('records-per-page');
-        perPageSelect.addEventListener('change', function() {
-            recordsPerPage = parseInt(this.value);
-            currentPage = 1; // Reset to first page
-            loadTableData();
-        });
-
-        // Refresh button
-        const refreshBtn = document.getElementById('refresh-table');
-        refreshBtn.addEventListener('click', function() {
-            loadTableData();
-        });
-
-        // Sortable columns
-        document.querySelectorAll('.sortable').forEach(th => {
-            th.addEventListener('click', function() {
-                const sortField = this.dataset.sort;
-                
-                // Toggle sort order if same field, otherwise default to desc
-                if (currentSort === sortField) {
-                    currentSortOrder = currentSortOrder === 'desc' ? 'asc' : 'desc';
-                } else {
-                    currentSort = sortField;
-                    currentSortOrder = 'desc';
-                }
-                
-                updateSortIcons();
-                loadTableData();
-            });
-        });
-
-        // Initial data load
-        loadTableData();
-    }
-
-    /**
-     * Load table data from API
-     */
-    async function loadTableData() {
-        showTableLoading(true);
-        
-        try {
-            const timeRangeElement = document.getElementById('time-range');
-            const timeRange = timeRangeElement ? timeRangeElement.value : '24h';
-            
-            // Convert timeRange to hours for API
-            const hoursMap = {
-                '1h': 1,
-                '6h': 6,
-                '24h': 24,
-                '7d': 168,
-                '30d': 720
-            };
-            const hours = hoursMap[timeRange] || 24;
-
-            const params = new URLSearchParams({
-                page: currentPage,
-                per_page: recordsPerPage,
-                search: currentSearch,
-                sort_by: currentSort,
-                sort_order: currentSortOrder,
-                hours: hours
-            });
-
-            const response = await fetch(`/api/analytics/demographics?${params}`);
-            const result = await response.json();
-
-            if (result.success) {
-                populateTable(result.data);
-                updatePagination(result.pagination);
-                updateTableInfo(result.pagination);
-            } else {
-                showEmptyTable(result.error || 'Failed to load data');
-            }
-        } catch (error) {
-            console.error('Error loading table data:', error);
-            showEmptyTable('Error loading data');
-        } finally {
-            showTableLoading(false);
-        }
-    }
-
-    /**
-     * Populate table with demographic records
-     */
-    function populateTable(records) {
-        const tableBody = document.querySelector('#demographicsTable tbody');
-        tableBody.innerHTML = '';
-
-        if (records && records.length > 0) {
-            records.forEach(record => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="text-nowrap">
-                        <div class="fw-semibold">${formatDateTime(record.timestamp)}</div>
-                        <small class="text-muted">${formatTimeAgo(record.timestamp)}</small>
-                    </td>
-                    <td>
-                        <span class="badge badge-gender-${record.gender.toLowerCase()} text-white">
-                            <i class="fas fa-${getGenderIcon(record.gender)} me-1"></i>
-                            ${record.gender}
-                        </span>
-                    </td>
-                    <td>
-                        <div class="fw-semibold">${record.age_group}</div>
-                        <small class="text-muted">${record.age} years old</small>
-                    </td>
-                    <td>
-                        <span class="badge bg-light text-dark border">
-                            <i class="fas fa-${getEmotionIcon(record.emotion)} me-1"></i>
-                            ${record.emotion}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="badge bg-info dwell-time-badge">
-                            ${formatDwellTime(record.dwell_time)}
-                        </span>
-                    </td>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <span class="me-2">${Math.round(record.confidence * 100)}%</span>
-                            <div class="confidence-bar" style="width: 60px;">
-                                <div class="confidence-fill confidence-${getConfidenceLevel(record.confidence)}" 
-                                     style="width: ${record.confidence * 100}%"></div>
-                            </div>
-                        </div>
-                    </td>
-                `;
-                tableBody.appendChild(tr);
-            });
-        } else {
-            showEmptyTable();
-        }
-    }
-
-    /**
-     * Show empty table message
-     */
-    function showEmptyTable(errorMessage = null) {
-        const tableBody = document.querySelector('#demographicsTable tbody');
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="6" class="text-center text-muted py-4">
-                    <i class="fas fa-info-circle me-2"></i>
-                    ${errorMessage || 'No demographic data available. Use the "Add Sample Data" button in Settings to populate demo data.'}
-                </td>
-            </tr>
-        `;
-        updateTableInfo({total_records: 0, page: 1, per_page: recordsPerPage});
-        updatePagination({total_pages: 0, page: 1, has_prev: false, has_next: false});
-    }
-
-    /**
-     * Show/hide table loading overlay
-     */
-    function showTableLoading(show) {
-        const loadingOverlay = document.getElementById('table-loading');
-        loadingOverlay.style.display = show ? 'block' : 'none';
-    }
-
-    /**
-     * Update pagination controls
-     */
-    function updatePagination(pagination) {
-        const paginationContainer = document.getElementById('table-pagination');
-        const prevBtn = document.getElementById('prev-page');
-        const nextBtn = document.getElementById('next-page');
-        
-        totalPages = pagination.total_pages;
-        currentPage = pagination.page;
-
-        // Update prev/next buttons
-        prevBtn.parentElement.classList.toggle('disabled', !pagination.has_prev);
-        nextBtn.parentElement.classList.toggle('disabled', !pagination.has_next);
-
-        // Clear existing page numbers
-        const pageItems = paginationContainer.querySelectorAll('.page-item:not(:first-child):not(:last-child)');
-        pageItems.forEach(item => item.remove());
-
-        // Add new page numbers
-        const startPage = Math.max(1, currentPage - 2);
-        const endPage = Math.min(totalPages, currentPage + 2);
-
-        for (let i = startPage; i <= endPage; i++) {
-            const li = document.createElement('li');
-            li.className = `page-item ${i === currentPage ? 'active' : ''}`;
-            li.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i}</a>`;
-            
-            li.addEventListener('click', function(e) {
-                e.preventDefault();
-                if (i !== currentPage) {
-                    currentPage = i;
-                    loadTableData();
-                }
-            });
-            
-            paginationContainer.insertBefore(li, nextBtn.parentElement);
-        }
-
-        // Update prev/next click handlers
-        prevBtn.onclick = function(e) {
-            e.preventDefault();
-            if (pagination.has_prev) {
-                currentPage--;
-                loadTableData();
-            }
-        };
-
-        nextBtn.onclick = function(e) {
-            e.preventDefault();
-            if (pagination.has_next) {
-                currentPage++;
-                loadTableData();
-            }
-        };
-    }
-
-    /**
-     * Update table info text
-     */
-    function updateTableInfo(pagination) {
-        const infoText = document.getElementById('table-info-text');
-        const start = ((pagination.page - 1) * pagination.per_page) + 1;
-        const end = Math.min(start + pagination.per_page - 1, pagination.total_records);
-        
-        if (pagination.total_records > 0) {
-            infoText.textContent = `Showing ${start}-${end} of ${pagination.total_records} records`;
-        } else {
-            infoText.textContent = 'Showing 0 of 0 records';
-        }
-    }
-
-    /**
-     * Update sort icons
-     */
-    function updateSortIcons() {
-        document.querySelectorAll('.sortable').forEach(th => {
-            th.classList.remove('sort-asc', 'sort-desc');
-            if (th.dataset.sort === currentSort) {
-                th.classList.add(`sort-${currentSortOrder}`);
-            }
-        });
-    }
-
-    // ====================================
-    // Utility Functions
-    // ====================================
-
-    function formatDateTime(timestamp) {
-        const date = new Date(timestamp);
-        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    }
-
-    function formatTimeAgo(timestamp) {
-        const now = new Date();
-        const then = new Date(timestamp);
-        const diffMs = now - then;
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMins / 60);
-        const diffDays = Math.floor(diffHours / 24);
-
-        if (diffDays > 0) return `${diffDays}d ago`;
-        if (diffHours > 0) return `${diffHours}h ago`;
-        if (diffMins > 0) return `${diffMins}m ago`;
-        return 'Just now';
-    }
-
-    function formatDwellTime(seconds) {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        if (mins > 0) {
-            return `${mins}m ${secs}s`;
-        }
-        return `${secs}s`;
-    }
-
-    function getGenderIcon(gender) {
-        switch (gender.toLowerCase()) {
-            case 'male': return 'mars';
-            case 'female': return 'venus';
-            default: return 'question';
-        }
-    }
-
-    function getEmotionIcon(emotion) {
-        switch (emotion.toLowerCase()) {
-            case 'happy': return 'smile';
-            case 'sad': return 'frown';
-            case 'angry': return 'angry';
-            case 'surprised': return 'surprise';
-            case 'neutral': return 'meh';
-            default: return 'meh';
-        }
-    }
-
-    function getConfidenceLevel(confidence) {
-        if (confidence >= 0.8) return 'high';
-        if (confidence >= 0.6) return 'medium';
-        return 'low';
-    }
-
-    /**
-     * Generate sample demographics data
-     */
-    function generateSampleDemographicsData() {
-        const ageGroups = ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
-        const genders = ['Male', 'Female', 'Unknown'];
-        const emotions = ['Happy', 'Neutral', 'Surprised', 'Sad', 'Angry'];
-        const data = [];
-        
-        for (let i = 0; i < 15; i++) {
-            const date = new Date();
-            date.setHours(date.getHours() - Math.floor(Math.random() * 24));
-            
-            data.push({
-                datetime: date.toLocaleString(),
-                ageGroup: ageGroups[Math.floor(Math.random() * ageGroups.length)],
-                gender: genders[Math.floor(Math.random() * genders.length)],
-                emotion: emotions[Math.floor(Math.random() * emotions.length)],
-                dwellTime: (Math.random() * 30 + 1).toFixed(1)
-            });
-        }
-        
-        return data.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
-    }
-
-    /**
-     * Get appropriate badge class for emotion
-     */
-    function getEmotionBadgeClass(emotion) {
-        const badgeClasses = {
-            'Happy': 'success',
-            'Neutral': 'secondary',
-            'Surprised': 'warning',
-            'Sad': 'info',
-            'Angry': 'danger'
-        };
-        return badgeClasses[emotion] || 'secondary';
-    }
 </script>
 </div> <!-- Close page-container -->
 {% endblock %}

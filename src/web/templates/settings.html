@@ -586,6 +586,55 @@ function setupEventHandlers() {
     
     // Test camera button
     document.getElementById('test-camera').addEventListener('click', testCamera);
+    
+    // Settings navigation cards click handlers
+    setupSettingsNavigation();
+}
+
+function setupSettingsNavigation() {
+    // Add click handlers to navigation pills to handle card clicks
+    const navButtons = document.querySelectorAll('.settings-nav .nav-link');
+    
+    navButtons.forEach(button => {
+        // Make the entire button clickable and add hover effects
+        button.style.cursor = 'pointer';
+        
+        // Add click handler if not already present
+        if (!button.hasAttribute('data-nav-setup')) {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all nav links
+                navButtons.forEach(nav => nav.classList.remove('active'));
+                
+                // Add active class to clicked nav link
+                this.classList.add('active');
+                
+                // Hide all tab panes
+                const tabPanes = document.querySelectorAll('.tab-pane');
+                tabPanes.forEach(pane => {
+                    pane.classList.remove('show', 'active');
+                });
+                
+                // Show the target tab pane
+                const targetId = this.getAttribute('data-bs-target');
+                if (targetId) {
+                    const targetPane = document.querySelector(targetId);
+                    if (targetPane) {
+                        targetPane.classList.add('show', 'active');
+                        
+                        // Smooth scroll to the target section
+                        targetPane.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'start' 
+                        });
+                    }
+                }
+            });
+            
+            button.setAttribute('data-nav-setup', 'true');
+        }
+    });
 }
 
 async function loadCurrentSettings() {
@@ -837,7 +886,6 @@ async function insertInitialData() {
                     </div>
                 </div>
             `;
-            showToast('success', 'Initial data inserted successfully!');
         } else {
             feedback.innerHTML = `
                 <div class="modern-card">
@@ -850,11 +898,9 @@ async function insertInitialData() {
                     </div>
                 </div>
             `;
-            showToast('error', 'Failed to insert initial data');
         }
     } catch (error) {
         feedback.innerHTML = `<div class="alert alert-danger"><strong>Error:</strong> ${error.message}</div>`;
-        showToast('error', 'Error inserting initial data');
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-database me-2"></i>Add Initial Data';
@@ -891,7 +937,6 @@ async function clearAllData() {
                     </div>
                 </div>
             `;
-            showToast('success', 'All data cleared successfully!');
         } else {
             feedback.innerHTML = `
                 <div class="modern-card">
@@ -904,11 +949,9 @@ async function clearAllData() {
                     </div>
                 </div>
             `;
-            showToast('error', 'Failed to clear data');
         }
     } catch (error) {
         feedback.innerHTML = `<div class="alert alert-danger"><strong>Error:</strong> ${error.message}</div>`;
-        showToast('error', 'Error clearing data');
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-trash-alt me-2"></i>Clear All Data';

@@ -337,6 +337,78 @@ def get_demographic_trends():
         logger.error(f"Error getting demographic trends: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
+# ============================================================================
+# Export Routes (CSV / JSON)
+# ============================================================================
+
+import io
+import csv
+
+
+def _build_csv_from_mapping(mapping: dict) -> str:
+    """Helper to convert a simple label:value dict to CSV string"""
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["label", "value"])
+    for k, v in mapping.items():
+        writer.writerow([k, v])
+    return output.getvalue()
+
+
+@web_bp.route('/api/export/<chart_id>.json', methods=['GET'])
+@require_auth()
+def export_chart_json(chart_id):
+    """Return JSON payload for a given chart_id (age_distribution, gender_distribution, demographic_trends)"""
+    try:
+        hours = int(request.args.get('hours', 24))
+        summary = analysis_service.get_analytics_summary(hours=hours)
+
+        if chart_id == 'age_distribution':
+            payload = summary.get('age_groups', {})
+        elif chart_id == 'gender_distribution':
+            payload = summary.get('gender_distribution', {})
+        elif chart_id == 'demographic_trends':
+            payload = summary.get('traffic', {})
+        else:
+            return jsonify({"success": False, "message": "Unknown chart id"}), 400
+
+        return jsonify({"success": True, "data": payload})
+    except Exception as e:
+        logger.error(f"Export JSON error: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@web_bp.route('/api/export/<chart_id>.csv', methods=['GET'])
+@require_auth()
+def export_chart_csv(chart_id):
+    """Return CSV file for a given chart_id"""
+    try:
+        hours = int(request.args.get('hours', 24))
+        summary = analysis_service.get_analytics_summary(hours=hours)
+
+        if chart_id == 'age_distribution':
+            data_map = summary.get('age_groups', {})
+        elif chart_id == 'gender_distribution':
+            data_map = summary.get('gender_distribution', {})
+        elif chart_id == 'demographic_trends':
+            traffic = summary.get('traffic', {})
+            # traffic may be in labels/data list format
+            labels = traffic.get('labels', [])
+            values = traffic.get('data', [])
+            data_map = dict(zip(labels, values))
+        else:
+            return jsonify({"success": False, "message": "Unknown chart id"}), 400
+
+        csv_str = _build_csv_from_mapping(data_map)
+        buf = io.BytesIO(csv_str.encode('utf-8'))
+        fname = f"{chart_id}.csv"
+        return Response(buf.getvalue(), mimetype='text/csv', headers={
+            'Content-Disposition': f'attachment;filename={fname}'
+        })
+    except Exception as e:
+        logger.error(f"Export CSV error: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
 @web_bp.route('/api/analyze_frame', methods=['POST'])
 def analyze_frame():
     """
