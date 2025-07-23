@@ -64,68 +64,89 @@
 - **DSAR Readiness** – Per-user query endpoints allow export / erasure to comply with GDPR Art. 20 & 17.  
 - **Transparency & Audit** – All logins / data exports logged with timestamp & IP.  
 
-### 8.4 Data-Flow Overview
+### 8.4 Data-Flow Overview (Revised)
 
 ```mermaid
-flowchart TD
+flowchart LR
+    %% ==== ZONES ====
+    subgraph CAM_WIFI["Camera Wi-Fi (WPA2-PSK / AES-CCMP)"]
+        C1((Cam-1))
+        C2((Cam-2))
+    end
 
-%%==================== ZONE DEFINITIONS ====================
-subgraph CAM_VLAN["Camera VLAN – No Internet Access"]
-    C1((Camera 1))
-    C2((Camera 2))
-    C3((Camera n))
-end
+    subgraph PI_EDGE["Raspberry Pi  (hostapd + iptables)"]
+        AP["hostapd<br/>WPA2 Auth"]
+        FW["iptables\nDefault-deny + DNAT 554→8554"]
+    end
 
-subgraph EDGE_PI["Raspberry Pi – Camera Hotspot & Firewall"]
-    PI["Wi-Fi AP<br/>WPA2 + iptables DNAT"]
-end
+    subgraph WIN_HOST["Windows 11  (Analytics & API)"]
+        NGINX["NGINX Reverse-Proxy<br/>WAF + TLS 1.3"]
+        API["Flask API / Analytics"]
+        WORKER["OpenCV / ML Workers"]
+        SQL[(SQLite DB<br/>BitLocker)]
+        LOG[[Syslog / Graylog]]
+        F2B[[fail2ban]]
+    end
 
-subgraph DMZ["Backend DMZ"]
-    BE["Flask / Gunicorn API"]
-    DB[(SQLite<br/>BitLocker Volume)]
-    LOGS[[Audit & Syslog]]
-end
+    subgraph USERS["Admin / Manager Browsers"]
+        ADMIN["Admin PC"]
+        VIEWER["Manager / Viewer"]
+    end
 
-subgraph USER_NET["User Network"]
-    ADMINPC["Admin Laptop"]
-    MANAGERPC["Manager / Viewer"]
-end
+    Internet((Internet))
 
-Internet((Internet))
-FW{{Firewall / Reverse-Proxy}}
+    %% ==== FLOWS ====
+    C1 -- "RTSP 554 (AES Wi-Fi)" --> AP
+    C2 --> AP
+    AP --> FW
+    FW -- "DNAT RTSP 8554" --> NGINX
+    NGINX -- "uWSGI (localhost)" --> API
+    API -- "JSON frames" --> WORKER
+    API -- "SQL (localhost)" --> SQL
+    API -- "syslog" --> LOG
+    F2B -. ban .-> FW
+    LOG -. dashboards .-> Graylog((SIEM))
 
-%%==================== DATA FLOWS ====================
-%% Cameras ➜ Pi
-C1 -- "RTSP (plaintext)" --> PI
-C2 -- RTSP --> PI
-C3 -- RTSP --> PI
+    ADMIN -- "HTTPS 443" --> NGINX
+    VIEWER -- "HTTPS" --> NGINX
+    ADMIN -- "SSH (keys)" --> FW
+    Internet -. optional remote mgmt .-> NGINX
 
-%% Pi ➜ Backend
-PI -- "WSS / HTTPS<br/>(TLS 1.3)" --> BE
+    %% ==== STYLES ====
+    classDef zone fill:none,stroke:#666,stroke-dasharray:6 4;
+    class CAM_WIFI,PI_EDGE,WIN_HOST,USERS zone;
+    classDef storage fill:#fffbe6,stroke:#333;
+    class SQL,LOG storage;
+```
 
-%% Backend ➜ DB & Logs
-BE -- "SQL (localhost)" --> DB
-BE -- JSON --> LOGS
+> Diagram emphasises WPA2 at the edge, iptables DNAT/firewall, and internal segmentation on the Windows host where all processing & storage occur.
 
-%% Users ➜ Backend via Firewall
-ADMINPC -- HTTPS --> FW -- HTTPS --> BE
-MANAGERPC -- HTTPS --> FW
+### 8.5 Authentication & Password-Management Flow
 
-%% Admin Ops ➜ Pi (SSH)
-ADMINPC -- "SSH (key-only)" --> PI
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Client
+    participant AuthAPI
+    participant DB
 
-%% Internet separation
-Internet -.-> FW
-
-%%==================== STYLES ====================
-classDef zone fill:none,stroke:#555,stroke-dasharray: 4 4;
-class CAM_VLAN,EDGE_PI,DMZ,USER_NET zone;
-classDef store fill:#f9f,stroke:#333,stroke-width:1px;
-class DB,LOGS store;
-    IDS["NIDS / Fail2Ban"]
-    LOGS --> IDS
-    BE --> IDS
-``` 
+    Client->>AuthAPI: POST /api/auth/login (user, pass)
+    AuthAPI->>DB: fetch user record
+    DB-->>AuthAPI: Argon2id hash, failedAttempts, lockUntil
+    alt Account locked (<30 s remaining)
+        AuthAPI-->>Client: 401  "Account locked – retry later"
+    else Password mismatch
+        AuthAPI->>DB: failedAttempts++
+        AuthAPI-->>Client: 401  "Invalid credentials"
+    else Password match
+        AuthAPI->>DB: reset failedAttempts & issue sessionToken
+        AuthAPI-->>Client: 200  {sessionToken, isDefaultPwd}
+        Note over Client: Store HttpOnly cookie
+        opt Default password flag == true
+            Note over Client: Display yellow prompt → change password
+        end
+    end
+```
 
 ### 8.5 Secure Development Lifecycle (SDL)
 
@@ -144,3 +165,120 @@ class DB,LOGS store;
 | RTSP credential reuse | Medium | Medium | **Medium** | VLAN + future SRTP migration.
 | Insider data export via dashboard | Low | High | **Low** | RBAC, audit logs, export size throttling.
 | Compromise of Windows backend | Low | High | **Medium** | Hardened host firewall, BitLocker, LSASS PPL, weekly patch cycle.
+
+### 8.7 Additional Defence-in-Depth Controls
+
+- **Supply-Chain Security**  
+  - `SBOM` generated via *cyclonedx*; checked against OSS-index for CVEs.  
+  - GitHub Dependabot & Renovate auto-patch vulnerable libs within 24 h.  
+  - All third-party Python wheels pinned with SHA-256 hashes in *requirements.txt*.  
+- **Back-up & Recovery**  
+  - Nightly BitLocker-encrypted snapshots copied to offline USB vault (rotation: GFS 3-2-1).  
+  - Quarterly restore drills documented; last RTO ≤ 15 min.  
+- **Physical Security (Windows Host)**  
+  - Chassis intrusion switch logs to Windows Event ID 593.  
+  - BIOS password + Secure-Boot; USB boot disabled.  
+  - Workstation kept in locked comms rack with CCTV coverage.  
+- **Authentication Hardening**  
+  - Admin accounts protected by TOTP-based 2-factor (Flask-Talisman).  
+  - Password complexity aligned to NIST 800-63B (§ 5.1.1).  
+- **Static & Dynamic Analysis**  
+  - *Bandit*, *Semgrep* run in CI; OWASP ZAP nightly crawl of staging host.  
+- **Network Monitoring**  
+  - Zeek sensor on mirror port analyses RTSP & HTTPS anomalies.  
+  - Wazuh agent on Windows host forwards Winlogbeat to SIEM.  
+- **Change Management**  
+  - GitFlow model; peer review required for `master` merges; SAST & unit tests gating.  
+- **Logging & Telemetry**  
+  - Structured JSON logs with UUID request-id; correlated across NGINX → Flask → worker.  
+  - Log retention: 6 months hot, 18 months cold archive (compressed).  
+
+### 8.8 Planned Enhancements
+
+| Feature | Benefit | ETA |
+|---------|---------|-----|
+| SRTP camera firmware roll-out | Encrypts video in transit, removes plaintext RTSP | Q4 2025 |
+| YubiKey enforced for admin login | Phishing-resistant MFA | Q1 2026 |
+| Zero-Trust micro-segmentation (Tailscale) | Replaces VPN; device identity per-packet | Pilot Q4 2025 |
+| SQLCipher migration | Field-level crypto & key rotation | Q3 2025 |
+| eBPF LSM on Pi | Kernel policy to block unknown sockets | R&D |
+
+### 8.11 Unified Threat Model Diagram
+
+```mermaid
+flowchart LR
+    %% === ACTORS ===
+    AttackerExt((🌐 External Attacker))
+    Insider((👤 Insider))
+    Thief((🛠️ Physical Thief))
+
+    %% === ZONES & COMPONENTS ===
+    subgraph Z1["Camera WLAN (WPA2-PSK)"]
+        Cam((RTSP Camera))
+        DefCam(["WPA2-PSK / AES"])
+    end
+
+    subgraph Z2["Raspberry Pi – Hotspot & Firewall"]
+        PiFW["iptables DNAT\nFail2ban"]
+        DefPi(["Default-deny fw\n30s ban"])
+    end
+
+    subgraph Z3["Reverse Proxy / WAF"]
+        WAF["NGINX + ModSecurity"]
+        DefWAF(["TLS 1.3 + CRS"])
+    end
+
+    subgraph Z4["Flask API & Workers"]
+        API["Auth & Logic"]
+        Worker["Analytics"]
+        DefAPI(["Argon2id + RBAC\nLockout 30s"])
+    end
+
+    subgraph Z5["Storage & Monitoring"]
+        DB[(SQLite / BitLocker)]
+        SIEM[[Graylog SIEM]]
+        DefDB(["BitLocker FDE"])
+        DefSIEM(["Immutable logs"])
+    end
+
+    subgraph Z6["User Browsers"]
+        Admin["Admin"]
+        Viewer["Viewer"]
+    end
+
+    %% === NORMAL FLOWS ===
+    Cam -- "RTSP 554" --> PiFW
+    PiFW -- "DNAT 8554" --> WAF
+    WAF -- "HTTPS 443" --> API
+    API --> Worker
+    API --> DB
+    API --> SIEM
+    Admin -- HTTPS --> WAF
+    Viewer -- HTTPS --> WAF
+    Admin -- SSH --> PiFW
+
+    %% === DEFENCE LINKS (dotted) ===
+    Cam -.-> DefCam
+    PiFW -.-> DefPi
+    WAF -.-> DefWAF
+    API -.-> DefAPI
+    DB -.-> DefDB
+    SIEM -.-> DefSIEM
+
+    classDef defense fill:#e6ffe6,stroke:#2b7a2b,stroke-dasharray: 2 2;
+    class DefCam,DefPi,DefWAF,DefAPI,DefDB,DefSIEM defense;
+
+    %% === THREAT PATHS (red dashed) ===
+    classDef threat stroke:#e00,stroke-width:2px,stroke-dasharray:4 3;
+    AttackerExt -- "MITM Wi-Fi" --> Cam
+    AttackerExt -- "DDoS 443" --> WAF
+    AttackerExt -- "Brute-force" --> API
+    Insider -- "Dump DB" --> DB
+    Insider -- "Erase logs" --> SIEM
+    Thief -- "Steal Pi" --> PiFW
+    class AttackerExt,Insider,Thief threat;
+
+    %% === BOUNDARIES ===
+    classDef zone fill:none,stroke:#666,stroke-dasharray:6 4;
+    class Z1,Z2,Z3,Z4,Z5,Z6 zone;
+```
