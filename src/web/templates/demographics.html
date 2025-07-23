@@ -19,8 +19,15 @@
         color: #6c757d;
         font-weight: 500;
         padding: 0.75rem 1rem;
-        margin-bottom: 0.5rem;
+        margin: 0 0.5rem 0 0;
+        display: inline-flex;
+        align-items: center;
         transition: all 0.3s ease;
+    }
+
+    /* Ensure no extra bottom spacing so links sit in a single horizontal row */
+    .demographics-nav .nav-link:last-child {
+        margin-right: 0;
     }
     
     .demographics-nav .nav-link:hover {
@@ -221,9 +228,9 @@
     
     <div class="row">
         <!-- Filter Navigation -->
-        <div class="col-lg-3 mb-4">
+        <div class="col-12 mb-4">
             <div class="demographics-nav">
-                <div class="nav nav-pills flex-column" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                <div class="nav nav-pills flex-row flex-wrap gap-2" id="v-pills-tab" role="tablist" aria-orientation="horizontal">
                     <button class="nav-link active" id="v-pills-charts-tab" data-bs-toggle="pill" data-bs-target="#v-pills-charts" type="button" role="tab">
                         <i class="fas fa-chart-pie me-2"></i>Charts
                     </button>
@@ -256,7 +263,7 @@
         </div>
         
         <!-- Demographics Content -->
-        <div class="col-lg-9">
+        <div class="col-12">
             <div class="tab-content" id="v-pills-tabContent">
                 
                 <!-- Charts Tab -->

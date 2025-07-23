@@ -5,6 +5,40 @@
 {% block header %}Historical Data{% endblock %}
 
 {% block styles %}
+<style>
+    .historical-nav {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        padding: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .historical-nav .nav-link {
+        border-radius: 8px;
+        color: #6c757d;
+        font-weight: 500;
+        padding: 0.75rem 1rem;
+        margin: 0 0.5rem 0 0;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.3s ease;
+    }
+
+    .historical-nav .nav-link:hover {
+        background: #f8f9fa;
+        color: #495057;
+    }
+
+    .historical-nav .nav-link.active {
+        background: linear-gradient(135deg,#3498db 0%, #2980b9 100%);
+        color: white;
+    }
+
+    .historical-nav .nav-link:last-child {
+        margin-right: 0;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -22,9 +56,9 @@
     
     <div class="row">
         <!-- Filter Navigation -->
-        <div class="col-lg-3 mb-4">
+        <div class="col-12 mb-4">
             <div class="historical-nav">
-                <div class="nav nav-pills flex-column" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                <div class="nav nav-pills flex-row flex-wrap gap-2" id="v-pills-tab" role="tablist" aria-orientation="horizontal">
                     <button class="nav-link active" id="v-pills-overview-tab" data-bs-toggle="pill" data-bs-target="#v-pills-overview" type="button" role="tab">
                         <i class="fas fa-chart-line me-2"></i>Overview
                     </button>
@@ -60,7 +94,7 @@
         </div>
         
         <!-- Historical Content -->
-        <div class="col-lg-9">
+        <div class="col-12">
             <div class="tab-content" id="v-pills-tabContent">
                 
                 <!-- Overview Tab -->
