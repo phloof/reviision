@@ -198,22 +198,39 @@ class FrameAnalysisService:
         }
 
         # Enhanced tracking and duplicate reduction
-        self.person_tracker = None
         self.detection_memory = {
-            'frame_count': 0,
-            'last_frame_time': 0,
             'active_tracks': {},
-            'people_database': {},
-            'next_id': 1,
-            'demographic_cache': {},  # Cache for demographic analysis
-            'feature_database': {},   # Store visual features for re-identification
-            'confidence_thresholds': {
-                'detection': 0.5,
-                'tracking': 0.3,
-                'demographics': 0.4,  # Lowered further for better gender detection
-                'database_entry': 0.5  # Lowered for more entries
-            }
+            'track_history': {},
+            'last_frame_time': time.time(),
+            'people_database': {},  # Persistent person database
+            'reid_features': {},  # Re-identification features
+            'track_id_counter': 1,
+            'max_track_history': 100,
+            'track_timeout': 30.0,  # 30 seconds
+            'similarity_threshold': 0.8,
+            'confirmation_frames': 3,
+            'max_distance_threshold': 100,
+            'frame_count': 0  # Add missing frame_count
         }
+
+        # Initialize zone manager and zone-based dwell analyzer
+        try:
+            from analysis.zone_manager import ZoneManager
+            from analysis.zone_dwell import ZoneDwellTimeAnalyzer
+            from database.sqlite_db import SQLiteDatabase
+            
+            # For now, create a temporary database connection for zones
+            # This will be properly connected when set_database is called
+            self.zone_manager = None
+            self.zone_dwell_analyzer = None
+            
+            logger.info("Zone management components imported successfully")
+        except ImportError as e:
+            logger.warning(f"Zone management not available: {e}")
+            self.zone_manager = None
+            self.zone_dwell_analyzer = None
+
+        logger.info("FrameAnalysisService initialized with enhanced tracking and zone support")
 
         # Enhanced duplicate reduction settings
         self.duplicate_reduction = {
@@ -268,6 +285,37 @@ class FrameAnalysisService:
             logger.info("Database reference set for FrameAnalysisService and FaceSnapshotManager")
         else:
             logger.warning("FaceSnapshotManager not available for database reference setting")
+            
+        # Initialize zone manager and zone-based dwell analyzer now that we have database
+        try:
+            if self.zone_manager is None:
+                from analysis.zone_manager import ZoneManager
+                self.zone_manager = ZoneManager(database)
+                logger.info("ZoneManager initialized with database")
+                
+            if self.zone_dwell_analyzer is None:
+                from analysis.zone_dwell import ZoneDwellTimeAnalyzer
+                # Use dwell time config from main config
+                dwell_config = {
+                    'min_dwell_time': 0.5,  # Reduced from 2.0 to 0.5 seconds for more responsive feedback
+                    'max_inactive_time': 10.0
+                }
+                self.zone_dwell_analyzer = ZoneDwellTimeAnalyzer(
+                    dwell_config, 
+                    self.zone_manager, 
+                    database=database, 
+                    camera_id='default'
+                )
+                logger.info(f"ZoneDwellTimeAnalyzer initialized with config: {dwell_config}")
+                
+                # Test zone loading
+                zones = self.zone_manager.get_zones('default')
+                logger.info(f"Loaded {len(zones)} zones for dwell analysis")
+                
+        except Exception as e:
+            logger.error(f"Failed to initialize zone components with database: {e}", exc_info=True)
+            self.zone_manager = None
+            self.zone_dwell_analyzer = None
     
     def _schedule_cache_cleanup(self):
         """Schedule periodic cache cleanup to prevent memory leaks"""
@@ -1366,7 +1414,7 @@ class FrameAnalysisService:
                     bbox_frontend = track['bbox']
                     center = ((track['bbox'][0] + track['bbox'][2]) / 2, (track['bbox'][1] + track['bbox'][3]) / 2)
                 
-                tracked_people.append({
+                tracked_person = {
                     'id': track_id,
                     'bbox': bbox_frontend,
                     'center': center,
@@ -1377,7 +1425,32 @@ class FrameAnalysisService:
                     'first_seen': person_data.get('first_seen', frame_time),
                     'last_seen': person_data.get('last_seen', frame_time),
                     'total_detections': person_data.get('total_detections', 1)
-                })
+                }
+                
+                # Add zone information if zone manager is available
+                if self.zone_manager:
+                    try:
+                        # Get center point for zone calculation
+                        cx, cy = center
+                        zone_id = self.zone_manager.point_to_zone('default', int(cx), int(cy))
+                        zones = self.zone_manager.get_zones('default')
+                        zone_name = 'Outside'
+                        
+                        # Find zone name
+                        for zone in zones:
+                            if zone['id'] == zone_id:
+                                zone_name = zone['name']
+                                break
+                        
+                        tracked_person['zone_id'] = zone_id
+                        tracked_person['zone_name'] = zone_name
+                        
+                    except Exception as e:
+                        logger.debug(f"Error adding zone info for person {track_id}: {e}")
+                        tracked_person['zone_id'] = 0
+                        tracked_person['zone_name'] = 'Outside'
+
+                tracked_people.append(tracked_person)
             
             return tracked_people
             
@@ -1558,6 +1631,29 @@ class FrameAnalysisService:
                 'dwell_time': self._calculate_person_dwell_time(track_id, track),  # Use proper dwell time calculation
                 'is_confirmed': track['is_confirmed']
             }
+            
+            # Add zone information if zone manager is available
+            if self.zone_manager:
+                try:
+                    # Get center point for zone calculation
+                    cx, cy = center
+                    zone_id = self.zone_manager.point_to_zone('default', int(cx), int(cy))
+                    zones = self.zone_manager.get_zones('default')
+                    zone_name = 'Outside'
+                    
+                    # Find zone name
+                    for zone in zones:
+                        if zone['id'] == zone_id:
+                            zone_name = zone['name']
+                            break
+                    
+                    tracked_person['zone_id'] = zone_id
+                    tracked_person['zone_name'] = zone_name
+                    
+                except Exception as e:
+                    logger.debug(f"Error adding zone info for person {track_id}: {e}")
+                    tracked_person['zone_id'] = 0
+                    tracked_person['zone_name'] = 'Outside'
 
             tracked_people.append(tracked_person)
 
@@ -1873,12 +1969,71 @@ class FrameAnalysisService:
                         'dwell_time': 0
                     })
             
+            # Process zone-based dwell time if zone analyzer is available
+            if self.zone_dwell_analyzer and tracked_people:
+                try:
+                    # Convert tracked people to format expected by zone dwell analyzer
+                    tracks_for_dwell = []
+                    for person in tracked_people:
+                        # Convert bbox format for zone analyzer (needs x1,y1,x2,y2)
+                        bbox = person['bbox']
+                        if len(bbox) == 4:
+                            # If bbox is [x, y, w, h], convert to [x1, y1, x2, y2]
+                            if isinstance(bbox[2], (int, float)) and bbox[2] > 0 and bbox[2] < 2000:  # width/height format
+                                bbox_zone = [bbox[0], bbox[1], bbox[0] + bbox[2], bbox[1] + bbox[3]]
+                            else:  # already x1,y1,x2,y2 format
+                                bbox_zone = bbox
+                        else:
+                            bbox_zone = bbox
+                            
+                        tracks_for_dwell.append({
+                            'id': person['id'],
+                            'bbox': bbox_zone
+                        })
+                    
+                    # Update zone-based dwell times
+                    zone_dwell_records = self.zone_dwell_analyzer.update(tracks_for_dwell)
+                    
+                    # Update tracked people with zone-based dwell times
+                    for person in tracked_people:
+                        person_id = person['id']
+                        
+                        # Check if person has active zone dwell
+                        if person_id in self.zone_dwell_analyzer.active:
+                            zone_dwell_info = self.zone_dwell_analyzer.active[person_id]
+                            current_time = time.time()
+                            zone_dwell_time = current_time - zone_dwell_info['start_time']
+                            person['zone_dwell_time'] = zone_dwell_time
+                            person['zone_dwell_zone_id'] = zone_dwell_info['zone_id']
+                            
+                            # Debug logging
+                            if zone_dwell_time > 1.0:  # Only log after 1 second
+                                logger.info(f"Person {person_id} zone dwell: {zone_dwell_time:.1f}s in zone {zone_dwell_info['zone_id']}")
+                        else:
+                            person['zone_dwell_time'] = 0
+                            person['zone_dwell_zone_id'] = person.get('zone_id', 0)
+                            
+                except Exception as e:
+                    logger.error(f"Error processing zone-based dwell time: {e}")
+                    # Add default zone dwell info to prevent errors
+                    for person in tracked_people:
+                        person['zone_dwell_time'] = person.get('dwell_time', 0)
+                        person['zone_dwell_zone_id'] = person.get('zone_id', 0)
+            else:
+                # Zone analyzer not available, log this
+                if tracked_people:
+                    logger.debug(f"Zone dwell analyzer not available (analyzer: {self.zone_dwell_analyzer is not None}, people: {len(tracked_people)})")
+                # Add default zone dwell info to prevent errors
+                for person in tracked_people:
+                    person['zone_dwell_time'] = person.get('dwell_time', 0)
+                    person['zone_dwell_zone_id'] = person.get('zone_id', 0)
+
             # Calculate demographics summary
             demographics_summary = {
                 'male_count': 0,
                 'female_count': 0,
                 'age_groups': {},
-                'total_analysed': 0
+                "total_analysed": 0
             }
             
             total_dwell = 0
@@ -1975,7 +2130,8 @@ class FrameAnalysisService:
                     "age_groups": demographics_summary['age_groups'],
                     "total_analysed": demographics_summary['total_analysed'],
                     "active_tracks": len(self.detection_memory['active_tracks']),
-                    "people_database_size": self._get_actual_database_count()
+                    "people_database_size": self._get_actual_database_count(),
+                    "zone_analytics": self._get_zone_analytics(tracked_people)
                 },
 
             }
@@ -3022,17 +3178,127 @@ class FrameAnalysisService:
                 first_seen = person_data.get('first_seen', current_time)
                 dwell_time = current_time - first_seen
                 
+                # Debug logging for dwell time
+                if dwell_time > 1.0:  # Only log after 1 second
+                    logger.debug(f"Person {track_id} general dwell: {dwell_time:.1f}s (first_seen: {first_seen:.1f}, current: {current_time:.1f})")
+                
                 # Ensure minimum dwell time threshold
                 min_dwell = 0.5  # 0.5 seconds minimum
                 return max(min_dwell, dwell_time) if dwell_time > 0 else 0.0
             else:
                 # New person, minimal dwell time
+                logger.debug(f"Person {track_id} not in database, returning 0 dwell time")
                 return 0.0
                 
         except Exception as e:
             logger.warning(f"Error calculating dwell time for person {track_id}: {e}")
             # Fallback to frame-based calculation
             return max(0.0, track['frames_tracked'] * 0.033)  # ~30fps assumption
+
+    def _get_zone_analytics(self, tracked_people):
+        """
+        Calculate zone-based analytics from tracked people data
+        
+        Args:
+            tracked_people: List of tracked person objects with zone information
+            
+        Returns:
+            dict: Zone analytics including per-zone dwell times and occupancy
+        """
+        try:
+            if not self.zone_manager:
+                return {"zones_available": False}
+            
+            zones = self.zone_manager.get_zones('default')
+            zone_analytics = {
+                "zones_available": True,
+                "total_zones": len(zones),
+                "zone_occupancy": {},
+                "zone_dwell_times": {},
+                "zone_demographics": {}
+            }
+            
+            # Initialize zone data
+            for zone in zones:
+                zone_id = zone['id']
+                zone_name = zone['name']
+                zone_analytics["zone_occupancy"][zone_name] = {
+                    "zone_id": zone_id,
+                    "current_count": 0,
+                    "people_ids": []
+                }
+                zone_analytics["zone_dwell_times"][zone_name] = {
+                    "zone_id": zone_id,
+                    "active_dwell_times": [],
+                    "average_dwell_time": 0
+                }
+                zone_analytics["zone_demographics"][zone_name] = {
+                    "zone_id": zone_id,
+                    "male_count": 0,
+                    "female_count": 0,
+                    "age_groups": {}
+                }
+            
+            # Add "Outside" zone for people not in any defined zone
+            zone_analytics["zone_occupancy"]["Outside"] = {
+                "zone_id": 0,
+                "current_count": 0,
+                "people_ids": []
+            }
+            zone_analytics["zone_dwell_times"]["Outside"] = {
+                "zone_id": 0,
+                "active_dwell_times": [],
+                "average_dwell_time": 0
+            }
+            zone_analytics["zone_demographics"]["Outside"] = {
+                "zone_id": 0,
+                "male_count": 0,
+                "female_count": 0,
+                "age_groups": {}
+            }
+            
+            # Process each tracked person
+            for person in tracked_people:
+                zone_name = person.get('zone_name', 'Outside')
+                zone_dwell_time = person.get('zone_dwell_time', person.get('dwell_time', 0))
+                person_id = person.get('id', 'unknown')
+                demographics = person.get('demographics', {})
+                
+                # Update occupancy
+                if zone_name in zone_analytics["zone_occupancy"]:
+                    zone_analytics["zone_occupancy"][zone_name]["current_count"] += 1
+                    zone_analytics["zone_occupancy"][zone_name]["people_ids"].append(person_id)
+                
+                # Update dwell times
+                if zone_name in zone_analytics["zone_dwell_times"] and zone_dwell_time > 0:
+                    zone_analytics["zone_dwell_times"][zone_name]["active_dwell_times"].append(zone_dwell_time)
+                
+                # Update demographics
+                if zone_name in zone_analytics["zone_demographics"]:
+                    gender = demographics.get('gender', 'unknown')
+                    age_group = demographics.get('age_group', 'unknown')
+                    
+                    if gender == 'male':
+                        zone_analytics["zone_demographics"][zone_name]["male_count"] += 1
+                    elif gender == 'female':
+                        zone_analytics["zone_demographics"][zone_name]["female_count"] += 1
+                    
+                    if age_group != 'unknown' and age_group != 'analyzing...':
+                        if age_group not in zone_analytics["zone_demographics"][zone_name]["age_groups"]:
+                            zone_analytics["zone_demographics"][zone_name]["age_groups"][age_group] = 0
+                        zone_analytics["zone_demographics"][zone_name]["age_groups"][age_group] += 1
+            
+            # Calculate average dwell times
+            for zone_name in zone_analytics["zone_dwell_times"]:
+                dwell_times = zone_analytics["zone_dwell_times"][zone_name]["active_dwell_times"]
+                if dwell_times:
+                    zone_analytics["zone_dwell_times"][zone_name]["average_dwell_time"] = sum(dwell_times) / len(dwell_times)
+            
+            return zone_analytics
+            
+        except Exception as e:
+            logger.error(f"Error calculating zone analytics: {e}")
+            return {"zones_available": False, "error": str(e)}
 
 # Global service instance
 analysis_service = FrameAnalysisService()

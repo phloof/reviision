@@ -208,8 +208,10 @@ def main():
         tracker = get_tracker(tracking_config)
         
         # Initialize analysis modules
+        from analysis.zone_manager import ZoneManager
+        zone_manager = ZoneManager(db)
         demographic_analyzer = DemographicAnalyzer(config['analysis']['demographics'])
-        dwell_time_analyzer = DwellTimeAnalyzer(config['analysis']['dwell_time'])
+        dwell_time_analyzer = DwellTimeAnalyzer(config['analysis']['dwell_time'], zone_manager, db)
         heatmap_generator = HeatmapGenerator(config['analysis']['heatmap'])
         
         # Initialize new analysis modules if enabled
@@ -228,16 +230,16 @@ def main():
         
         # Initialize Flask web application
         app = create_app(config, db)
+        app.zone_manager = zone_manager
         
         # Start processing pipeline in background thread
         logger.info("Starting ReViision system...")
         
-        # Run web server
-        app.run(
-            host=config['web']['host'],
-            port=config['web']['port'],
-            debug=args.debug
-        )
+        # Run web server (SocketIO if available)
+        if hasattr(app, 'run_with_socketio'):
+            app.run_with_socketio(host=config['web']['host'],port=config['web']['port'],debug=args.debug)
+        else:
+            app.run(host=config['web']['host'],port=config['web']['port'],debug=args.debug)
         
     except KeyboardInterrupt:
         logger.info("Shutting down...")

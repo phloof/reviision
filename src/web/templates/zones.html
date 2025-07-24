@@ -1,0 +1,726 @@
+{% extends "base.html" %}
+{% block title %}Zones{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-page-styles.css') }}">
+<style>
+  #liveWrapper { position: relative; }
+  #videoContainer { 
+    position: relative; 
+    display: block; 
+    width: 100%; 
+    line-height: 0; 
+  }
+  #zonesOverlay { 
+    position: absolute; 
+    left: 0; 
+    top: 0; 
+    pointer-events: none; 
+    z-index: 10;
+  }
+  #liveVideo { 
+    width: 100%; 
+    height: auto; 
+    display: block; 
+    background-color: #000; 
+  }
+
+  /* Modal Specific Styles */
+  #snapshotWrapper {
+    position: relative;
+    line-height: 0;
+    min-height: 400px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  #snapshotCanvas {
+    border: 1px solid #ddd;
+    cursor: crosshair;
+  }
+  
+  .loading-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    text-align: center;
+  }
+  
+  .debug-info {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 5px;
+    font-size: 12px;
+    border-radius: 3px;
+    z-index: 20;
+    white-space: pre-wrap;
+  }
+
+  .btn-toolbar .btn.disabled,
+  .btn-toolbar .btn:disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+</style>
+{% endblock %}
+
+{% block header %}Zones{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <div id="liveWrapper" class="mb-3 card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Live Camera Feed with Zone Overlays</h5>
+        <button id="editBtn" class="btn btn-primary">
+          <i class="fas fa-edit me-1"></i> Edit Zones
+        </button>
+      </div>
+      <div class="card-body p-0">
+        <div id="videoContainer">
+          <img id="liveVideo" src="{{ url_for('web.camera_stream') }}" alt="live feed"/>
+          <canvas id="zonesOverlay"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Zone Editor Modal -->
+<div class="modal fade" id="zoneModal" tabindex="-1" aria-labelledby="zoneModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="zoneModalLabel">Zone Editor</h5>
+        <div id="modalToolbar" class="btn-toolbar ms-auto">
+          <div class="btn-group me-2" role="group">
+            <button type="button" class="btn btn-sm btn-outline-success" id="modalDrawBtn" title="Draw New Zone" disabled>
+              <i class="fas fa-pencil-alt"></i> Draw
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-primary active" id="modalSelectBtn" title="Select and Move" disabled>
+              <i class="fas fa-mouse-pointer"></i> Select
+            </button>
+          </div>
+          <div class="btn-group" role="group">
+            <button type="button" class="btn btn-sm btn-outline-danger" id="modalDeleteBtn" title="Delete Selected" disabled>
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="loading-indicator" id="modalLoadingIndicator">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <div class="mt-2">Loading camera snapshot...</div>
+        </div>
+        <div id="snapshotWrapper" style="display: none;">
+            <canvas id="snapshotCanvas"></canvas>
+            <div class="debug-info" id="debugInfo" style="display: none;"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span class="text-muted me-auto">Double-click a zone to rename. Draw mode: Click and drag to create zones.</span>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="saveZonesBtn" disabled>Save All Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Load dependencies first -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.2.4/fabric.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
+
+<!-- Inline zone editor script to avoid timing issues -->
+<script>
+console.log('Zone Editor: Inline script starting');
+
+// Simple zones page functionality with precise positioning
+(function(){
+  const overlay = document.getElementById('zonesOverlay');
+  const video = document.getElementById('liveVideo');
+  const videoContainer = document.getElementById('videoContainer');
+  if (!overlay || !video || !videoContainer) return;
+  
+  const ctx = overlay.getContext('2d');
+  let zones = [];
+  
+  function resize(){
+    // Set canvas to match video exactly
+    const videoDisplayWidth = video.clientWidth;
+    const videoDisplayHeight = video.clientHeight;
+    
+    overlay.width = videoDisplayWidth;
+    overlay.height = videoDisplayHeight;
+    overlay.style.width = videoDisplayWidth + 'px';
+    overlay.style.height = videoDisplayHeight + 'px';
+    
+    drawZones();
+  }
+  
+  function drawZones(){
+    if(!overlay.width || !zones.length) return;
+    
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+    
+    // Calculate scale factor from stored coordinates to current video size
+    const videoWidth = video.clientWidth;
+    const videoHeight = video.clientHeight;
+    
+    // Assume zones were stored at 1280x720 reference size
+    const scaleX = videoWidth / 1280;
+    const scaleY = videoHeight / 720;
+    
+    zones.forEach((z, i) => {
+      const color = ['#f44336','#2196f3','#4caf50','#ff9800','#9c27b0','#00bcd4','#e91e63'][i % 7];
+      
+      // Scale zone coordinates to current video size
+      const x1 = z.x1 * scaleX;
+      const y1 = z.y1 * scaleY;
+      const x2 = z.x2 * scaleX;
+      const y2 = z.y2 * scaleY;
+      
+      // Draw zone rectangle
+      ctx.strokeStyle = color; 
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+      
+      // Draw zone name
+      ctx.fillStyle = color;
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText(z.name, x1 + 5, y1 + 20);
+      
+      // Add semi-transparent fill
+      ctx.fillStyle = color + '30';
+      ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+    });
+  }
+  
+  async function fetchZones(){
+    try{ 
+      const res = await fetch('/api/zones'); 
+      const j = await res.json(); 
+      if(j.success){ 
+        zones = j.zones || []; 
+        drawZones(); 
+      } 
+    }catch(e){console.error('Fetch zones error:', e);} 
+  }
+  
+  // Event listeners
+  video.addEventListener('load', resize);
+  video.addEventListener('loadeddata', resize);
+  window.addEventListener('resize', resize);
+  
+  // WebSocket for live updates
+  if (typeof io !== 'undefined') {
+    const socket = io();
+    socket.on('zonesUpdated', fetchZones);
+  }
+  
+  // Initialize
+  setTimeout(() => {
+    resize();
+    fetchZones();
+  }, 500);
+})();
+
+// Zone editor modal functionality
+(function(){
+  console.log('Zone Editor Modal: Starting initialization');
+  
+  // Wait for everything to be ready
+  function initWhenReady() {
+    if (typeof bootstrap === 'undefined') {
+      console.log('Zone Editor Modal: Bootstrap not ready, retrying...');
+      setTimeout(initWhenReady, 100);
+      return;
+    }
+    
+    if (typeof fabric === 'undefined') {
+      console.log('Zone Editor Modal: Fabric.js not ready, retrying...');
+      setTimeout(initWhenReady, 100);
+      return;
+    }
+    
+    console.log('Zone Editor Modal: Dependencies ready, initializing...');
+    initZoneEditor();
+  }
+  
+  function initZoneEditor() {
+    const editBtn = document.getElementById('editBtn');
+    const zoneModalEl = document.getElementById('zoneModal');
+    const snapshotCanvasEl = document.getElementById('snapshotCanvas');
+    const snapshotWrapper = document.getElementById('snapshotWrapper');
+    const loadingIndicator = document.getElementById('modalLoadingIndicator');
+    const debugInfo = document.getElementById('debugInfo');
+    
+    // Modal control elements
+    const modalDrawBtn = document.getElementById('modalDrawBtn');
+    const modalSelectBtn = document.getElementById('modalSelectBtn');
+    const modalDeleteBtn = document.getElementById('modalDeleteBtn');
+    const saveBtn = document.getElementById('saveZonesBtn');
+    
+    if (!editBtn || !zoneModalEl) {
+      console.error('Zone Editor Modal: Required elements not found');
+      return;
+    }
+    
+    let zoneModal, snapCanvas, originalZoneIds = [], isModalReady = false;
+    let currentMode = 'select';
+    
+    try {
+      zoneModal = new bootstrap.Modal(zoneModalEl);
+      console.log('Zone Editor Modal: Bootstrap modal initialized successfully');
+    } catch (error) {
+      console.error('Zone Editor Modal: Bootstrap modal init failed:', error);
+      alert('Failed to initialize modal. Bootstrap error: ' + error.message);
+      return;
+    }
+    
+    const colorForIndex = (i) => ['#f44336', '#2196f3', '#4caf50', '#ff9800', '#9c27b0', '#00bcd4', '#e91e63'][i % 7];
+    
+    function setButtonsEnabled(enabled) {
+      console.log('Zone Editor Modal: Setting buttons enabled:', enabled);
+      [modalDrawBtn, modalSelectBtn, modalDeleteBtn, saveBtn].forEach(btn => {
+        if (btn) {
+          btn.disabled = !enabled;
+          if (enabled) {
+            btn.classList.remove('disabled');
+          } else {
+            btn.classList.add('disabled');
+          }
+        }
+      });
+    }
+    
+    function setLoading(loading) {
+      if (loadingIndicator) loadingIndicator.style.display = loading ? 'block' : 'none';
+      if (snapshotWrapper) snapshotWrapper.style.display = loading ? 'none' : 'block';
+    }
+    
+    function updateDebugInfo(info) {
+      if (debugInfo) {
+        debugInfo.textContent = JSON.stringify(info, null, 2);
+        debugInfo.style.display = 'block';
+      }
+    }
+    
+    async function openZoneModal() {
+      console.log('Zone Editor Modal: Opening modal...');
+      
+      try {
+        isModalReady = false;
+        setButtonsEnabled(false);
+        setLoading(true);
+        
+        zoneModal.show();
+        
+        console.log('Zone Editor Modal: Fetching snapshot and zones...');
+        
+        const snapshotUrl = '/api/camera/snapshot?' + Date.now();
+        console.log('Zone Editor Modal: Snapshot URL:', snapshotUrl);
+        
+        const [snapRes, zRes] = await Promise.all([
+          fetch(snapshotUrl),
+          fetch('/api/zones')
+        ]);
+        
+        console.log('Zone Editor Modal: Responses:', {
+          snapshot: { status: snapRes.status, ok: snapRes.ok },
+          zones: { status: zRes.status, ok: zRes.ok }
+        });
+        
+        if (!snapRes.ok) {
+          const errorText = await snapRes.text();
+          throw new Error(`Snapshot failed (${snapRes.status}): ${errorText}`);
+        }
+        
+        if (!zRes.ok) {
+          const errorText = await zRes.text();
+          throw new Error(`Zones failed (${zRes.status}): ${errorText}`);
+        }
+        
+        const snapshotBlob = await snapRes.blob();
+        const zoneDataResponse = await zRes.json();
+        const zoneData = zoneDataResponse.zones || [];
+        originalZoneIds = zoneData.map(z => z.id).filter(id => id);
+        
+        console.log('Zone Editor Modal: Data loaded:', {
+          snapshotSize: snapshotBlob.size,
+          zonesCount: zoneData.length
+        });
+        
+        // Load image and create canvas with image as background
+        const img = new Image();
+        img.onload = () => {
+          console.log('Zone Editor Modal: Image loaded, initializing canvas...');
+          setTimeout(() => {
+            try {
+              initCanvasWithImage(img, zoneData);
+              setLoading(false);
+              setButtonsEnabled(true);
+              isModalReady = true;
+              
+              updateDebugInfo({
+                imageSize: img.width + 'x' + img.height,
+                canvasSize: snapshotCanvasEl.width + 'x' + snapshotCanvasEl.height,
+                zonesLoaded: zoneData.length,
+                fabricObjects: snapCanvas ? snapCanvas.getObjects().length : 0,
+                currentMode: currentMode
+              });
+              
+              console.log('Zone Editor Modal: Initialization complete');
+            } catch (error) {
+              console.error('Zone Editor Modal: Canvas init failed:', error);
+              setLoading(false);
+              alert('Canvas initialization failed: ' + error.message);
+            }
+          }, 100);
+        };
+        
+        img.onerror = (error) => {
+          console.error('Zone Editor Modal: Image load failed:', error);
+          setLoading(false);
+          alert('Failed to load snapshot image');
+        };
+        
+        img.src = URL.createObjectURL(snapshotBlob);
+        
+      } catch (error) {
+        console.error('Zone Editor Modal: Error:', error);
+        setLoading(false);
+        alert('Error opening zone editor: ' + error.message);
+        if (zoneModal) zoneModal.hide();
+      }
+    }
+    
+    function initCanvasWithImage(img, zonesData) {
+      console.log('Zone Editor Modal: Initializing canvas with image:', img.width + 'x' + img.height);
+      
+      if (snapCanvas) {
+        snapCanvas.dispose();
+        snapCanvas = null;
+      }
+      
+      // Set canvas size to match image exactly (no scaling in editor)
+      const canvasWidth = Math.min(img.width, 1200); // Max width for modal
+      const canvasHeight = Math.round((canvasWidth / img.width) * img.height);
+      
+      snapshotCanvasEl.width = canvasWidth;
+      snapshotCanvasEl.height = canvasHeight;
+      snapshotCanvasEl.style.width = canvasWidth + 'px';
+      snapshotCanvasEl.style.height = canvasHeight + 'px';
+      
+      snapCanvas = new fabric.Canvas('snapshotCanvas', { 
+        selection: true,
+        preserveObjectStacking: true
+      });
+      
+      // Set image as canvas background
+      snapCanvas.setBackgroundImage(img.src, snapCanvas.renderAll.bind(snapCanvas), {
+        scaleX: canvasWidth / img.width,
+        scaleY: canvasHeight / img.height
+      });
+      
+      // Scale zones to match canvas size (for display in editor)
+      const scaleX = canvasWidth / img.width;
+      const scaleY = canvasHeight / img.height;
+      
+      // Add existing zones
+      zonesData.forEach((zone, index) => {
+        const color = colorForIndex(index);
+        const rect = new fabric.Rect({
+          left: zone.x1 * scaleX,
+          top: zone.y1 * scaleY,
+          width: (zone.x2 - zone.x1) * scaleX,
+          height: (zone.y2 - zone.y1) * scaleY,
+          fill: color + '33',
+          stroke: color,
+          strokeWidth: 2,
+          cornerColor: color,
+          transparentCorners: false,
+          cornerSize: 8,
+          hasRotatingPoint: false
+        });
+        
+        rect.setControlsVisibility({ mtr: false });
+        rect.zoneData = { 
+          id: zone.id, 
+          name: zone.name || 'Zone ' + (index + 1),
+          originalScale: { x: scaleX, y: scaleY },
+          originalImageSize: { width: img.width, height: img.height }
+        };
+        
+        snapCanvas.add(rect);
+      });
+      
+      setupEventHandlers();
+      setMode('draw'); // Start in draw mode
+      
+      console.log('Zone Editor Modal: Canvas setup complete');
+    }
+    
+    function setupEventHandlers() {
+      let isDrawing = false, startX = 0, startY = 0, tempRect = null;
+      
+      const startDraw = (opt) => {
+        if (!isModalReady || currentMode !== 'draw') return;
+        
+        isDrawing = true;
+        const pointer = snapCanvas.getPointer(opt.e);
+        startX = pointer.x;
+        startY = pointer.y;
+        
+        tempRect = new fabric.Rect({
+          left: startX, 
+          top: startY, 
+          width: 1, 
+          height: 1,
+          fill: 'rgba(0,255,0,0.2)', 
+          stroke: '#00ff00', 
+          strokeWidth: 2,
+          selectable: false, 
+          evented: false
+        });
+        snapCanvas.add(tempRect);
+        console.log('Zone Editor Modal: Started drawing rectangle');
+      };
+      
+      const moveDraw = (opt) => {
+        if (!isDrawing || !tempRect || currentMode !== 'draw') return;
+        
+        const pointer = snapCanvas.getPointer(opt.e);
+        const width = Math.abs(pointer.x - startX);
+        const height = Math.abs(pointer.y - startY);
+        const left = Math.min(pointer.x, startX);
+        const top = Math.min(pointer.y, startY);
+        
+        tempRect.set({ width, height, left, top });
+        snapCanvas.renderAll();
+      };
+      
+      const endDraw = () => {
+        if (!isDrawing || !tempRect || currentMode !== 'draw') return;
+        
+        isDrawing = false;
+        console.log('Zone Editor Modal: Finished drawing, rectangle size:', tempRect.width + 'x' + tempRect.height);
+        
+        if (tempRect.width < 10 || tempRect.height < 10) {
+          console.log('Zone Editor Modal: Rectangle too small, removing');
+          snapCanvas.remove(tempRect);
+          tempRect = null;
+          return;
+        }
+        
+        const newIndex = snapCanvas.getObjects().length - 1;
+        const color = colorForIndex(newIndex);
+        const name = prompt('Enter Zone Name:', 'Zone ' + (newIndex + 1));
+        
+        if (name) {
+          tempRect.set({
+            fill: color + '33',
+            stroke: color,
+            strokeWidth: 2,
+            cornerColor: color,
+            selectable: true,
+            evented: true,
+            hasRotatingPoint: false
+          });
+          tempRect.setControlsVisibility({ mtr: false });
+          tempRect.zoneData = { 
+            name: name,
+            originalScale: { x: 1, y: 1 }, // New zones use canvas scale
+            originalImageSize: { width: snapCanvas.width, height: snapCanvas.height }
+          };
+          console.log('Zone Editor Modal: Zone created:', name);
+        } else {
+          snapCanvas.remove(tempRect);
+          console.log('Zone Editor Modal: Zone creation cancelled');
+        }
+        
+        tempRect = null;
+        // Stay in draw mode for continuous drawing
+      };
+      
+      // Double-click to rename
+      snapCanvas.on('mouse:dblclick', (e) => {
+        if (e.target && e.target.type === 'rect' && e.target.zoneData) {
+          const currentName = e.target.zoneData.name || '';
+          const newName = prompt('Rename Zone:', currentName);
+          if (newName) {
+            e.target.zoneData.name = newName;
+            console.log('Zone Editor Modal: Zone renamed to:', newName);
+          }
+        }
+      });
+      
+      // Set mode function
+      window.setMode = (mode) => {
+        console.log('Zone Editor Modal: Setting mode to:', mode);
+        currentMode = mode;
+        
+        // Clear previous event handlers
+        snapCanvas.off('mouse:down', startDraw);
+        snapCanvas.off('mouse:move', moveDraw);
+        snapCanvas.off('mouse:up', endDraw);
+        
+        // Update button states
+        modalDrawBtn.classList.toggle('active', mode === 'draw');
+        modalSelectBtn.classList.toggle('active', mode === 'select');
+        
+        if (mode === 'draw') {
+          snapCanvas.selection = false;
+          snapCanvas.defaultCursor = 'crosshair';
+          snapshotCanvasEl.style.cursor = 'crosshair';
+          snapCanvas.forEachObject(obj => obj.selectable = false);
+          snapCanvas.on('mouse:down', startDraw);
+          snapCanvas.on('mouse:move', moveDraw);
+          snapCanvas.on('mouse:up', endDraw);
+          console.log('Zone Editor Modal: Draw mode activated');
+        } else {
+          snapCanvas.selection = true;
+          snapCanvas.defaultCursor = 'default';
+          snapshotCanvasEl.style.cursor = 'default';
+          snapCanvas.forEachObject(obj => obj.selectable = true);
+          console.log('Zone Editor Modal: Select mode activated');
+        }
+        
+        snapCanvas.renderAll();
+      };
+      
+      // Button event handlers
+      if (modalDrawBtn) {
+        modalDrawBtn.onclick = (e) => {
+          e.preventDefault();
+          console.log('Zone Editor Modal: Draw button clicked');
+          setMode('draw');
+        };
+      }
+      
+      if (modalSelectBtn) {
+        modalSelectBtn.onclick = (e) => {
+          e.preventDefault();
+          console.log('Zone Editor Modal: Select button clicked');
+          setMode('select');
+        };
+      }
+      
+      if (modalDeleteBtn) {
+        modalDeleteBtn.onclick = (e) => {
+          e.preventDefault();
+          const activeObject = snapCanvas.getActiveObject();
+          if (activeObject) {
+            snapCanvas.remove(activeObject);
+            console.log('Zone Editor Modal: Zone deleted');
+          }
+        };
+      }
+    }
+    
+    if (saveBtn) {
+      saveBtn.onclick = async () => {
+        if (!isModalReady || !snapCanvas) return;
+        
+        setButtonsEnabled(false);
+        console.log('Zone Editor Modal: Saving zones...');
+        
+        try {
+          const currentObjects = snapCanvas.getObjects();
+          const updatedZones = [];
+          const newZones = [];
+          const activeIds = [];
+          
+          currentObjects.forEach((obj, i) => {
+            if (obj.type !== 'rect' || !obj.zoneData) return;
+            
+            // Get the image dimensions for coordinate conversion
+            const imageWidth = obj.zoneData.originalImageSize ? obj.zoneData.originalImageSize.width : snapCanvas.width;
+            const imageHeight = obj.zoneData.originalImageSize ? obj.zoneData.originalImageSize.height : snapCanvas.height;
+            
+            // Scale coordinates back to original image size
+            const scaleX = obj.zoneData.originalScale ? obj.zoneData.originalScale.x : (snapCanvas.width / imageWidth);
+            const scaleY = obj.zoneData.originalScale ? obj.zoneData.originalScale.y : (snapCanvas.height / imageHeight);
+            
+            const zData = {
+              name: obj.zoneData.name || 'Zone ' + (i + 1),
+              x1: Math.round(obj.left / scaleX),
+              y1: Math.round(obj.top / scaleY),
+              x2: Math.round((obj.left + (obj.width * obj.scaleX)) / scaleX),
+              y2: Math.round((obj.top + (obj.height * obj.scaleY)) / scaleY)
+            };
+            
+            if (obj.zoneData.id) {
+              zData.id = obj.zoneData.id;
+              updatedZones.push(zData);
+              activeIds.push(zData.id);
+            } else {
+              newZones.push(zData);
+            }
+          });
+          
+          const deletedIds = originalZoneIds.filter(id => !activeIds.includes(id));
+          
+          const requests = [];
+          newZones.forEach(zone => {
+            requests.push(fetch('/api/zones', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(zone)
+            }));
+          });
+          
+          updatedZones.forEach(zone => {
+            requests.push(fetch('/api/zones/' + zone.id, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(zone)
+            }));
+          });
+          
+          deletedIds.forEach(id => {
+            requests.push(fetch('/api/zones/' + id, { method: 'DELETE' }));
+          });
+          
+          await Promise.all(requests);
+          console.log('Zone Editor Modal: Zones saved successfully');
+          zoneModal.hide();
+          
+        } catch (error) {
+          console.error('Zone Editor Modal: Save failed:', error);
+          alert('Failed to save zones: ' + error.message);
+          setButtonsEnabled(true);
+        }
+      };
+    }
+    
+    // Attach event listener to edit button
+    editBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      console.log('Zone Editor Modal: Edit button clicked');
+      openZoneModal();
+    });
+    
+    console.log('Zone Editor Modal: Initialization complete');
+  }
+  
+  // Start initialization when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initWhenReady);
+  } else {
+    initWhenReady();
+  }
+})();
+</script>
+{% endblock %} 

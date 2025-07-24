@@ -3,7 +3,9 @@ Web module for ReViision
 Handles the Flask web application and API endpoints for retail vision analytics
 """
 
+# Added SocketIO for real-time zone update broadcasts
 from flask import Flask, jsonify, request, render_template, redirect, url_for
+from flask_socketio import SocketIO, emit
 from datetime import datetime, timedelta
 import os
 from .routes import web_bp  # Import the Blueprint from routes.py
@@ -24,12 +26,21 @@ def create_app(config, db):
     app = Flask(__name__, 
                 template_folder=os.path.join(os.path.dirname(__file__), 'templates'),
                 static_folder=os.path.join(os.path.dirname(__file__), 'static'))
+
+    # ------------------------------------------------------------------
+    # Real-time WebSocket support (zones updates & future events)
+    # ------------------------------------------------------------------
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+    app.socketio = socketio  # expose for routes
     
     # Configure app with explicit loop=True for video looping
     app.config['CAMERA_OPTIONS'] = {
         'loop': True,  # Ensure video looping is enabled by default
         'playback_speed': config.get('camera', {}).get('playback_speed', 1.0)
     }
+    
+    # Configure static file versioning for cache busting
+    app.config['STATIC_VERSION'] = '5'  # Increment this to force cache reload
     
     # Configure session security
     app.config['SECRET_KEY'] = config.get('web', {}).get('secret_key', 'dev-key-change-in-production')
@@ -82,5 +93,10 @@ def create_app(config, db):
     
     # Register the Blueprint from routes.py
     app.register_blueprint(web_bp, url_prefix='')
-    
+
+    # Helper to run SocketIO in main if needed (used by main.py)
+    def run_with_socketio(*args, **kwargs):
+        socketio.run(app, *args, **kwargs)
+    app.run_with_socketio = run_with_socketio
+
     return app 

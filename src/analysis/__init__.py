@@ -4,7 +4,7 @@ Provides various analytics functionalities for customer behavior
 """
 
 from .demographics import DemographicAnalyzer
-from .dwell import DwellTimeAnalyzer
+from .zone_dwell import ZoneDwellTimeAnalyzer as DwellTimeAnalyzer
 from .heatmap import HeatmapGenerator
 from .face_quality import FaceQualityScorer
 from .face_snapshot_manager import FaceSnapshotManager

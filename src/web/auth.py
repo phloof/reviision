@@ -191,8 +191,14 @@ class AuthService:
                 failure_reason = "User not found"
             elif not user["is_active"]:
                 failure_reason = "Account disabled"
-            elif user["locked_until"] and datetime.fromisoformat(user["locked_until"]) > datetime.now():
-                failure_reason = "Account locked"
+            elif user["locked_until"]:
+                locked_until = datetime.fromisoformat(user["locked_until"])
+                if locked_until > datetime.now():
+                    failure_reason = "Account locked"
+                else:
+                    # Lock expired – clear counters in DB and reload fresh user record
+                    self.db.reset_failed_login_attempts(username)
+                    user = self.db.get_user_by_username(username)
             elif (user["failed_login_attempts"] or 0) >= self.max_login_attempts:
                 # Lock account
                 lock_until = datetime.now() + self.lockout_duration

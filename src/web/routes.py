@@ -602,8 +602,8 @@ def camera_stream():
                         else:
                             logger.warning("Failed to encode frame")
                     else:
-                        logger.warning("No frame received from camera")
-                        time.sleep(0.1)  # Small delay to prevent busy loop
+                        logger.warning("No frame received from camera; retrying in 5s")
+                        time.sleep(5.0)
                 except Exception as e:
                     logger.error(f"Error in camera stream: {e}")
                     time.sleep(0.1)
@@ -614,6 +614,82 @@ def camera_stream():
     except Exception as e:
         logger.error(f"Error starting camera stream: {e}")
         return f"Camera stream error: {e}", 500
+
+# ---------------------------------------------------------------------------
+# Snapshot endpoint for zone editor
+# ---------------------------------------------------------------------------
+
+@web_bp.route('/api/camera/snapshot')
+def camera_snapshot():
+    """Return a single JPEG frame from the current camera feed"""
+    try:
+        from camera import _camera_manager
+        
+        # Check if camera manager exists
+        if not hasattr(_camera_manager, '_current_camera') or not _camera_manager._current_camera:
+            logger.warning("Camera snapshot: No active camera found")
+            return "No active camera", 503
+            
+        cam = _camera_manager._current_camera
+        
+        # Check if camera is running
+        if not cam.is_running:
+            logger.warning("Camera snapshot: Camera not running, attempting to start")
+            cam.start()
+            time.sleep(0.5)  # Give it a moment to start
+        
+        frame = cam.get_frame()
+        if frame is None:
+            logger.warning("Camera snapshot: No frame available from camera")
+            return "No frame available", 503
+            
+        ret, buf = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        if not ret:
+            logger.error("Camera snapshot: Failed to encode frame as JPEG")
+            return "Encode error", 500
+            
+        logger.info(f"Camera snapshot: Successfully captured frame ({len(buf)} bytes)")
+        return Response(buf.tobytes(), mimetype='image/jpeg', headers={
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        })
+    except Exception as e:
+        logger.error(f"Snapshot error: {e}", exc_info=True)
+        return f"Snapshot error: {e}", 500
+
+@web_bp.route('/api/camera/status')
+def camera_status():
+    """Get camera status for debugging"""
+    try:
+        from camera import _camera_manager
+        
+        status = {
+            'camera_manager_exists': hasattr(_camera_manager, '_current_camera'),
+            'current_camera_exists': False,
+            'camera_running': False,
+            'camera_type': None,
+            'error': None
+        }
+        
+        if hasattr(_camera_manager, '_current_camera') and _camera_manager._current_camera:
+            cam = _camera_manager._current_camera
+            status['current_camera_exists'] = True
+            status['camera_running'] = cam.is_running
+            status['camera_type'] = type(cam).__name__
+            
+            # Try to get a frame
+            try:
+                frame = cam.get_frame()
+                status['frame_available'] = frame is not None
+                if frame is not None:
+                    status['frame_shape'] = frame.shape
+            except Exception as e:
+                status['frame_error'] = str(e)
+        
+        return jsonify(status)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @web_bp.route('/get_video_config')
 def get_video_config():
@@ -764,11 +840,9 @@ def restart_camera():
         logger.info("Camera restart requested")
         
         # Stop current camera
-        try:
-            stop_camera()
-            logger.info("Current camera stopped successfully")
-        except Exception as e:
-            logger.warning(f"Error stopping camera (continuing anyway): {e}")
+        from camera import reset_camera
+        reset_camera()
+        logger.info("Camera fully reset")
         
         # Small delay to ensure cleanup
         time.sleep(2)
@@ -1641,3 +1715,58 @@ def get_historical_analytics():
     except Exception as e:
         logger.error(f"Error getting historical analytics: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
+
+# ============================================================================
+# Zone Management Routes
+# ============================================================================
+
+@web_bp.route('/zones')
+@require_auth('manager')
+def zones_editor():
+    """Render the zone editor page"""
+    return render_template('zones.html')
+
+
+@web_bp.route('/api/zones', methods=['GET'])
+@require_auth()
+def api_get_zones():
+    """Return list of zones for current camera (single camera setup)"""
+    zones = current_app.zone_manager.get_zones()
+    return jsonify({"success": True, "zones": zones})
+
+
+@web_bp.route('/api/zones', methods=['POST'])
+@require_auth('manager')
+def api_create_zone():
+    data = request.get_json()
+    required = {'name', 'x1', 'y1', 'x2', 'y2'}
+    if not data or not required.issubset(data):
+        return jsonify({"success": False, "message": "Missing fields"}), 400
+    zone_id = current_app.zone_manager.create_zone(
+        data['name'], data['x1'], data['y1'], data['x2'], data['y2']
+    )
+    # Broadcast update
+    if hasattr(current_app, 'socketio'):
+        current_app.socketio.emit('zonesUpdated')
+    return jsonify({"success": True, "zone_id": zone_id})
+
+
+@web_bp.route('/api/zones/<int:zone_id>', methods=['PUT'])
+@require_auth('manager')
+def api_update_zone(zone_id):
+    data = request.get_json() or {}
+    if not data:
+        return jsonify({"success": False, "message": "No data"}), 400
+    current_app.zone_manager.update_zone(zone_id, **data)
+    if hasattr(current_app, 'socketio'):
+        current_app.socketio.emit('zonesUpdated')
+    return jsonify({"success": True})
+
+
+@web_bp.route('/api/zones/<int:zone_id>', methods=['DELETE'])
+@require_auth('manager')
+def api_delete_zone(zone_id):
+    current_app.zone_manager.delete_zone(zone_id)
+    if hasattr(current_app, 'socketio'):
+        current_app.socketio.emit('zonesUpdated')
+    return jsonify({"success": True})

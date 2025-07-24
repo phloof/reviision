@@ -589,6 +589,7 @@ class RTSPCamera(BaseCamera):
         stream = None
         consecutive_errors = 0
         max_consecutive_errors = 10
+        frame_count = 0  # ensure defined for finally block
         
         try:
             logger.info(f"PyAV opening RTSP stream: {self._get_safe_url(url)}")
@@ -671,7 +672,8 @@ class RTSPCamera(BaseCamera):
                 
                 # Break if too many consecutive errors
                 if consecutive_errors > max_consecutive_errors:
-                    logger.error(f"Too many consecutive PyAV errors ({consecutive_errors}), restarting")
+                    logger.error(f"Too many consecutive PyAV errors ({consecutive_errors}), restarting after back-off")
+                    time.sleep(5.0)  # back-off before reconnect
                     break
                     
         except av.error.HTTPNotFoundError:
@@ -691,7 +693,10 @@ class RTSPCamera(BaseCamera):
                     container.close()
                 except:
                     pass
-            logger.info(f"PyAV grabber loop ended, processed {frame_count} frames")
+            try:
+                logger.info(f"PyAV grabber loop ended, processed {frame_count} frames")
+            except NameError:
+                logger.info("PyAV grabber loop ended before frame processing started")
 
     def _capture_loop(self):
         """Main capture loop - delegates to enhanced or legacy mode"""
@@ -747,6 +752,8 @@ class RTSPCamera(BaseCamera):
                     retries = 0
                     consecutive_failures = 0
                     decode_errors = 0
+                    # Reset watchdog timer when connection is successfully (re)opened
+                    last_frame_time = time.time()
                     self._start_grabber()
                 else:
                     retries += 1

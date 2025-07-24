@@ -171,6 +171,22 @@ class SQLiteDatabase:
                 )
             ''')
             
+            # Zones table (new) ----------------------------------------------------
+            self.cursor.execute('''
+                CREATE TABLE IF NOT EXISTS zones (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    camera_id TEXT DEFAULT 'default',
+                    name TEXT NOT NULL UNIQUE,
+                    x1 INTEGER NOT NULL,
+                    y1 INTEGER NOT NULL,
+                    x2 INTEGER NOT NULL,
+                    y2 INTEGER NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_zones_camera ON zones(camera_id)')
+            
             # Persons table (normalized entity for individuals)
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS persons (
@@ -224,23 +240,39 @@ class SQLiteDatabase:
                 )
             ''')
             
-            # Dwell times table (previously missing)
+            # Dwell times table (zone-aware) --------------------------------------
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS dwell_times (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     person_id INTEGER NOT NULL,
-                    detection_id INTEGER,
-                    zone_name VARCHAR(100),
+                    zone_id INTEGER NOT NULL DEFAULT 0,
                     start_time DATETIME NOT NULL,
                     end_time DATETIME,
-                    total_time REAL, -- in seconds
+                    total_time REAL,
                     is_active BOOLEAN DEFAULT 1,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE CASCADE,
-                    FOREIGN KEY (detection_id) REFERENCES detections(id) ON DELETE SET NULL
+                    FOREIGN KEY (zone_id) REFERENCES zones(id)
                 )
             ''')
+            # Ensure legacy databases are upgraded to include zone_id column
+            try:
+                cursor = self.conn.cursor()
+                cursor.execute("PRAGMA table_info(dwell_times)")
+                cols = [row[1] for row in cursor.fetchall()]
+                if 'zone_id' not in cols:
+                    logger.info("Upgrading existing dwell_times table with zone_id column")
+                    cursor.execute('ALTER TABLE dwell_times ADD COLUMN zone_id INTEGER NOT NULL DEFAULT 0')
+                if 'zone_name' in cols:
+                    # SQLite cannot drop columns before v3.35; skip if unsupported
+                    logger.info("Legacy column zone_name present – retained for backward compatibility")
+                self.conn.commit()
+            except Exception as upgrade_err:
+                logger.warning(f"Dwell_times upgrade check failed: {upgrade_err}")
+            
+            # Create index now that column is guaranteed
+            self.cursor.execute('CREATE INDEX IF NOT EXISTS idx_dwell_times_zone ON dwell_times(zone_id)')
             
             # Customer paths table for path tracking and analysis
             self.cursor.execute('''
@@ -731,16 +763,15 @@ class SQLiteDatabase:
             logger.error(f"Error storing demographics: {e}")
             return None
     
-    def store_dwell_time(self, person_id, zone_name, start_time, end_time=None, detection_id=None):
+    def store_dwell_time(self, person_id, zone_id, start_time, end_time=None):
         """
         Store dwell time information
         
         Args:
             person_id (int): Person track ID
-            zone_name (str): Zone name where dwell occurred
+            zone_id (int): Zone identifier (0 = outside zones)
             start_time (datetime): Start time
             end_time (datetime): End time (None if still active)
-            detection_id (int): Related detection ID
         """
         try:
             conn = self._get_connection()
@@ -754,11 +785,11 @@ class SQLiteDatabase:
             
             cursor.execute('''
                 INSERT INTO dwell_times (
-                    person_id, detection_id, zone_name, start_time, 
+                    person_id, zone_id, start_time, 
                     end_time, total_time, is_active
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (person_id, detection_id, zone_name, start_time, end_time, total_time, is_active))
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (person_id, zone_id, start_time, end_time, total_time, is_active))
             
             dwell_id = cursor.lastrowid
             conn.commit()
@@ -2614,3 +2645,67 @@ class SQLiteDatabase:
                 "age_trends": {},
                 "emotion_trends": {}
             }
+
+    # ------------------------------------------------------------------
+    # Zone CRUD operations
+    # ------------------------------------------------------------------
+    def create_zone(self, name, x1, y1, x2, y2, camera_id='default'):
+        """Create a new zone and return its ID"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO zones (camera_id, name, x1, y1, x2, y2)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (camera_id, name, int(x1), int(y1), int(x2), int(y2)))
+        zone_id = cursor.lastrowid
+        conn.commit()
+        return zone_id
+
+    def update_zone(self, zone_id, **fields):
+        """Update a zone's fields (name, coords, camera_id)"""
+        if not fields:
+            return False
+        allowed = {'name', 'x1', 'y1', 'x2', 'y2', 'camera_id'}
+        set_clauses = []
+        values = []
+        for k, v in fields.items():
+            if k in allowed:
+                set_clauses.append(f"{k} = ?")
+                values.append(v)
+        if not set_clauses:
+            return False
+        values.append(zone_id)
+        sql = f"UPDATE zones SET {', '.join(set_clauses)}, updated_at=CURRENT_TIMESTAMP WHERE id = ?"
+        conn = self._get_connection()
+        conn.execute(sql, tuple(values))
+        conn.commit()
+        return True
+
+    def delete_zone(self, zone_id):
+        """Delete a zone"""
+        conn = self._get_connection()
+        conn.execute('DELETE FROM zones WHERE id = ?', (zone_id,))
+        conn.commit()
+        return True
+
+    def get_zones(self, camera_id='default'):
+        """Return list of zones for the specified camera"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM zones WHERE camera_id = ? ORDER BY id', (camera_id,))
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+
+    def reset_failed_login_attempts(self, username):
+        """Reset failed attempts and unlock the account"""
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE username = ?
+            ''', (username,))
+            conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Error resetting failed login attempts: {e}")
+            return False

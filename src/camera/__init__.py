@@ -34,7 +34,12 @@ class CameraManager:
         if (self._current_camera is not None and 
             self._current_config is not None and
             self._config_matches(config, self._current_config)):
-            return self._current_camera
+            # If camera thread died or stopped, discard and recreate
+            if hasattr(self._current_camera, 'is_running') and not self._current_camera.is_running:
+                logger.warning("Existing camera instance not running, creating new one")
+                self._current_camera = None
+            else:
+                return self._current_camera
         
         # Stop current camera if it exists
         if self._current_camera is not None:
@@ -115,4 +120,8 @@ def get_camera(config):
 
 def stop_camera():
     """Stop the current camera instance"""
+    _camera_manager.stop_current_camera() 
+
+def reset_camera():
+    """Completely shut down current camera so next get_camera call makes new instance"""
     _camera_manager.stop_current_camera() 

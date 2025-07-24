@@ -195,13 +195,17 @@
 
 {% block scripts %}
 <script>
+    // Global variables
     let analysisActive = false;
     let frameInterval = null;
     let abortController = null;
     let selectedOverlay = 'none';
     let detectedObjects = [];
     let movementHistory = [];
-    let analysisDelay = 500; // milliseconds between analyses
+    let analysisDelay = 200; // milliseconds between frame processing
+    
+    // Enable debug mode to see dwell time logs
+    window.DEBUG_MODE = true;
     
     // Initialize on document ready
     document.addEventListener('DOMContentLoaded', function() {
@@ -657,8 +661,23 @@
                 return;
             }
             
+            // Get actual analysis image display dimensions for proper scaling
+            const analysisImage = document.getElementById('analysis-feed-image');
+            if (!analysisImage) {
+                console.error('Analysis image not found!');
+                return;
+            }
+            
+            const displayWidth = analysisImage.clientWidth;
+            const displayHeight = analysisImage.clientHeight;
+            
             if (window.DEBUG_MODE) {
-                console.log('Sending frame for analysis...', { width, height, selectedOverlay });
+                console.log('Sending frame for analysis...', { 
+                    captureSize: { width, height }, 
+                    displaySize: { width: displayWidth, height: displayHeight }, 
+                    selectedOverlay,
+                    resolutionMismatch: width !== displayWidth || height !== displayHeight
+                });
             }
             
             // Create AbortController for this request
@@ -712,6 +731,21 @@
                 return;
             }
             
+            // Calculate scaling factors from backend frame resolution to display resolution
+            // Use actual frame info from backend instead of hardcoded 1280x720
+            const backendWidth = result.frame_info?.width || 1280;
+            const backendHeight = result.frame_info?.height || 720;
+            const scaleX = displayWidth / backendWidth;
+            const scaleY = displayHeight / backendHeight;
+            
+            if (window.DEBUG_MODE) {
+                console.log('Scaling calculation:', {
+                    backendResolution: [backendWidth, backendHeight],
+                    displayResolution: [displayWidth, displayHeight],
+                    scaleFactors: [scaleX, scaleY]
+                });
+            }
+            
             // Process people data with enhanced tracking
             const newDetectedObjects = result.detections.people.map((person, index) => {
                 // Use the backend-provided ID (should be consistent now)
@@ -720,6 +754,23 @@
                 if (!person.bbox || person.bbox.length < 4) {
                     console.warn('Person missing bbox property:', person);
                     return null;
+                }
+                
+                // Scale bounding box from backend resolution (1280x720) to display resolution
+                // Backend always sends [x, y, width, height] format
+                const scaledX = person.bbox[0] * scaleX;
+                const scaledY = person.bbox[1] * scaleY;
+                const scaledWidth = person.bbox[2] * scaleX;
+                const scaledHeight = person.bbox[3] * scaleY;
+                
+                if (window.DEBUG_MODE) {
+                    console.log(`Person ${personId} coordinates:`, {
+                        original: person.bbox,
+                        scaled: [scaledX, scaledY, scaledWidth, scaledHeight],
+                        scaleFactors: [scaleX, scaleY],
+                        displaySize: [displayWidth, displayHeight],
+                        backendResolution: [backendWidth, backendHeight]
+                    });
                 }
                 
                 // Find existing person data for continuity
@@ -731,11 +782,11 @@
                 
                 return {
                     id: personId,
-                    x: person.bbox[0],
-                    y: person.bbox[1],
-                    width: person.bbox[2],
-                    height: person.bbox[3],
-                    center: person.center || [(person.bbox[0] + person.bbox[2]/2), (person.bbox[1] + person.bbox[3]/2)],
+                    x: scaledX,
+                    y: scaledY,
+                    width: scaledWidth,
+                    height: scaledHeight,
+                    center: [(scaledX + scaledWidth/2), (scaledY + scaledHeight/2)],
                     confidence: person.confidence || 0.5,
                     frames_tracked: person.frames_tracked || 1,
                     demographics: {
@@ -746,7 +797,10 @@
                         emotion: demographics.emotion || 'neutral',
                         confidence: demographics.confidence || 0.1
                     },
-                    dwell_time: person.dwell_time || 0,
+                    dwell_time: person.dwell_time || person.zone_dwell_time || 0,
+                    zone_dwell_time: person.zone_dwell_time || person.dwell_time || 0,
+                    zone_id: person.zone_id || 0,
+                    zone_name: person.zone_name || 'Outside',
                     path: person.path || [],
                     // Preserve movement history for smooth tracking
                     movement_history: existingPerson ? 
@@ -773,8 +827,8 @@
             // Enhanced heatmap processing using both current detections and persistent paths
             if (result.heatmap && result.heatmap.points) {
                 const newHeatmapPoints = result.heatmap.points.map(p => ({
-                    x: p.x,
-                    y: p.y,
+                    x: p.x * scaleX,
+                    y: p.y * scaleY,
                     intensity: p.value,
                     id: p.id || 'unknown',
                     timestamp: Date.now()
@@ -799,8 +853,8 @@
                     const person = detectedObjects.find(obj => obj.id == personId);
                     if (person && pathPoints.length > 0) {
                         person.path = pathPoints.map(point => ({
-                            x: point.x,
-                            y: point.y,
+                            x: point.x * scaleX,
+                            y: point.y * scaleY,
                             timestamp: point.timestamp || Date.now(),
                             confidence: point.confidence || 0.5
                         }));
@@ -914,10 +968,28 @@
             if (result.analytics?.average_dwell_time) {
                 avgDwell = result.analytics.average_dwell_time;
             } else if (detectedObjects.length > 0) {
-                avgDwell = detectedObjects.reduce((sum, obj) => sum + (obj.dwell_time || 0), 0) / detectedObjects.length;
+                // Calculate from detected objects, using zone_dwell_time if available
+                const dwellTimes = detectedObjects.map(obj => {
+                    return Math.max(obj.dwell_time || 0, obj.zone_dwell_time || 0);
+                });
+                avgDwell = dwellTimes.reduce((sum, dwell) => sum + dwell, 0) / dwellTimes.length;
             }
             
             dwellTimeElement.textContent = avgDwell > 0 ? `${Math.round(avgDwell)} sec` : '-- sec';
+            
+            // Debug log for dwell time tracking
+            if (window.DEBUG_MODE && detectedObjects.length > 0) {
+                console.log('Dwell time update:', {
+                    backendAvg: result.analytics?.average_dwell_time,
+                    calculatedAvg: avgDwell,
+                    objectDwellTimes: detectedObjects.map(obj => ({
+                        id: obj.id,
+                        dwell_time: obj.dwell_time,
+                        zone_dwell_time: obj.zone_dwell_time,
+                        zone_name: obj.zone_name
+                    }))
+                });
+            }
         }
         
         // Log analytics if debug mode enabled
@@ -1405,28 +1477,41 @@
     }
     
     function createDwellTimeOverlay(container) {
-        // Update each person with dwell time visualization
+        // Update each person with dwell time visualization and zone information
         const people = container.querySelectorAll('.person-element');
         
         people.forEach(person => {
             // Change box color for dwell time view
             person.style.border = '2px solid #ff00ff';
             
-            // Get dwell time from dataset
+            // Get person data
             const dwellTime = parseInt(person.dataset.dwellTime || '0');
+            const personId = person.dataset.id;
             
-            // Create a dwell time label
+            // Get zone information for this person
+            const personX = parseFloat(person.style.left) + parseFloat(person.style.width) / 2;
+            const personY = parseFloat(person.style.top) + parseFloat(person.style.height) / 2;
+            const zoneName = getZoneNameByPoint(personX, personY);
+            
+            // Create a comprehensive dwell time label with zone info
             const dwellLabel = document.createElement('div');
             dwellLabel.className = 'person-label dwell-label';
             dwellLabel.style.position = 'absolute';
-            dwellLabel.style.top = '-25px';
+            dwellLabel.style.top = '-35px';
             dwellLabel.style.left = '0';
-            dwellLabel.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            dwellLabel.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
             dwellLabel.style.color = '#fff';
-            dwellLabel.style.padding = '2px 6px';
+            dwellLabel.style.padding = '4px 8px';
             dwellLabel.style.borderRadius = '4px';
-            dwellLabel.style.fontSize = '12px';
-            dwellLabel.textContent = formatTime(dwellTime);
+            dwellLabel.style.fontSize = '11px';
+            dwellLabel.style.lineHeight = '1.2';
+            dwellLabel.style.minWidth = '120px';
+            
+            // Multi-line label with zone and dwell time
+            dwellLabel.innerHTML = `
+                <div style="font-weight: bold;">${formatTime(dwellTime)}</div>
+                <div style="font-size: 10px; opacity: 0.9;">Zone: ${zoneName}</div>
+            `;
             
             person.appendChild(dwellLabel);
             
@@ -1453,26 +1538,115 @@
             person.appendChild(timerCircle);
         });
         
-        // Create a dwell time summary
+        // Create enhanced dwell time summary with zone statistics
         const dwellSummary = document.createElement('div');
         dwellSummary.className = 'dwell-summary';
         dwellSummary.style.position = 'absolute';
         dwellSummary.style.bottom = '10px';
         dwellSummary.style.right = '10px';
-        dwellSummary.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        dwellSummary.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
         dwellSummary.style.color = '#fff';
-        dwellSummary.style.padding = '8px';
-        dwellSummary.style.borderRadius = '4px';
+        dwellSummary.style.padding = '10px';
+        dwellSummary.style.borderRadius = '6px';
         dwellSummary.style.fontSize = '12px';
+        dwellSummary.style.minWidth = '200px';
+        dwellSummary.style.maxHeight = '200px';
+        dwellSummary.style.overflowY = 'auto';
         
-        // Calculate average dwell time
+        // Calculate zone-based statistics
+        const zoneStats = {};
+        people.forEach(person => {
+            const dwellTime = parseInt(person.dataset.dwellTime || '0');
+            const personX = parseFloat(person.style.left) + parseFloat(person.style.width) / 2;
+            const personY = parseFloat(person.style.top) + parseFloat(person.style.height) / 2;
+            const zoneName = getZoneNameByPoint(personX, personY);
+            
+            if (!zoneStats[zoneName]) {
+                zoneStats[zoneName] = {
+                    count: 0,
+                    totalDwell: 0,
+                    people: []
+                };
+            }
+            
+            zoneStats[zoneName].count++;
+            zoneStats[zoneName].totalDwell += dwellTime;
+            zoneStats[zoneName].people.push(person.dataset.id || 'unknown');
+        });
+        
+        // Calculate overall average
         const avgDwell = people.length 
             ? Array.from(people).reduce((sum, p) => sum + parseInt(p.dataset.dwellTime || '0'), 0) / people.length 
             : 0;
         
-        dwellSummary.textContent = `Average Dwell Time: ${formatTime(Math.round(avgDwell))}`;
+        // Build summary HTML
+        let summaryHTML = `<div style="font-weight: bold; margin-bottom: 8px;">Dwell Time Analysis</div>`;
+        summaryHTML += `<div style="margin-bottom: 8px;">Overall Avg: ${formatTime(Math.round(avgDwell))}</div>`;
         
+        // Add zone breakdown
+        if (Object.keys(zoneStats).length > 0) {
+            summaryHTML += `<div style="font-weight: bold; margin-bottom: 4px; font-size: 11px;">By Zone:</div>`;
+            
+            Object.entries(zoneStats).forEach(([zoneName, stats]) => {
+                const avgZoneDwell = stats.count > 0 ? stats.totalDwell / stats.count : 0;
+                summaryHTML += `
+                    <div style="margin-bottom: 3px; font-size: 10px;">
+                        <span style="font-weight: bold;">${zoneName}:</span> 
+                        ${stats.count} people, avg ${formatTime(Math.round(avgZoneDwell))}
+                    </div>
+                `;
+            });
+        }
+        
+        dwellSummary.innerHTML = summaryHTML;
         container.appendChild(dwellSummary);
+        
+        // Update zone overlays to show dwell time information
+        updateZoneOverlaysWithDwellTime(container, zoneStats);
+    }
+    
+    function updateZoneOverlaysWithDwellTime(container, zoneStats) {
+        // Find existing zone overlays and update them with dwell time info
+        const zoneOverlays = container.querySelectorAll('.zone-overlay');
+        
+        zoneOverlays.forEach((overlay, index) => {
+            if (!window._zones || !window._zones[index]) return;
+            
+            const zone = window._zones[index];
+            const zoneName = zone.name;
+            const stats = zoneStats[zoneName] || { count: 0, totalDwell: 0 };
+            
+            // Add zone statistics label
+            let existingLabel = overlay.querySelector('.zone-dwell-label');
+            if (!existingLabel) {
+                existingLabel = document.createElement('div');
+                existingLabel.className = 'zone-dwell-label';
+                existingLabel.style.position = 'absolute';
+                existingLabel.style.top = '5px';
+                existingLabel.style.left = '5px';
+                existingLabel.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                existingLabel.style.color = '#fff';
+                existingLabel.style.padding = '4px 6px';
+                existingLabel.style.borderRadius = '3px';
+                existingLabel.style.fontSize = '10px';
+                existingLabel.style.fontWeight = 'bold';
+                existingLabel.style.pointerEvents = 'none';
+                overlay.appendChild(existingLabel);
+            }
+            
+            const avgDwell = stats.count > 0 ? Math.round(stats.totalDwell / stats.count) : 0;
+            existingLabel.innerHTML = `
+                <div>${zoneName}</div>
+                <div style="font-size: 9px; opacity: 0.9;">
+                    ${stats.count} people<br/>
+                    Avg: ${formatTime(avgDwell)}
+                </div>
+            `;
+            
+            // Update zone overlay opacity based on activity
+            const activity = Math.min(1, stats.count / 3); // Normalize to max 3 people
+            overlay.style.backgroundColor = `rgba(255, 255, 255, ${0.05 + activity * 0.15})`;
+        });
     }
     
     function updateDetectedObjects(container) {
@@ -1562,7 +1736,10 @@
         element.dataset.confidence = obj.confidence || 0.5;
         element.dataset.gender = obj.demographics?.gender || 'unknown';
         element.dataset.ageGroup = obj.demographics?.age_group || 'unknown';
-        element.dataset.dwellTime = Math.round(obj.dwell_time || 0);
+        element.dataset.dwellTime = Math.round(Math.max(obj.dwell_time || 0, obj.zone_dwell_time || 0));
+        element.dataset.zoneDwellTime = Math.round(obj.zone_dwell_time || obj.dwell_time || 0);
+        element.dataset.zoneId = obj.zone_id || 0;
+        element.dataset.zoneName = obj.zone_name || 'Outside';
         
         // Update border visibility
         if (showBoxes) {
@@ -1743,7 +1920,10 @@
         personElement.dataset.confidence = obj.confidence || 0.5;
         personElement.dataset.gender = obj.demographics?.gender || 'unknown';
         personElement.dataset.ageGroup = obj.demographics?.age_group || 'unknown';
-        personElement.dataset.dwellTime = Math.round(obj.dwell_time || 0);
+        personElement.dataset.dwellTime = Math.round(Math.max(obj.dwell_time || 0, obj.zone_dwell_time || 0));
+        personElement.dataset.zoneDwellTime = Math.round(obj.zone_dwell_time || obj.dwell_time || 0);
+        personElement.dataset.zoneId = obj.zone_id || 0;
+        personElement.dataset.zoneName = obj.zone_name || 'Outside';
         
         // Set border and background based on showBoxes
         if (showBoxes) {
@@ -1821,7 +2001,6 @@
             labelContainer.appendChild(infoText);
             personElement.appendChild(labelContainer);
             
-            // Load face thumbnail asynchronously
             loadFaceThumbnail(obj.id, faceThumbnail);
         }
         
@@ -1832,5 +2011,193 @@
         
         return personElement;
     }
+</script>
+
+{% block extra_scripts %}
+<script>
+(async function(){
+  const overlayContainer = document.getElementById('overlay-container');
+  if (!overlayContainer) return;
+  
+  const zonesResp = await fetch('/api/zones');
+  const json = await zonesResp.json();
+  if(!json.success) return;
+  
+  window._zones = json.zones;
+  const zones = json.zones;
+  
+  function createZoneOverlays() {
+    // Remove existing zone overlays
+    const existingOverlays = overlayContainer.querySelectorAll('.zone-overlay');
+    existingOverlays.forEach(overlay => overlay.remove());
+    
+    // Find the analysis feed image
+    const analysisImage = document.getElementById('analysis-feed-image');
+    if (!analysisImage) return;
+    
+    // Get scaling factors - zones should be positioned directly on the image
+    const imageWidth = analysisImage.clientWidth;
+    const imageHeight = analysisImage.clientHeight;
+    const scaleX = imageWidth / 1280;  // Use 1280x720 reference
+    const scaleY = imageHeight / 720;
+    
+    zones.forEach((z, i) => {
+      const div = document.createElement('div');
+      div.className = 'zone-overlay';
+      div.dataset.zoneName = z.name;
+      div.dataset.zoneId = z.id;
+      
+      const color = ['#f44336','#2196f3','#4caf50','#ff9800','#9c27b0','#00bcd4','#e91e63'][i % 7];
+      
+      // Scale zone coordinates to image size
+      const x1 = z.x1 * scaleX;
+      const y1 = z.y1 * scaleY;
+      const width = (z.x2 - z.x1) * scaleX;
+      const height = (z.y2 - z.y1) * scaleY;
+      
+      div.style.cssText = `
+        position: absolute;
+        border: 3px dashed ${color};
+        left: ${x1}px;
+        top: ${y1}px;
+        width: ${width}px;
+        height: ${height}px;
+        pointer-events: none;
+        background: ${color}20;
+        z-index: 15;
+        font-weight: bold;
+        color: ${color};
+      `;
+      
+      // Add zone name label
+      const label = document.createElement('div');
+      label.style.cssText = `
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        background: ${color};
+        color: white;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 12px;
+        font-weight: bold;
+      `;
+      label.textContent = z.name;
+      div.appendChild(label);
+      
+      overlayContainer.appendChild(div);
+    });
+  }
+  
+  // Create overlays when analysis image loads
+  function setupImageObserver() {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.id === 'analysis-feed-image') {
+            console.log('Analysis image added to DOM, setting up zone overlays');
+            node.addEventListener('load', () => {
+              console.log('Analysis image loaded, creating zones');
+              setTimeout(createZoneOverlays, 100);
+            });
+            node.addEventListener('loadeddata', () => {
+              console.log('Analysis image data loaded, creating zones');
+              setTimeout(createZoneOverlays, 100);
+            });
+            // Try to create overlays immediately if image is already loaded
+            if (node.complete && node.naturalWidth > 0) {
+              console.log('Analysis image already loaded, creating zones immediately');
+              setTimeout(createZoneOverlays, 100);
+            }
+          }
+        });
+      });
+    });
+    
+    observer.observe(overlayContainer.parentElement, { childList: true, subtree: true });
+    
+    // Check if image already exists
+    const existingImage = document.getElementById('analysis-feed-image');
+    if (existingImage) {
+      console.log('Found existing analysis image, setting up zone overlays');
+      existingImage.addEventListener('load', () => {
+        console.log('Existing analysis image loaded, creating zones');
+        setTimeout(createZoneOverlays, 100);
+      });
+      existingImage.addEventListener('loadeddata', () => {
+        console.log('Existing analysis image data loaded, creating zones');
+        setTimeout(createZoneOverlays, 100);
+      });
+      if (existingImage.complete && existingImage.naturalWidth > 0) {
+        console.log('Existing analysis image already loaded, creating zones immediately');
+        setTimeout(createZoneOverlays, 100);
+      }
+    }
+  }
+  
+  // Window resize handler
+  window.addEventListener('resize', () => {
+    setTimeout(createZoneOverlays, 100);
+  });
+  
+  setupImageObserver();
+  
+  // Socket.io integration for real-time zone updates
+  if (typeof io !== 'undefined') {
+    const socket = io();
+    socket.on('zonesUpdated', async () => {
+      const newZonesResp = await fetch('/api/zones');
+      const newJson = await newZonesResp.json();
+      if (newJson.success) {
+        window._zones = newJson.zones;
+        createZoneOverlays();
+      }
+    });
+  }
+})();
+</script>
+<style>
+.zone-overlay {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(1px);
+  transition: background-color 0.3s ease;
+}
+
+.zone-overlay:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.zone-dwell-label {
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+}
+</style>
+{% endblock %}
+
+<script id="dwell-helper">
+// Enhanced helper to find zone by point with detailed info
+function getZoneNameByPoint(x, y) {
+  if (!window._zones) return 'Outside';
+  for (const z of window._zones) {
+     if (x >= z.x1 && x <= z.x2 && y >= z.y1 && y <= z.y2) {
+       return z.name;
+     }
+  }
+  return 'Outside';
+}
+
+function getZoneByPoint(x, y) {
+  if (!window._zones) return { id: 0, name: 'Outside' };
+  for (const z of window._zones) {
+     if (x >= z.x1 && x <= z.x2 && y >= z.y1 && y <= z.y2) {
+       return { id: z.id, name: z.name, x1: z.x1, y1: z.y1, x2: z.x2, y2: z.y2 };
+     }
+  }
+  return { id: 0, name: 'Outside' };
+}
+
+function getAllZones() {
+  return window._zones || [];
+}
 </script>
 {% endblock %}
