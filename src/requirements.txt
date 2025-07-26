@@ -1,4 +1,7 @@
 insightface
 numpy
-scipy 
-av 
+scipy
+av
+reportlab
+matplotlib
+pillow

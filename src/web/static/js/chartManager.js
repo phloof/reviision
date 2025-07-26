@@ -234,7 +234,7 @@
                 style.id = 'chart-toolbar-style';
                 style.textContent = `
                      .chart-toolbar { position: absolute; top: -2px; right: 10px; z-index: 40; display: flex; gap: 4px; flex-wrap: nowrap; background: rgba(255,255,255,0.85); border-radius: 4px; padding: 2px 4px; box-shadow: 0 0 4px rgba(0,0,0,0.1); transition: transform 0.3s ease, opacity 0.3s ease; }
-                     .chart-toolbar.collapsed { transform: translateX(calc(100% - 48px)); }
+                     .chart-toolbar.collapsed { transform: translateX(calc(100% - 36px)); }
                      .chart-toolbar.collapsed .chart-controls { opacity: 0; pointer-events: none; transform: translateX(20px); }
                      .chart-toolbar .chart-controls { display: flex; gap: 4px; transition: all 0.3s ease; }
                      .chart-toolbar .chart-expand-btn { order: -1; margin-right: 4px; border-radius: 4px 0 0 4px; }

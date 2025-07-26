@@ -95,7 +95,50 @@
     margin-left: var(--spacing-3);
 }
 
+/* Settings page layout - better width utilization */
+.settings-page-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+.settings-sidebar-container {
+    position: sticky;
+    top: var(--spacing-6);
+}
+
+.settings-content-container {
+    width: 100%;
+    max-width: none;
+}
+
+.settings-content-expanded {
+    width: 100%;
+    max-width: none;
+}
+
+/* Responsive adjustments */
+@media (min-width: 1200px) {
+    .settings-page-layout {
+        grid-template-columns: 320px 1fr;
+        gap: 3rem;
+    }
+}
+
+@media (min-width: 1400px) {
+    .settings-page-layout {
+        grid-template-columns: 350px 1fr;
+        gap: 4rem;
+    }
+}
+
 @media (max-width: 991px) {
+    .settings-page-layout {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
     .settings-sidebar {
         position: static;
         margin-bottom: var(--spacing-6);
@@ -103,6 +146,10 @@
 
     .settings-nav-link {
         padding: var(--spacing-3);
+    }
+
+    .settings-sidebar-container {
+        position: static;
     }
 }
 </style>
@@ -116,9 +163,9 @@
         <p class="text-secondary">Configure camera, analysis, and system parameters</p>
     </div>
 
-    <div class="d-grid grid-cols-1 desktop-grid-cols-4 xl-grid-cols-5 xxl-grid-cols-6 ultra-grid-cols-8 gap-6">
+    <div class="settings-page-layout">
         <!-- Settings Navigation -->
-        <div class="desktop-col-span-1 xl-col-span-1 xxl-col-span-1 ultra-col-span-1">
+        <div class="settings-sidebar-container">
             <div class="settings-sidebar">
                 <h3 class="text-lg font-semibold mb-4">Settings Categories</h3>
                 <nav class="settings-nav">
@@ -150,8 +197,8 @@
             </div>
         </div>
         <!-- Settings Content -->
-        <div class="desktop-col-span-3 xl-col-span-3 xxl-col-span-4 ultra-col-span-5">
-            <div id="settings-content" class="settings-content-card">
+        <div class="settings-content-container">
+            <div id="settings-content" class="settings-content-expanded">
                 <!-- Camera Settings Section -->
                 <div id="camera-section" class="settings-section">
                     <div class="d-flex justify-between items-center mb-6">

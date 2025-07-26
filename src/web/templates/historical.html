@@ -82,9 +82,17 @@
 {% block content %}
 <div class="container py-6">
     <!-- Page Header -->
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-primary mb-2">Historical Data Analysis</h1>
-        <p class="text-secondary">Comprehensive historical insights and trend analysis</p>
+    <div class="mb-8 d-flex justify-between items-start">
+        <div>
+            <h1 class="text-3xl font-bold text-primary mb-2">Historical Data Analysis</h1>
+            <p class="text-secondary">Comprehensive historical insights and trend analysis</p>
+        </div>
+        <div class="d-flex gap-3">
+            <button class="btn btn-outline-primary" id="generate-historical-report" title="Generate comprehensive PDF report">
+                <i class="fas fa-file-pdf mr-2"></i>
+                Generate Report
+            </button>
+        </div>
     </div>
 
     <!-- Navigation Tabs -->
@@ -448,6 +456,11 @@ class HistoricalDataManager {
                 this.handleTabChange(e.target);
             });
         });
+
+        // Report generation
+        document.getElementById('generate-historical-report').addEventListener('click', () => {
+            this.generateReport();
+        });
     }
     
     handleTabChange(tab) {
@@ -786,6 +799,64 @@ class HistoricalDataManager {
             }
         });
         this.charts = {};
+    }
+
+    async generateReport() {
+        try {
+            const button = document.getElementById('generate-historical-report');
+            const originalText = button.innerHTML;
+
+            // Show loading state
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+
+            // Get current time range
+            const hours = this.getHoursFromRange();
+
+            // Generate report URL
+            const reportUrl = `/api/reports/historical/pdf?hours=${hours}`;
+
+            // Fetch the PDF as a blob
+            const response = await fetch(reportUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/pdf'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            // Get the PDF blob
+            const pdfBlob = await response.blob();
+
+            // Create download link
+            const downloadUrl = window.URL.createObjectURL(pdfBlob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = `historical_report_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pdf`;
+
+            // Trigger download
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Clean up the blob URL
+            window.URL.revokeObjectURL(downloadUrl);
+
+            // Show success message
+            showNotification('Historical report generated successfully!', 'success');
+
+        } catch (error) {
+            console.error('Error generating report:', error);
+            showNotification('Failed to generate report. Please try again.', 'error');
+        } finally {
+            // Restore button state
+            const button = document.getElementById('generate-historical-report');
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-file-pdf mr-2"></i>Generate Report';
+        }
     }
 }
 

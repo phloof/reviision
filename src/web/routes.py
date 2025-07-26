@@ -1784,3 +1784,125 @@ def api_delete_zone(zone_id):
     if hasattr(current_app, 'socketio'):
         current_app.socketio.emit('zonesUpdated')
     return jsonify({"success": True})
+
+
+# ============================================================================
+# PDF Report Generation Routes
+# ============================================================================
+
+@web_bp.route('/api/reports/demographics/pdf', methods=['GET'])
+@require_auth()
+def generate_demographics_pdf_report():
+    """Generate comprehensive demographics PDF report"""
+    try:
+        # Get parameters
+        hours = int(request.args.get('hours', 24))
+
+        # Get data from analysis service
+        data = analysis_service.get_analytics_summary(hours=hours)
+
+        if not data.get('success', True):
+            return jsonify({
+                'success': False,
+                'message': 'Failed to retrieve analytics data'
+            }), 500
+
+        # Import report generator
+        from analysis.reports import DemographicsReportGenerator
+
+        # Generate time period description
+        if hours <= 24:
+            time_period = f"Last {hours} hours"
+        elif hours <= 168:  # 7 days
+            days = hours // 24
+            time_period = f"Last {days} day{'s' if days > 1 else ''}"
+        else:
+            days = hours // 24
+            time_period = f"Last {days} days"
+
+        # Generate report
+        report_generator = DemographicsReportGenerator()
+        pdf_bytes = report_generator.generate_report(data, time_period)
+
+        # Create response
+        response = Response(
+            pdf_bytes,
+            mimetype='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="demographics_report_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf"',
+                'Content-Type': 'application/pdf'
+            }
+        )
+
+        logger.info(f"Demographics PDF report generated successfully for {hours} hours period")
+        return response
+
+    except Exception as e:
+        logger.error(f"Error generating demographics PDF report: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Report generation failed: {str(e)}'
+        }), 500
+
+
+@web_bp.route('/api/reports/historical/pdf', methods=['GET'])
+@require_auth()
+def generate_historical_pdf_report():
+    """Generate comprehensive historical analytics PDF report"""
+    try:
+        # Get parameters
+        hours = int(request.args.get('hours', 24))
+
+        # Get data from analysis service (using historical endpoint data structure)
+        summary_data = analysis_service.get_analytics_summary(hours=hours)
+        traffic_data = analysis_service.get_traffic_data(hours=hours)
+
+        if not summary_data.get('success', True) or not traffic_data.get('success', True):
+            return jsonify({
+                'success': False,
+                'message': 'Failed to retrieve analytics data'
+            }), 500
+
+        # Combine data as expected by historical report
+        combined_data = {
+            **summary_data,
+            'traffic': traffic_data,
+            'period_hours': hours
+        }
+
+        # Import report generator
+        from analysis.reports import HistoricalReportGenerator
+
+        # Generate time period description
+        if hours <= 24:
+            time_period = f"Last {hours} hours"
+        elif hours <= 168:  # 7 days
+            days = hours // 24
+            time_period = f"Last {days} day{'s' if days > 1 else ''}"
+        else:
+            days = hours // 24
+            time_period = f"Last {days} days"
+
+        # Generate report
+        report_generator = HistoricalReportGenerator()
+        pdf_bytes = report_generator.generate_report(combined_data, time_period)
+
+        # Create response
+        response = Response(
+            pdf_bytes,
+            mimetype='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="historical_report_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf"',
+                'Content-Type': 'application/pdf'
+            }
+        )
+
+        logger.info(f"Historical PDF report generated successfully for {hours} hours period")
+        return response
+
+    except Exception as e:
+        logger.error(f"Error generating historical PDF report: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Report generation failed: {str(e)}'
+        }), 500

@@ -27,10 +27,28 @@
         padding: 0.75rem;
     }
 
-    /* Dashboard stats grid with balanced spacing */
+    /* Chart title clickable styling */
+    .card-title.clickable-section {
+        transition: all 0.2s ease;
+        border-radius: 4px;
+        padding: 4px 8px;
+        margin: -4px -8px;
+    }
+
+    .card-title.clickable-section:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+        transform: translateY(-1px);
+    }
+
+    .card-header-success .card-title.clickable-section:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Dashboard stats grid - match demographics page sizing */
     .dashboard-stats-container {
         width: 100%;
-        padding: 0 2rem;
+        padding: 0;
+        margin: 0 auto 1.5rem auto;
     }
 
     .dashboard-stats-grid {
@@ -48,10 +66,11 @@
         }
     }
 
-    /* Desktop - 4 columns with balanced spacing */
+    /* Desktop - match demographics page */
     @media (min-width: 992px) {
         .dashboard-stats-container {
-            padding: 0 3rem;
+            padding: 0;
+            margin: 0 auto 2rem auto;
         }
 
         .dashboard-stats-grid {
@@ -70,10 +89,10 @@
         }
     }
 
-    /* Large desktop - more spacing */
+    /* Large desktop - match demographics page */
     @media (min-width: 1200px) {
         .dashboard-stats-container {
-            padding: 0 4rem;
+            margin: 0 auto 2.5rem auto;
         }
 
         .dashboard-stats-grid {
@@ -85,18 +104,7 @@
         }
     }
 
-    /* Extra large screens */
-    @media (min-width: 1400px) {
-        .dashboard-stats-container {
-            padding: 0 5rem;
-        }
-
-        .dashboard-stats-grid {
-            gap: 3rem;
-        }
-    }
-
-    /* Dashboard charts grid - match width of other cards */
+    /* Dashboard charts grid - match demographics page sizing */
     .dashboard-charts-container {
         width: 100%;
         padding: 0;
@@ -108,7 +116,6 @@
         grid-template-columns: 1fr;
         gap: 2rem;
         width: 100%;
-        max-width: none;
     }
 
     /* Mobile - 1 column */
@@ -119,7 +126,7 @@
         }
     }
 
-    /* Desktop - match container width with other cards */
+    /* Desktop - match demographics page */
     @media (min-width: 992px) {
         .dashboard-charts-container {
             padding: 0;
@@ -131,7 +138,7 @@
         }
     }
 
-    /* Large desktop - maintain symmetry */
+    /* Large desktop - match demographics page */
     @media (min-width: 1200px) {
         .dashboard-charts-grid {
             gap: 2.5rem;
@@ -232,10 +239,10 @@
     <div class="dashboard-charts-container mb-8">
         <div class="dashboard-charts-grid">
         <!-- Traffic Chart -->
-        <div class="card chart-card cursor-pointer hover:shadow-lg transition-all clickable-section"
-             role="link" tabindex="0" data-href="{{ url_for('web.historical') }}">
+        <div class="card chart-card hover:shadow-lg transition-all">
             <div class="card-header" style="background: white; color: black; border-bottom: 1px solid var(--color-border-primary);">
-                <h3 class="card-title" style="color: black;">
+                <h3 class="card-title cursor-pointer clickable-section" style="color: black;"
+                    role="link" tabindex="0" data-href="{{ url_for('web.historical') }}">
                     <i class="fas fa-chart-line" style="color: black;"></i>
                     Store Traffic
                 </h3>
@@ -248,10 +255,10 @@
         </div>
 
         <!-- Demographics Chart -->
-        <div class="card chart-card cursor-pointer hover:shadow-lg transition-all clickable-section"
-             role="link" tabindex="0" data-href="{{ url_for('web.demographics') }}">
+        <div class="card chart-card hover:shadow-lg transition-all">
             <div class="card-header card-header-success">
-                <h3 class="card-title">
+                <h3 class="card-title cursor-pointer clickable-section"
+                    role="link" tabindex="0" data-href="{{ url_for('web.demographics') }}">
                     <i class="fas fa-users"></i>
                     Demographics
                 </h3>
@@ -340,7 +347,7 @@ const api = {
 };
 
 // Chart instances to allow destroy/redraw
-let trafficChartInstance, ageChartInstance, genderChartInstance;
+let trafficChartInstance, demographicsChartInstance;
 
 function getFilterParams() {
     const timeMap = { '1h': 1, '6h': 6, '24h': 24, '7d': 168, '30d': 720 };
@@ -427,24 +434,86 @@ function drawTraffic(res){
     attachToolbar('trafficChart',trafficChartInstance);
 }
 function drawDemographics(ageData,genderData){
-    const ageCanvas = document.getElementById('ageChart');
-    const genderCanvas = document.getElementById('genderChart');
-    if(ageChartInstance) ageChartInstance.destroy();
-    if(genderChartInstance) genderChartInstance.destroy();
-    const ageCfg={
-        type:'bar',
-        data:{labels:Object.keys(ageData),datasets:[{label:'Age Groups',data:Object.values(ageData),backgroundColor:'#3498db'}]},
-        options:{responsive:true,maintainAspectRatio:false}
+    const demographicsCanvas = document.getElementById('demographicsChart');
+    if(!demographicsCanvas) return;
+
+    if(demographicsChartInstance) demographicsChartInstance.destroy();
+
+    // Create a combined demographics chart showing both age and gender data
+    const hasAgeData = ageData && Object.keys(ageData).length > 0;
+    const hasGenderData = genderData && Object.keys(genderData).length > 0;
+
+    if (!hasAgeData && !hasGenderData) {
+        // Show no data message
+        const ctx = demographicsCanvas.getContext('2d');
+        ctx.clearRect(0, 0, demographicsCanvas.width, demographicsCanvas.height);
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('No demographic data available', demographicsCanvas.width/2, demographicsCanvas.height/2);
+        return;
+    }
+
+    // Use age data for the main chart, or gender data if age data is not available
+    const chartData = hasAgeData ? ageData : genderData;
+    const chartType = hasAgeData ? 'bar' : 'doughnut';
+    const chartLabel = hasAgeData ? 'Age Groups' : 'Gender Distribution';
+
+    const demographicsCfg = {
+        type: chartType,
+        data: {
+            labels: Object.keys(chartData),
+            datasets: [{
+                label: chartLabel,
+                data: Object.values(chartData),
+                backgroundColor: hasAgeData ? [
+                    'rgba(52, 152, 219, 0.8)',
+                    'rgba(46, 204, 113, 0.8)',
+                    'rgba(155, 89, 182, 0.8)',
+                    'rgba(241, 196, 15, 0.8)',
+                    'rgba(230, 126, 34, 0.8)',
+                    'rgba(231, 76, 60, 0.8)'
+                ] : ['#3498db', '#e74c3c', '#95a5a6'],
+                borderColor: hasAgeData ? [
+                    'rgba(52, 152, 219, 1)',
+                    'rgba(46, 204, 113, 1)',
+                    'rgba(155, 89, 182, 1)',
+                    'rgba(241, 196, 15, 1)',
+                    'rgba(230, 126, 34, 1)',
+                    'rgba(231, 76, 60, 1)'
+                ] : ['#3498db', '#e74c3c', '#95a5a6'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: !hasAgeData,
+                    position: 'bottom'
+                }
+            },
+            scales: hasAgeData ? {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Visitors'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Age Groups'
+                    }
+                }
+            } : {}
+        }
     };
-    const genderCfg={
-        type:'doughnut',
-        data:{labels:Object.keys(genderData),datasets:[{data:Object.values(genderData),backgroundColor:['#3498db','#e74c3c','#95a5a6']}]},
-        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}
-    };
-    ageChartInstance=new ChartManager(ageCanvas,ageCfg,{filename:'age_distribution'});
-    genderChartInstance=new ChartManager(genderCanvas,genderCfg,{filename:'gender_distribution'});
-    attachToolbar('ageChart',ageChartInstance);
-    attachToolbar('genderChart',genderChartInstance);
+
+    demographicsChartInstance = new ChartManager(demographicsCanvas, demographicsCfg, {filename: 'demographics_overview'});
+    attachToolbar('demographicsChart', demographicsChartInstance);
 }
 
 // Enhanced toolbar util with new controls and export dropdown
