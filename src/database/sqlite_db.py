@@ -1471,13 +1471,15 @@ class SQLiteDatabase:
             logger.error(f"Error getting total persons count: {e}")
             return 0
 
-    def get_analytics_summary(self, hours=24):
+    def get_analytics_summary(self, hours=24, age_filter=None, gender_filter=None):
         """
-        Get analytics summary using 3NF schema with proper joins
-        
+        Get analytics summary using 3NF schema with proper joins and optional demographic filtering
+
         Args:
             hours (int): Number of hours to look back
-            
+            age_filter (str): Age group filter ('child', 'teen', 'adult', 'senior')
+            gender_filter (str): Gender filter ('male', 'female')
+
         Returns:
             dict: Analytics summary
         """
@@ -1490,28 +1492,73 @@ class SQLiteDatabase:
             # Calculate time range
             end_time = datetime.now()
             start_time = end_time - timedelta(hours=hours)
-            
-            # Get total visitors (unique persons detected)
-            cursor.execute('''
+
+            # Build demographic filter conditions
+            demographic_filter = ""
+            demographic_params = []
+
+            if age_filter or gender_filter:
+                demographic_filter = " AND EXISTS (SELECT 1 FROM demographics dm2 WHERE dm2.person_id = p.id"
+                if age_filter:
+                    age_group_map = {
+                        'child': '0-12',
+                        'teen': '13-19',
+                        'adult': '20-64',
+                        'senior': '65+'
+                    }
+                    if age_filter in age_group_map:
+                        demographic_filter += " AND EXISTS (SELECT 1 FROM age_groups ag WHERE dm2.age_group_id = ag.id AND ag.group_name = ?)"
+                        demographic_params.append(age_group_map[age_filter])
+
+                if gender_filter:
+                    demographic_filter += " AND EXISTS (SELECT 1 FROM genders g WHERE dm2.gender_id = g.id AND g.gender_name = ?)"
+                    demographic_params.append(gender_filter)
+
+                demographic_filter += ")"
+
+            # Get total visitors (unique persons detected) with demographic filtering
+            visitor_query = f'''
                 SELECT COUNT(DISTINCT p.id) as unique_visitors,
                        COUNT(d.id) as total_detections
                 FROM persons p
                 LEFT JOIN detections d ON p.id = d.person_id
                 WHERE p.first_detected >= ? AND p.first_detected <= ?
-            ''', (start_time, end_time))
+                {demographic_filter}
+            '''
+
+            cursor.execute(visitor_query, [start_time, end_time] + demographic_params)
             
             visitor_data = cursor.fetchone()
             total_visitors = visitor_data[0] if visitor_data else 0
             total_detections = visitor_data[1] if visitor_data else 0
             
-            # Get gender distribution using proper joins
-            cursor.execute('''
+            # Get gender distribution using proper joins with demographic filtering
+            gender_query = '''
                 SELECT g.display_name, COUNT(*) as count
                 FROM demographics dm
                 JOIN genders g ON dm.gender_id = g.id
                 WHERE dm.timestamp >= ? AND dm.timestamp <= ?
-                GROUP BY g.id, g.display_name
-            ''', (start_time, end_time))
+            '''
+            gender_params = [start_time, end_time]
+
+            if age_filter:
+                age_group_map = {
+                    'child': '0-12',
+                    'teen': '13-19',
+                    'adult': '20-64',
+                    'senior': '65+'
+                }
+                if age_filter in age_group_map:
+                    gender_query += " AND EXISTS (SELECT 1 FROM age_groups ag WHERE dm.age_group_id = ag.id AND ag.group_name = ?)"
+                    gender_params.append(age_group_map[age_filter])
+
+            if gender_filter:
+                gender_query += " AND g.gender_name = ?"
+                gender_params.append(gender_filter)
+
+            gender_query += " GROUP BY g.id, g.display_name"
+
+            cursor.execute(gender_query, gender_params)
             
             gender_data = cursor.fetchall()
             gender_summary = {row[0]: row[1] for row in gender_data}
@@ -1521,37 +1568,91 @@ class SQLiteDatabase:
             female_count = gender_summary.get('Female', 0)
             gender_ratio = f"{male_count}/{female_count}"
             
-            # Get age group distribution
-            cursor.execute('''
+            # Get age group distribution with demographic filtering
+            age_query = '''
                 SELECT ag.group_name, COUNT(*) as count
                 FROM demographics dm
                 JOIN age_groups ag ON dm.age_group_id = ag.id
                 WHERE dm.timestamp >= ? AND dm.timestamp <= ?
-                GROUP BY ag.id, ag.group_name
-                ORDER BY ag.display_order
-            ''', (start_time, end_time))
+            '''
+            age_params = [start_time, end_time]
+
+            if age_filter:
+                age_group_map = {
+                    'child': '0-12',
+                    'teen': '13-19',
+                    'adult': '20-64',
+                    'senior': '65+'
+                }
+                if age_filter in age_group_map:
+                    age_query += " AND ag.group_name = ?"
+                    age_params.append(age_group_map[age_filter])
+
+            if gender_filter:
+                age_query += " AND EXISTS (SELECT 1 FROM genders g WHERE dm.gender_id = g.id AND g.gender_name = ?)"
+                age_params.append(gender_filter)
+
+            age_query += " GROUP BY ag.id, ag.group_name ORDER BY ag.display_order"
+
+            cursor.execute(age_query, age_params)
             
             age_data = cursor.fetchall()
             age_groups = {row[0]: row[1] for row in age_data}
             
-            # Get average age
-            cursor.execute('''
+            # Get average age with demographic filtering
+            avg_age_query = '''
                 SELECT AVG(dm.age) as avg_age
                 FROM demographics dm
                 WHERE dm.timestamp >= ? AND dm.timestamp <= ? AND dm.age IS NOT NULL
-            ''', (start_time, end_time))
-            
+            '''
+            avg_age_params = [start_time, end_time]
+
+            if age_filter:
+                age_group_map = {
+                    'child': '0-12',
+                    'teen': '13-19',
+                    'adult': '20-64',
+                    'senior': '65+'
+                }
+                if age_filter in age_group_map:
+                    avg_age_query += " AND EXISTS (SELECT 1 FROM age_groups ag WHERE dm.age_group_id = ag.id AND ag.group_name = ?)"
+                    avg_age_params.append(age_group_map[age_filter])
+
+            if gender_filter:
+                avg_age_query += " AND EXISTS (SELECT 1 FROM genders g WHERE dm.gender_id = g.id AND g.gender_name = ?)"
+                avg_age_params.append(gender_filter)
+
+            cursor.execute(avg_age_query, avg_age_params)
             avg_age_result = cursor.fetchone()
             avg_age = round(avg_age_result[0], 1) if avg_age_result and avg_age_result[0] else 0
-            
-            # Get emotion distribution
-            cursor.execute('''
+
+            # Get emotion distribution with demographic filtering
+            emotion_query = '''
                 SELECT e.display_name, COUNT(*) as count
                 FROM demographics dm
                 JOIN emotions e ON dm.emotion_id = e.id
                 WHERE dm.timestamp >= ? AND dm.timestamp <= ?
-                GROUP BY e.id, e.display_name
-            ''', (start_time, end_time))
+            '''
+            emotion_params = [start_time, end_time]
+
+            if age_filter:
+                age_group_map = {
+                    'child': '0-12',
+                    'teen': '13-19',
+                    'adult': '20-64',
+                    'senior': '65+'
+                }
+                if age_filter in age_group_map:
+                    emotion_query += " AND EXISTS (SELECT 1 FROM age_groups ag WHERE dm.age_group_id = ag.id AND ag.group_name = ?)"
+                    emotion_params.append(age_group_map[age_filter])
+
+            if gender_filter:
+                emotion_query += " AND EXISTS (SELECT 1 FROM genders g WHERE dm.gender_id = g.id AND g.gender_name = ?)"
+                emotion_params.append(gender_filter)
+
+            emotion_query += " GROUP BY e.id, e.display_name"
+
+            cursor.execute(emotion_query, emotion_params)
             
             emotion_data = cursor.fetchall()
             emotions = {row[0]: row[1] for row in emotion_data}
@@ -1611,13 +1712,15 @@ class SQLiteDatabase:
                 "message": f"Failed to get analytics summary: {str(e)}"
             }
     
-    def get_hourly_traffic(self, hours=24):
+    def get_hourly_traffic(self, hours=24, age_filter=None, gender_filter=None):
         """
-        Get hourly traffic data for the specified period
-        
+        Get hourly traffic data for the specified period with optional demographic filtering
+
         Args:
             hours (int): Number of hours to look back
-            
+            age_filter (str): Age group filter ('child', 'teen', 'adult', 'senior')
+            gender_filter (str): Gender filter ('male', 'female')
+
         Returns:
             dict: Hourly traffic data
         """
@@ -1631,16 +1734,46 @@ class SQLiteDatabase:
             end_time = datetime.now()
             start_time = end_time - timedelta(hours=hours)
             
-            # Get hourly visitor counts
-            cursor.execute('''
-                SELECT 
-                    strftime('%H', timestamp) as hour,
-                    COUNT(DISTINCT person_id) as visitors
-                FROM detections 
-                WHERE timestamp >= ? AND timestamp <= ?
-                GROUP BY strftime('%H', timestamp)
+            # Get hourly visitor counts with demographic filtering
+            traffic_query = '''
+                SELECT
+                    strftime('%H', d.timestamp) as hour,
+                    COUNT(DISTINCT d.person_id) as visitors
+                FROM detections d
+                WHERE d.timestamp >= ? AND d.timestamp <= ?
+            '''
+            traffic_params = [start_time, end_time]
+
+            if age_filter or gender_filter:
+                traffic_query += '''
+                    AND EXISTS (
+                        SELECT 1 FROM demographics dm
+                        WHERE dm.person_id = d.person_id
+                '''
+
+                if age_filter:
+                    age_group_map = {
+                        'child': '0-12',
+                        'teen': '13-19',
+                        'adult': '20-64',
+                        'senior': '65+'
+                    }
+                    if age_filter in age_group_map:
+                        traffic_query += " AND EXISTS (SELECT 1 FROM age_groups ag WHERE dm.age_group_id = ag.id AND ag.group_name = ?)"
+                        traffic_params.append(age_group_map[age_filter])
+
+                if gender_filter:
+                    traffic_query += " AND EXISTS (SELECT 1 FROM genders g WHERE dm.gender_id = g.id AND g.gender_name = ?)"
+                    traffic_params.append(gender_filter)
+
+                traffic_query += ")"
+
+            traffic_query += '''
+                GROUP BY strftime('%H', d.timestamp)
                 ORDER BY hour
-            ''', (start_time, end_time))
+            '''
+
+            cursor.execute(traffic_query, traffic_params)
             
             hourly_data = cursor.fetchall()
             traffic_by_hour = {f"{int(row[0]):02d}:00": row[1] for row in hourly_data}

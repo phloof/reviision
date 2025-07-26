@@ -126,7 +126,7 @@
 
     <!-- Control Panel -->
     <div class="card mb-6">
-        <div class="card-header">
+        <div class="card-header card-header-primary">
             <h2 class="card-title">
                 <i class="fas fa-sliders-h"></i>
                 Camera Controls
@@ -154,7 +154,7 @@
 
     <!-- Video Feed -->
     <div class="card mb-6">
-        <div class="card-header">
+        <div class="card-header card-header-primary">
             <h3 class="card-title">
                 <i class="fas fa-video"></i>
                 Live Analysis Feed
@@ -189,7 +189,7 @@
         <!-- Overlay Controls -->
         <div class="desktop-col-span-2">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header card-header-primary">
                     <h3 class="card-title">
                         <i class="fas fa-layer-group"></i>
                         Overlay Controls
@@ -384,9 +384,9 @@
 
     <!-- Historical Chart -->
     <div class="card mt-6">
-        <div class="card-header card-header-success">
-            <h3 class="card-title">
-                <i class="fas fa-history"></i>
+        <div class="card-header card-header-primary">
+            <h3 class="card-title" style="color: white;">
+                <i class="fas fa-history" style="color: white;"></i>
                 Historical Data
             </h3>
         </div>
@@ -688,8 +688,8 @@
         analysisFeed.innerHTML = '';
         
         // Show loading message
-        originalFeed.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#666;">Loading video feed...</div>';
-        analysisFeed.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#666;">Initializing analysis...</div>';
+        originalFeed.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;">Loading video feed...</div>';
+        analysisFeed.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;">Initializing analysis...</div>';
         
         // Create video feed image
         const feedImage = document.createElement('img');

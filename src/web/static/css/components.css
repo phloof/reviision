@@ -156,6 +156,9 @@
     box-shadow: var(--shadow-sm);
     overflow: hidden;
     transition: var(--transition-all);
+    width: 100%;
+    min-width: 280px;
+    max-width: 100%;
 }
 
 .card:hover {
@@ -477,4 +480,99 @@
 .badge-secondary {
     background: var(--color-secondary-100);
     color: var(--color-secondary-800);
+}
+
+/* ====================================
+   Responsive Card Enhancements
+   ==================================== */
+
+/* Card grid responsive behavior */
+.card-grid-responsive {
+    display: grid;
+    gap: var(--spacing-6);
+    width: 100%;
+}
+
+/* Responsive card sizing for different screen sizes */
+@media (min-width: 1200px) {
+    .card {
+        min-width: 300px;
+    }
+
+    .card-body {
+        padding: var(--spacing-8);
+    }
+
+    .card-header {
+        padding: var(--spacing-8);
+    }
+
+    /* Stats cards should have reasonable max width */
+    .card.stat-card {
+        max-width: 400px;
+    }
+
+    /* Chart cards can be wider */
+    .card.chart-card {
+        max-width: 600px;
+    }
+}
+
+@media (min-width: 1400px) {
+    .card {
+        min-width: 320px;
+    }
+
+    .card-body {
+        padding: var(--spacing-10);
+    }
+
+    .card-header {
+        padding: var(--spacing-10);
+    }
+
+    .card.stat-card {
+        max-width: 450px;
+    }
+
+    .card.chart-card {
+        max-width: 700px;
+    }
+}
+
+@media (min-width: 2560px) {
+    .card {
+        min-width: 350px;
+    }
+
+    .card.stat-card {
+        max-width: 500px;
+    }
+
+    .card.chart-card {
+        max-width: 800px;
+    }
+}
+
+/* Content width constraints for readability */
+.card-content-constrained {
+    max-width: 65ch; /* Optimal reading width */
+    margin: 0 auto;
+}
+
+/* Settings page specific card improvements */
+.settings-content-card {
+    max-width: 800px;
+}
+
+@media (min-width: 1400px) {
+    .settings-content-card {
+        max-width: 900px;
+    }
+}
+
+@media (min-width: 2560px) {
+    .settings-content-card {
+        max-width: 1000px;
+    }
 }

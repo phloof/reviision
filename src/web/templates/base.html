@@ -628,7 +628,7 @@
             // Just ensure dropdowns are initialized when Bootstrap is ready
             if (typeof bootstrap !== 'undefined') {
                 console.log('Bootstrap dropdowns initialized');
-                
+
                 // Optional: Add custom event listeners for specific dropdowns
                 const profileDropdown = document.getElementById('profile-dropdown-btn');
                 if (profileDropdown) {
@@ -644,6 +644,60 @@
                 setTimeout(initializeDropdowns, 100);
             }
         }
+
+        // Global notification system - non-disruptive toast notifications
+        function showNotification(message, type = 'success', duration = 3000) {
+            // Remove any existing notifications
+            const existingNotifications = document.querySelectorAll('.notification-popup');
+            existingNotifications.forEach(notification => {
+                notification.classList.add('fade-out');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
+            });
+
+            // Create new notification
+            const popup = document.createElement('div');
+            popup.className = 'notification-popup';
+
+            const iconMap = {
+                'success': 'check-circle',
+                'error': 'exclamation-triangle',
+                'warning': 'exclamation-triangle',
+                'info': 'info-circle'
+            };
+
+            popup.innerHTML = `
+                <div class="notification-content notification-${type}">
+                    <div class="notification-icon">
+                        <i class="fas fa-${iconMap[type] || 'info-circle'}"></i>
+                    </div>
+                    <div class="notification-message">${message}</div>
+                </div>
+            `;
+
+            document.body.appendChild(popup);
+
+            // Trigger show animation
+            setTimeout(() => {
+                popup.classList.add('show');
+            }, 100);
+
+            // Auto-hide after specified duration
+            setTimeout(() => {
+                popup.classList.add('fade-out');
+                setTimeout(() => {
+                    if (popup.parentNode) {
+                        popup.remove();
+                    }
+                }, 300);
+            }, duration);
+        }
+
+        // Make showNotification globally available
+        window.showNotification = showNotification;
     </script>
     
     <!-- Page-specific scripts -->

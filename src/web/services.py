@@ -2309,26 +2309,36 @@ class FrameAnalysisService:
         """Set the database reference for direct access"""
         self.database = database
 
-    def get_analytics_summary(self, hours=24):
+    def get_analytics_summary(self, hours=24, age_filter=None, gender_filter=None):
         """
-        Get analytics summary data
-        
+        Get analytics summary data with optional demographic filtering
+
         Args:
             hours (int): Number of hours to look back
-            
+            age_filter (str): Age group filter ('child', 'teen', 'adult', 'senior')
+            gender_filter (str): Gender filter ('male', 'female')
+
         Returns:
             dict: Analytics summary data
         """
         try:
             # First try direct database reference
             if hasattr(self, 'database') and self.database:
-                return self.database.get_analytics_summary(hours=hours)
-            
+                return self.database.get_analytics_summary(
+                    hours=hours,
+                    age_filter=age_filter,
+                    gender_filter=gender_filter
+                )
+
             # Fallback to Flask context
             from flask import current_app
             if hasattr(current_app, 'db'):
                 db = current_app.db
-                return db.get_analytics_summary(hours=hours)
+                return db.get_analytics_summary(
+                    hours=hours,
+                    age_filter=age_filter,
+                    gender_filter=gender_filter
+                )
             else:
                 logger.warning("Database not available, returning empty analytics summary")
                 return self._get_empty_analytics_summary()
@@ -2336,26 +2346,36 @@ class FrameAnalysisService:
             logger.error(f"Error getting analytics summary: {e}")
             return self._get_empty_analytics_summary()
 
-    def get_traffic_data(self, hours=24):
+    def get_traffic_data(self, hours=24, age_filter=None, gender_filter=None):
         """
-        Get traffic data for charts
-        
+        Get traffic data for charts with optional demographic filtering
+
         Args:
             hours (int): Number of hours to look back
-            
+            age_filter (str): Age group filter ('child', 'teen', 'adult', 'senior')
+            gender_filter (str): Gender filter ('male', 'female')
+
         Returns:
             dict: Traffic data for charts
         """
         try:
             # First try direct database reference
             if hasattr(self, 'database') and self.database:
-                return self.database.get_hourly_traffic(hours=hours)
-            
+                return self.database.get_hourly_traffic(
+                    hours=hours,
+                    age_filter=age_filter,
+                    gender_filter=gender_filter
+                )
+
             # Fallback to Flask context
             from flask import current_app
             if hasattr(current_app, 'db'):
                 db = current_app.db
-                return db.get_hourly_traffic(hours=hours)
+                return db.get_hourly_traffic(
+                    hours=hours,
+                    age_filter=age_filter,
+                    gender_filter=gender_filter
+                )
             else:
                 logger.warning("Database not available, returning empty traffic data")
                 return self._get_empty_traffic_data()

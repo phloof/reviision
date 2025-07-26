@@ -281,11 +281,18 @@ def settings():
 @require_auth()
 def get_analytics_summary():
     """
-    Get analytics summary data
+    Get analytics summary data with optional demographic filtering
     """
     try:
         hours = int(request.args.get('hours', 24))
-        summary_data = analysis_service.get_analytics_summary(hours=hours)
+        age_filter = request.args.get('age_filter', None)
+        gender_filter = request.args.get('gender_filter', None)
+
+        summary_data = analysis_service.get_analytics_summary(
+            hours=hours,
+            age_filter=age_filter,
+            gender_filter=gender_filter
+        )
         return jsonify({"success": True, **summary_data})
     except Exception as e:
         logger.error(f"Error getting analytics summary: {e}")
@@ -295,11 +302,18 @@ def get_analytics_summary():
 @require_auth()
 def get_traffic_data():
     """
-    Get traffic data for charts
+    Get traffic data for charts with optional demographic filtering
     """
     try:
         hours = int(request.args.get('hours', 24))
-        traffic_data = analysis_service.get_traffic_data(hours=hours)
+        age_filter = request.args.get('age_filter', None)
+        gender_filter = request.args.get('gender_filter', None)
+
+        traffic_data = analysis_service.get_traffic_data(
+            hours=hours,
+            age_filter=age_filter,
+            gender_filter=gender_filter
+        )
         return jsonify({"success": True, **traffic_data})
     except Exception as e:
         logger.error(f"Error getting traffic data: {e}")

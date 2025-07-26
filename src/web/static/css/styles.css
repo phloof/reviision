@@ -3988,3 +3988,377 @@ header {
     background-color: var(--primary-color) !important;
     border-color: var(--primary-color) !important;
 }
+
+/* ====================================
+   Card Headers with Blue Backgrounds
+   ==================================== */
+
+/* All card headers with primary/blue backgrounds should have white text */
+.card-header-primary,
+.card-header-primary *,
+.card-header-primary .card-title,
+.card-header-primary .card-title i,
+.card-header-primary h1,
+.card-header-primary h2,
+.card-header-primary h3,
+.card-header-primary h4,
+.card-header-primary h5,
+.card-header-primary h6 {
+    color: #ffffff !important;
+}
+
+/* Regular card headers that might have blue backgrounds */
+.card-header {
+    color: var(--text-dark) !important;
+}
+
+/* When card header has blue/primary background, ensure white text */
+.card-header.bg-primary,
+.card-header.bg-primary *,
+.card-header.bg-primary .card-title,
+.card-header.bg-primary .card-title i {
+    color: #ffffff !important;
+}
+
+/* ====================================
+   Alert Messages and Security Notices
+   ==================================== */
+
+/* Security notice with warning background should have dark text */
+.card-header.bg-warning,
+.card-header.bg-warning *,
+.card-header.bg-warning h5,
+.card-header.bg-warning i {
+    color: #000000 !important;
+    background-color: #ffc107 !important;
+}
+
+/* Alert messages - ensure proper contrast */
+.alert-primary,
+.alert-primary * {
+    color: #ffffff !important;
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.alert-info,
+.alert-info * {
+    color: #ffffff !important;
+    background-color: var(--info-color) !important;
+    border-color: var(--info-color) !important;
+}
+
+/* Warning alerts should have dark text */
+.alert-warning,
+.alert-warning * {
+    color: #000000 !important;
+    background-color: #ffc107 !important;
+    border-color: #ffc107 !important;
+}
+
+/* Success alerts should have white text */
+.alert-success,
+.alert-success * {
+    color: #ffffff !important;
+    background-color: var(--success-color) !important;
+    border-color: var(--success-color) !important;
+}
+
+/* Danger alerts should have white text */
+.alert-danger,
+.alert-danger * {
+    color: #ffffff !important;
+    background-color: var(--danger-color) !important;
+    border-color: var(--danger-color) !important;
+}
+
+/* ====================================
+   Page Headers and Titles
+   ==================================== */
+
+/* Page headers with blue backgrounds */
+.page-header,
+.page-header * {
+    color: var(--text-dark) !important;
+}
+
+/* When page header has blue background */
+.page-header.bg-primary,
+.page-header.bg-primary *,
+.page-header.bg-primary h1,
+.page-header.bg-primary h2 {
+    color: #ffffff !important;
+}
+
+/* Text with primary color class should be blue on white backgrounds */
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+/* ====================================
+   Logo and Brand Elements
+   ==================================== */
+
+/* Ensure logo text is white in sidebar */
+.sidebar .logo,
+.sidebar .logo *,
+.sidebar .logo h1,
+.sidebar .logo i,
+.sidebar .logo .logo-text {
+    color: #ffffff !important;
+}
+
+/* Brand elements on blue backgrounds */
+.bg-primary .logo,
+.bg-primary .logo *,
+.card-header-primary .logo,
+.card-header-primary .logo * {
+    color: #ffffff !important;
+}
+
+/* ====================================
+   Modern Card Headers (from shared-page-styles.css)
+   ==================================== */
+
+/* Modern card headers with blue backgrounds */
+.modern-card-header,
+.modern-card-header *,
+.modern-card-header h1,
+.modern-card-header h2,
+.modern-card-header h3,
+.modern-card-header h4,
+.modern-card-header h5,
+.modern-card-header h6,
+.modern-card-header i {
+    color: #ffffff !important;
+}
+
+/* Specific color variants of modern headers */
+.modern-card-header.green,
+.modern-card-header.green * {
+    color: #ffffff !important;
+}
+
+.modern-card-header.orange,
+.modern-card-header.orange * {
+    color: #ffffff !important;
+}
+
+.modern-card-header.red,
+.modern-card-header.red * {
+    color: #ffffff !important;
+}
+
+.modern-card-header.purple,
+.modern-card-header.purple * {
+    color: #ffffff !important;
+}
+
+.modern-card-header.teal,
+.modern-card-header.teal * {
+    color: #ffffff !important;
+}
+
+/* ====================================
+   Bootstrap Override for Blue Backgrounds
+   ==================================== */
+
+/* Any element with Bootstrap primary background */
+.bg-primary,
+.bg-primary *,
+.bg-primary h1,
+.bg-primary h2,
+.bg-primary h3,
+.bg-primary h4,
+.bg-primary h5,
+.bg-primary h6,
+.bg-primary p,
+.bg-primary span,
+.bg-primary div,
+.bg-primary i,
+.bg-primary a {
+    color: #ffffff !important;
+}
+
+/* Any element with info background */
+.bg-info,
+.bg-info *,
+.bg-info h1,
+.bg-info h2,
+.bg-info h3,
+.bg-info h4,
+.bg-info h5,
+.bg-info h6,
+.bg-info p,
+.bg-info span,
+.bg-info div,
+.bg-info i,
+.bg-info a {
+    color: #ffffff !important;
+}
+
+/* Buttons with primary backgrounds */
+.btn-primary,
+.btn-primary *,
+.btn-primary i {
+    color: #ffffff !important;
+}
+
+.btn-info,
+.btn-info *,
+.btn-info i {
+    color: #ffffff !important;
+}
+
+/* ====================================
+   Design System Overrides for Blue Backgrounds
+   ==================================== */
+
+/* Override design-system.css for elements on blue backgrounds */
+.sidebar .text-primary,
+.card-header-primary .text-primary,
+.bg-primary .text-primary,
+.bg-info .text-primary,
+.modern-card-header .text-primary {
+    color: #ffffff !important;
+}
+
+/* Ensure card titles in blue headers are white */
+.card-header-primary .card-title,
+.bg-primary .card-title,
+.modern-card-header .card-title {
+    color: #ffffff !important;
+}
+
+/* Fix any remaining text elements that might be dark on blue backgrounds */
+.card-header-primary h1,
+.card-header-primary h2,
+.card-header-primary h3,
+.card-header-primary h4,
+.card-header-primary h5,
+.card-header-primary h6,
+.card-header-primary p,
+.card-header-primary span,
+.card-header-primary div:not(.dropdown-menu),
+.card-header-primary label {
+    color: #ffffff !important;
+}
+
+/* Ensure icons in blue headers are white */
+.card-header-primary i,
+.bg-primary i,
+.modern-card-header i,
+.sidebar i {
+    color: #ffffff !important;
+}
+
+/* Final catch-all for any blue background elements */
+[class*="bg-primary"] *,
+[class*="card-header-primary"] *,
+[class*="modern-card-header"] * {
+    color: #ffffff !important;
+}
+
+/* Exception: dropdown menus should remain with dark text */
+.dropdown-menu,
+.dropdown-menu *,
+.dropdown-item,
+.dropdown-item * {
+    color: var(--text-dark) !important;
+    background-color: #ffffff !important;
+}
+
+/* ====================================
+   Global Notification System
+   ==================================== */
+
+/* Toast-style notification popup that doesn't disrupt page layout */
+.notification-popup {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1060;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.notification-popup.show {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.notification-popup.fade-out {
+    opacity: 0;
+    transform: translateX(100%);
+    pointer-events: none;
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 300px;
+    max-width: 400px;
+    backdrop-filter: blur(10px);
+}
+
+.notification-success {
+    background: linear-gradient(135deg, var(--success-color) 0%, #27ae60 100%);
+    color: white;
+}
+
+.notification-error {
+    background: linear-gradient(135deg, var(--danger-color) 0%, #c0392b 100%);
+    color: white;
+}
+
+.notification-warning {
+    background: linear-gradient(135deg, var(--warning-color) 0%, #f39c12 100%);
+    color: white;
+}
+
+.notification-info {
+    background: linear-gradient(135deg, var(--info-color) 0%, #3498db 100%);
+    color: white;
+}
+
+.notification-icon {
+    margin-right: 1rem;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.notification-message {
+    flex: 1;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .notification-popup {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        transform: translateY(-100%);
+    }
+
+    .notification-popup.show {
+        transform: translateY(0);
+    }
+
+    .notification-popup.fade-out {
+        transform: translateY(-100%);
+    }
+
+    .notification-content {
+        min-width: auto;
+        max-width: none;
+        width: 100%;
+    }
+}

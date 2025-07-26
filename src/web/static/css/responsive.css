@@ -214,6 +214,25 @@
     }
 }
 
+/* Large screen chart improvements */
+@media (min-width: 1200px) {
+    .chart-container {
+        height: 350px;
+    }
+}
+
+@media (min-width: 1400px) {
+    .chart-container {
+        height: 400px;
+    }
+}
+
+@media (min-width: 2560px) {
+    .chart-container {
+        height: 450px;
+    }
+}
+
 /* ====================================
    Grid System Enhancements
    ==================================== */
@@ -245,9 +264,51 @@
     .responsive-grid-lg-3 {
         grid-template-columns: repeat(3, 1fr);
     }
-    
+
     .responsive-grid-lg-4 {
         grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (min-width: 1200px) {
+    .responsive-grid-xl-4 {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .responsive-grid-xl-5 {
+        grid-template-columns: repeat(5, 1fr);
+    }
+
+    .responsive-grid-xl-6 {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+
+@media (min-width: 1400px) {
+    .responsive-grid-xxl-5 {
+        grid-template-columns: repeat(5, 1fr);
+    }
+
+    .responsive-grid-xxl-6 {
+        grid-template-columns: repeat(6, 1fr);
+    }
+
+    .responsive-grid-xxl-7 {
+        grid-template-columns: repeat(7, 1fr);
+    }
+}
+
+@media (min-width: 2560px) {
+    .responsive-grid-ultra-6 {
+        grid-template-columns: repeat(6, 1fr);
+    }
+
+    .responsive-grid-ultra-8 {
+        grid-template-columns: repeat(8, 1fr);
+    }
+
+    .responsive-grid-ultra-10 {
+        grid-template-columns: repeat(10, 1fr);
     }
 }
 
@@ -285,6 +346,51 @@
     
     .gap-6 { gap: var(--spacing-4); }
     .gap-8 { gap: var(--spacing-6); }
+}
+
+/* ====================================
+   Large Screen Accessibility Enhancements
+   ==================================== */
+
+/* Ensure focus indicators scale properly on large screens */
+@media (min-width: 1200px) {
+    .focus-visible:focus {
+        outline: 3px solid var(--color-primary-500);
+        outline-offset: 3px;
+    }
+
+    .btn:focus {
+        outline: 3px solid var(--color-primary-500);
+        outline-offset: 3px;
+    }
+}
+
+/* Ensure interactive elements maintain proper size on ultra-wide screens */
+@media (min-width: 2560px) {
+    .btn {
+        min-height: 48px;
+        min-width: 48px;
+        padding: var(--spacing-4) var(--spacing-8);
+    }
+
+    .form-control {
+        min-height: 48px;
+        padding: var(--spacing-4) var(--spacing-5);
+    }
+}
+
+/* Content width constraints for optimal readability */
+@media (min-width: 1400px) {
+    .card-content-text {
+        max-width: 70ch;
+        margin: 0 auto;
+    }
+}
+
+@media (min-width: 2560px) {
+    .card-content-text {
+        max-width: 75ch;
+    }
 }
 
 /* ====================================

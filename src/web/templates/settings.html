@@ -109,16 +109,16 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-6">
+<div class="container-responsive py-6">
     <!-- Page Header -->
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-primary mb-2">System Settings</h1>
         <p class="text-secondary">Configure camera, analysis, and system parameters</p>
     </div>
 
-    <div class="d-grid grid-cols-1 desktop-grid-cols-4 gap-6">
+    <div class="d-grid grid-cols-1 desktop-grid-cols-4 xl-grid-cols-5 xxl-grid-cols-6 ultra-grid-cols-8 gap-6">
         <!-- Settings Navigation -->
-        <div class="desktop-col-span-1">
+        <div class="desktop-col-span-1 xl-col-span-1 xxl-col-span-1 ultra-col-span-1">
             <div class="settings-sidebar">
                 <h3 class="text-lg font-semibold mb-4">Settings Categories</h3>
                 <nav class="settings-nav">
@@ -150,8 +150,8 @@
             </div>
         </div>
         <!-- Settings Content -->
-        <div class="desktop-col-span-3">
-            <div id="settings-content">
+        <div class="desktop-col-span-3 xl-col-span-3 xxl-col-span-4 ultra-col-span-5">
+            <div id="settings-content" class="settings-content-card">
                 <!-- Camera Settings Section -->
                 <div id="camera-section" class="settings-section">
                     <div class="d-flex justify-between items-center mb-6">
@@ -647,16 +647,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(data => {
                     if (data.success) {
                         this.innerHTML = '<i class="fas fa-check"></i> Data Inserted!';
-                        alert('Sample data inserted successfully! You can now view demographics and analytics.');
+                        showNotification('Sample data inserted successfully! You can now view demographics and analytics.', 'success');
                     } else {
                         this.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed';
-                        alert('Failed to insert data: ' + (data.message || 'Unknown error'));
+                        showNotification('Failed to insert data: ' + (data.message || 'Unknown error'), 'error');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     this.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
-                    alert('Error inserting data: ' + error.message);
+                    showNotification('Error inserting data: ' + error.message, 'error');
                 })
                 .finally(() => {
                     setTimeout(() => {
@@ -677,7 +677,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(() => {
                     this.innerHTML = '<i class="fas fa-download"></i> Backup';
                     this.disabled = false;
-                    alert('Database backup created successfully!');
+                    showNotification('Database backup created successfully!', 'success');
                 }, 2000);
             }
         });
@@ -701,16 +701,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     .then(data => {
                         if (data.success) {
                             this.innerHTML = '<i class="fas fa-check"></i> Data Cleared!';
-                            alert('All data cleared successfully!');
+                            showNotification('All data cleared successfully!', 'success');
                         } else {
                             this.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed';
-                            alert('Failed to clear data: ' + (data.message || 'Unknown error'));
+                            showNotification('Failed to clear data: ' + (data.message || 'Unknown error'), 'error');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
                         this.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
-                        alert('Error clearing data: ' + error.message);
+                        showNotification('Error clearing data: ' + error.message, 'error');
                     })
                     .finally(() => {
                         setTimeout(() => {

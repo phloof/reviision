@@ -26,11 +26,122 @@
         border: 1px solid #dee2e6;
         padding: 0.75rem;
     }
+
+    /* Dashboard stats grid with balanced spacing */
+    .dashboard-stats-container {
+        width: 100%;
+        padding: 0 2rem;
+    }
+
+    .dashboard-stats-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        width: 100%;
+    }
+
+    /* Mobile - 1 column */
+    @media (min-width: 576px) {
+        .dashboard-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+    }
+
+    /* Desktop - 4 columns with balanced spacing */
+    @media (min-width: 992px) {
+        .dashboard-stats-container {
+            padding: 0 3rem;
+        }
+
+        .dashboard-stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+        }
+
+        .stat-card {
+            min-height: 180px;
+            display: flex;
+            align-items: center;
+        }
+
+        .stat-card .card-body {
+            width: 100%;
+        }
+    }
+
+    /* Large desktop - more spacing */
+    @media (min-width: 1200px) {
+        .dashboard-stats-container {
+            padding: 0 4rem;
+        }
+
+        .dashboard-stats-grid {
+            gap: 2.5rem;
+        }
+
+        .stat-card {
+            min-height: 200px;
+        }
+    }
+
+    /* Extra large screens */
+    @media (min-width: 1400px) {
+        .dashboard-stats-container {
+            padding: 0 5rem;
+        }
+
+        .dashboard-stats-grid {
+            gap: 3rem;
+        }
+    }
+
+    /* Dashboard charts grid - match width of other cards */
+    .dashboard-charts-container {
+        width: 100%;
+        padding: 0;
+        margin: 0 auto;
+    }
+
+    .dashboard-charts-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        width: 100%;
+        max-width: none;
+    }
+
+    /* Mobile - 1 column */
+    @media (min-width: 768px) {
+        .dashboard-charts-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+    }
+
+    /* Desktop - match container width with other cards */
+    @media (min-width: 992px) {
+        .dashboard-charts-container {
+            padding: 0;
+        }
+
+        .dashboard-charts-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+    }
+
+    /* Large desktop - maintain symmetry */
+    @media (min-width: 1200px) {
+        .dashboard-charts-grid {
+            gap: 2.5rem;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-6">
+<div class="container-responsive py-6">
     <!-- Page Header -->
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-primary mb-2">Dashboard Overview</h1>
@@ -45,35 +156,41 @@
         {'icon':'venus-mars','label':'M/F Ratio','id':'gender-ratio','variant':'warning'}
     ] %}
 
-    <div class="d-grid grid-cols-1 tablet-grid-cols-2 desktop-grid-cols-4 gap-6 mb-8">
-        {% for stat in stats %}
-        <div class="card hover:shadow-lg transition-all animate-fade-in">
-            <div class="card-body text-center p-6">
-                <div class="mb-4">
-                    <i class="fas fa-{{ stat.icon }} text-4xl text-{{ stat.variant }}"></i>
-                </div>
-                <div class="text-3xl font-bold text-primary mb-2" id="{{ stat.id }}">
-                    <span class="animate-pulse">--</span>
-                </div>
-                <div class="text-sm font-medium text-secondary uppercase tracking-wide">
-                    {{ stat.label }}
+    <div class="dashboard-stats-container mb-8">
+        <div class="dashboard-stats-grid">
+            {% for stat in stats %}
+            <div class="card stat-card hover:shadow-lg transition-all animate-fade-in">
+                <div class="card-body text-center p-6">
+                    <div class="mb-4">
+                        {% if stat.id == 'total-visitors' %}
+                            <i class="fas fa-{{ stat.icon }} text-4xl" style="color: black;"></i>
+                        {% else %}
+                            <i class="fas fa-{{ stat.icon }} text-4xl text-{{ stat.variant }}"></i>
+                        {% endif %}
+                    </div>
+                    <div class="text-3xl font-bold text-primary mb-2" id="{{ stat.id }}">
+                        <span class="animate-pulse">--</span>
+                    </div>
+                    <div class="text-sm font-medium text-secondary uppercase tracking-wide">
+                        {{ stat.label }}
+                    </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
 
     <!-- Controls Section -->
     <div class="card mb-8">
-        <div class="card-header">
+        <div class="card-header card-header-primary">
             <h2 class="card-title">
                 <i class="fas fa-sliders-h"></i>
                 Data Controls
             </h2>
         </div>
         <div class="card-body">
-            <div class="d-flex flex-column desktop-flex-row gap-4 items-end">
-                <div class="form-group flex-1">
+            <div class="d-grid grid-cols-1 tablet-grid-cols-2 desktop-grid-cols-4 gap-4">
+                <div class="form-group">
                     <label for="time-range" class="form-label">Time Range</label>
                     <select class="form-control" id="time-range">
                         <option value="1h">Last Hour</option>
@@ -84,9 +201,27 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <button class="btn btn-primary" id="refreshButton">
-                        <i class="fas fa-sync-alt"></i>
-                        Refresh Data
+                    <label for="age-filter" class="form-label">Age Group</label>
+                    <select class="form-control" id="age-filter">
+                        <option value="all">All Ages</option>
+                        <option value="child">Children (0-12)</option>
+                        <option value="teen">Teenagers (13-19)</option>
+                        <option value="adult">Adults (20-64)</option>
+                        <option value="senior">Seniors (65+)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="gender-filter" class="form-label">Gender</label>
+                    <select class="form-control" id="gender-filter">
+                        <option value="all">All Genders</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                    </select>
+                </div>
+                <div class="form-group d-flex items-end">
+                    <button class="btn btn-primary w-full" id="refreshButton">
+                        <i class="fas fa-search"></i>
+                        Apply Filters
                     </button>
                 </div>
             </div>
@@ -94,13 +229,14 @@
     </div>
 
     <!-- Charts Grid -->
-    <div class="d-grid grid-cols-1 desktop-grid-cols-2 gap-6 mb-8">
+    <div class="dashboard-charts-container mb-8">
+        <div class="dashboard-charts-grid">
         <!-- Traffic Chart -->
-        <div class="card cursor-pointer hover:shadow-lg transition-all clickable-section"
+        <div class="card chart-card cursor-pointer hover:shadow-lg transition-all clickable-section"
              role="link" tabindex="0" data-href="{{ url_for('web.historical') }}">
-            <div class="card-header card-header-primary">
-                <h3 class="card-title">
-                    <i class="fas fa-chart-line"></i>
+            <div class="card-header" style="background: white; color: black; border-bottom: 1px solid var(--color-border-primary);">
+                <h3 class="card-title" style="color: black;">
+                    <i class="fas fa-chart-line" style="color: black;"></i>
                     Store Traffic
                 </h3>
             </div>
@@ -112,7 +248,7 @@
         </div>
 
         <!-- Demographics Chart -->
-        <div class="card cursor-pointer hover:shadow-lg transition-all clickable-section"
+        <div class="card chart-card cursor-pointer hover:shadow-lg transition-all clickable-section"
              role="link" tabindex="0" data-href="{{ url_for('web.demographics') }}">
             <div class="card-header card-header-success">
                 <h3 class="card-title">
@@ -126,11 +262,13 @@
                 </div>
             </div>
         </div>
+        </div>
     </div>
     <!-- Additional Analytics -->
-    <div class="d-grid grid-cols-1 desktop-grid-cols-2 gap-6">
+    <div class="dashboard-charts-container mb-8">
+        <div class="dashboard-charts-grid">
         <!-- Age Distribution -->
-        <div class="card">
+        <div class="card chart-card">
             <div class="card-header card-header-warning">
                 <h3 class="card-title">
                     <i class="fas fa-birthday-cake"></i>
@@ -145,7 +283,7 @@
         </div>
 
         <!-- Gender Distribution -->
-        <div class="card">
+        <div class="card chart-card">
             <div class="card-header card-header-danger">
                 <h3 class="card-title">
                     <i class="fas fa-venus-mars"></i>
@@ -158,11 +296,12 @@
                 </div>
             </div>
         </div>
+        </div>
     </div>
 
     <!-- Quick Actions -->
     <div class="card mt-8">
-        <div class="card-header">
+        <div class="card-header card-header-primary">
             <h3 class="card-title">
                 <i class="fas fa-bolt"></i>
                 Quick Actions
@@ -194,14 +333,35 @@
 
 {% block scripts %}
 <script>
-// ===== Dashboard Logic (clean version) =====
+// ===== Dashboard Logic with Enhanced Filtering =====
 const api = {
-    summary: (h) => `/api/analytics/summary?hours=${h}`,
-    traffic: (h) => `/api/analytics/traffic?hours=${h}`
+    summary: (params) => `/api/analytics/summary?${new URLSearchParams(params).toString()}`,
+    traffic: (params) => `/api/analytics/traffic?${new URLSearchParams(params).toString()}`
 };
 
 // Chart instances to allow destroy/redraw
 let trafficChartInstance, ageChartInstance, genderChartInstance;
+
+function getFilterParams() {
+    const timeMap = { '1h': 1, '6h': 6, '24h': 24, '7d': 168, '30d': 720 };
+    const timeRange = document.getElementById('time-range').value || '24h';
+    const ageFilter = document.getElementById('age-filter').value || 'all';
+    const genderFilter = document.getElementById('gender-filter').value || 'all';
+
+    const params = {
+        hours: timeMap[timeRange] || 24
+    };
+
+    if (ageFilter !== 'all') {
+        params.age_filter = ageFilter;
+    }
+
+    if (genderFilter !== 'all') {
+        params.gender_filter = genderFilter;
+    }
+
+    return params;
+}
 
 function getHours() {
     const map = { '1h': 1, '6h': 6, '24h': 24, '7d': 168, '30d': 720 };
@@ -210,21 +370,47 @@ function getHours() {
 }
 
 async function refreshDashboard() {
-    const hours = getHours();
-    const [summaryRes, trafficRes] = await Promise.all([
-        fetch(api.summary(hours)).then(r=>r.json()).catch(()=>({success:false})),
-        fetch(api.traffic(hours)).then(r=>r.json()).catch(()=>({success:false}))
-    ]);
+    const filterParams = getFilterParams();
 
-    // Update stat cards
-    if (summaryRes.success) {
-        document.getElementById('total-visitors').textContent = (summaryRes.total_visitors||0).toLocaleString();
-        document.getElementById('avg-dwell-time').textContent = summaryRes.avg_dwell_time || '--';
-        document.getElementById('conversion-rate').textContent = summaryRes.conversion_rate ? summaryRes.conversion_rate+'%' : '--';
-        document.getElementById('gender-ratio').textContent = summaryRes.gender_ratio || '--';
-        drawDemographics(summaryRes.age_groups || {}, summaryRes.gender_distribution || {});
+    // Show loading state
+    showLoadingState();
+
+    try {
+        const [summaryRes, trafficRes] = await Promise.all([
+            fetch(api.summary(filterParams)).then(r=>r.json()).catch(()=>({success:false})),
+            fetch(api.traffic(filterParams)).then(r=>r.json()).catch(()=>({success:false}))
+        ]);
+
+        // Update stat cards
+        if (summaryRes.success) {
+            document.getElementById('total-visitors').textContent = (summaryRes.total_visitors||0).toLocaleString();
+            document.getElementById('avg-dwell-time').textContent = summaryRes.avg_dwell_time || '--';
+            document.getElementById('conversion-rate').textContent = summaryRes.conversion_rate ? summaryRes.conversion_rate+'%' : '--';
+            document.getElementById('gender-ratio').textContent = summaryRes.gender_ratio || '--';
+            drawDemographics(summaryRes.age_groups || {}, summaryRes.gender_distribution || {});
+        }
+        drawTraffic(trafficRes);
+
+        // Show success notification
+        showNotification('Data updated successfully', 'success');
+    } catch (error) {
+        console.error('Error refreshing dashboard:', error);
+        showNotification('Error loading data. Please try again.', 'error');
+    } finally {
+        hideLoadingState();
     }
-    drawTraffic(trafficRes);
+}
+
+function showLoadingState() {
+    const button = document.getElementById('refreshButton');
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+}
+
+function hideLoadingState() {
+    const button = document.getElementById('refreshButton');
+    button.disabled = false;
+    button.innerHTML = '<i class="fas fa-search"></i> Apply Filters';
 }
 
 function drawTraffic(res){
@@ -261,31 +447,69 @@ function drawDemographics(ageData,genderData){
     attachToolbar('genderChart',genderChartInstance);
 }
 
-// Toolbar util copied from demographics page
+// Enhanced toolbar util with new controls and export dropdown
 function attachToolbar(canvasId, chartManager){
     const canvas=document.getElementById(canvasId);
     if(!canvas) return;
     const container=canvas.closest('.chart-container');
     if(!container || container.querySelector('.chart-toolbar')) return;
+
+    // Ensure container positioning for absolute toolbar
+    if (getComputedStyle(container).position === 'static') {
+        container.style.position = 'relative';
+    }
+
     const tb=document.createElement('div');
     tb.className='chart-toolbar text-end mt-1';
-    tb.innerHTML=`<button class="btn btn-sm btn-outline-secondary me-1" data-action="png"><i class="fas fa-image"></i></button><button class="btn btn-sm btn-outline-secondary me-1" data-action="csv"><i class="fas fa-file-csv"></i></button><button class="btn btn-sm btn-outline-secondary" data-action="json"><i class="fas fa-code"></i></button>`;
+    tb.innerHTML=`
+        <button class="btn btn-sm btn-outline-secondary me-1" data-action="zoom-in" title="Zoom In"><i class="fas fa-search-plus"></i></button>
+        <button class="btn btn-sm btn-outline-secondary me-1" data-action="zoom-out" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
+        <button class="btn btn-sm btn-outline-secondary me-1" data-action="reset-zoom" title="Reset Zoom"><i class="fas fa-expand-arrows-alt"></i></button>
+        <button class="btn btn-sm btn-outline-secondary me-1" data-action="toggle-pan" title="Enable Pan Mode"><i class="fas fa-hand-paper"></i></button>
+        <div class="btn-group">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="Export Options">
+                <i class="fas fa-download"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" data-action="png" href="#"><i class="fas fa-image me-2"></i>PNG Image</a></li>
+                <li><a class="dropdown-item" data-action="csv" href="#"><i class="fas fa-file-csv me-2"></i>CSV Data</a></li>
+                <li><a class="dropdown-item" data-action="json" href="#"><i class="fas fa-code me-2"></i>JSON Data</a></li>
+            </ul>
+        </div>
+    `;
     container.appendChild(tb);
+
     tb.addEventListener('click',ev=>{
-        const btn=ev.target.closest('button');
+        const btn=ev.target.closest('[data-action]');
         if(!btn) return;
+
+        ev.preventDefault();
         const act=btn.getAttribute('data-action');
+
+        // Handle export actions
         if(act==='png') chartManager.exportPNG();
-        if(act==='csv') chartManager.exportCSV();
-        if(act==='json') chartManager.exportJSON();
+        else if(act==='csv') chartManager.exportCSV();
+        else if(act==='json') chartManager.exportJSON();
+        // Handle zoom actions
+        else if(act==='zoom-in') chartManager.zoomIn();
+        else if(act==='zoom-out') chartManager.zoomOut();
+        else if(act==='reset-zoom') chartManager.resetZoom();
+        // Handle pan toggle
+        else if(act==='toggle-pan') chartManager.togglePan();
     });
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
+    // Event listeners for filter controls
     document.getElementById('refreshButton').addEventListener('click', refreshDashboard);
     document.getElementById('time-range').addEventListener('change', refreshDashboard);
-    // set icon colours defined in data-color attrs
+    document.getElementById('age-filter').addEventListener('change', refreshDashboard);
+    document.getElementById('gender-filter').addEventListener('change', refreshDashboard);
+
+    // Set icon colours defined in data-color attrs
     document.querySelectorAll('i[data-color]').forEach(el=>{el.style.color=el.dataset.color;});
+
+    // Initial load
     refreshDashboard();
 });
 </script>

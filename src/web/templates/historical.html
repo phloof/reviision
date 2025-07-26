@@ -204,9 +204,9 @@
                 </div>
 
                 <div class="card">
-                    <div class="card-header card-header-success">
-                        <h3 class="card-title">
-                            <i class="fas fa-clock"></i>
+                    <div class="card-header card-header-primary">
+                        <h3 class="card-title" style="color: white;">
+                            <i class="fas fa-clock" style="color: white;"></i>
                             Hourly Distribution
                         </h3>
                     </div>
@@ -770,41 +770,7 @@ class HistoricalDataManager {
     }
     
     showSuccessMessage(message) {
-        this.showNotificationPopup('success', message);
-    }
-    
-    showNotificationPopup(type, message) {
-        // Remove any existing notifications
-        const existingNotifications = document.querySelectorAll('.notification-popup');
-        existingNotifications.forEach(notification => notification.remove());
-        
-        const popup = document.createElement('div');
-        popup.className = 'notification-popup';
-        popup.innerHTML = `
-            <div class="notification-content notification-${type}">
-                <div class="notification-icon">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
-                </div>
-                <div class="notification-message">${message}</div>
-            </div>
-        `;
-        
-        document.body.appendChild(popup);
-        
-        // Trigger animation
-        setTimeout(() => {
-            popup.classList.add('show');
-        }, 100);
-        
-        // Auto-hide after 3 seconds
-        setTimeout(() => {
-            popup.classList.add('fade-out');
-            setTimeout(() => {
-                if (popup.parentNode) {
-                    popup.remove();
-                }
-            }, 300);
-        }, 3000);
+        showNotification(message, 'success');
     }
     
     showNoDataState() {

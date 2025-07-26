@@ -14,9 +14,11 @@
 .demographic-stat {
     text-align: center;
     padding: var(--spacing-4);
-    background: var(--color-surface-secondary);
+    background: white;
+    border: 1px solid var(--color-border-primary);
     border-radius: var(--radius-lg);
     transition: var(--transition-all);
+    box-shadow: var(--shadow-sm);
 }
 
 .demographic-stat:hover {
@@ -45,6 +47,71 @@
     border-radius: var(--radius-xl);
     padding: var(--spacing-6);
     margin-bottom: var(--spacing-6);
+}
+
+/* Ensure gender distribution header and icon are white */
+.demographics-section .section-title {
+    color: white;
+}
+
+.demographics-section .section-title i {
+    color: white;
+}
+
+/* Better spacing for larger screens */
+@media (min-width: 1200px) {
+    .demographic-stat {
+        padding: var(--spacing-6);
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+}
+
+@media (min-width: 1400px) {
+    .demographic-stat {
+        padding: var(--spacing-8);
+        min-height: 140px;
+    }
+}
+
+/* Demographics stats grid - match width of data filter above */
+.demographics-stats-container {
+    width: 100%;
+    padding: 0;
+    margin: 0 auto 3rem auto; /* Added bottom margin */
+}
+
+.demographics-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    width: 100%;
+}
+
+/* Desktop - 4 columns matching filter width */
+@media (min-width: 992px) {
+    .demographics-stats-container {
+        padding: 0;
+        margin: 0 auto 4rem auto; /* Increased bottom margin for desktop */
+    }
+
+    .demographics-stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 2rem;
+    }
+}
+
+/* Large desktop - maintain proportions */
+@media (min-width: 1200px) {
+    .demographics-stats-container {
+        margin: 0 auto 5rem auto; /* Even more margin on large screens */
+    }
+
+    .demographics-stats-grid {
+        gap: 2.5rem;
+    }
 }
 
 @media (max-width: 767px) {
@@ -143,7 +210,8 @@
         <!-- Overview Section -->
         <div id="overview-section" class="content-section">
             <!-- Summary Stats -->
-            <div class="d-grid grid-cols-2 desktop-grid-cols-4 gap-4 mb-8">
+            <div class="demographics-stats-container">
+                <div class="demographics-stats-grid">
                 <div class="demographic-stat">
                     <div class="demographic-stat-value" id="total-visitors">--</div>
                     <div class="demographic-stat-label">Total Visitors</div>
@@ -159,6 +227,7 @@
                 <div class="demographic-stat">
                     <div class="demographic-stat-value" id="female-percentage">--</div>
                     <div class="demographic-stat-label">Female %</div>
+                </div>
                 </div>
             </div>
 
@@ -179,9 +248,9 @@
                 </div>
 
                 <div class="card">
-                    <div class="card-header card-header-success">
-                        <h3 class="card-title">
-                            <i class="fas fa-chart-donut"></i>
+                    <div class="card-header card-header-primary">
+                        <h3 class="card-title" style="color: white;">
+                            <i class="fas fa-venus-mars" style="color: white;"></i>
                             Gender Distribution
                         </h3>
                     </div>
@@ -260,7 +329,7 @@
 
             <!-- Gender Trends -->
             <div class="card mt-6">
-                <div class="card-header">
+                <div class="card-header card-header-success">
                     <h3 class="card-title">
                         <i class="fas fa-chart-area"></i>
                         Gender Distribution Trends
@@ -291,8 +360,8 @@
             </div>
 
             <!-- Emotion by Demographics -->
-            <div class="d-grid grid-cols-1 desktop-grid-cols-2 gap-6">
-                <div class="card">
+            <div class="d-grid grid-cols-1 desktop-grid-cols-2 xl-grid-cols-2 xxl-grid-cols-3 ultra-grid-cols-4 ultrawide-grid-cols-5 gap-6 card-grid-responsive">
+                <div class="card chart-card">
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fas fa-chart-bar"></i>
@@ -306,7 +375,7 @@
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card chart-card">
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fas fa-chart-bar"></i>
@@ -615,55 +684,26 @@
     }
 }
 
-/* Notification Popup Styles */
-.notification-popup {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 1060;
-    opacity: 0;
-    transform: translateX(100%);
-    transition: all 0.3s ease;
+/* Demographics page specific styles - notification styles moved to global CSS */
+
+/* Section switching styles */
+.content-section {
+    transition: opacity 0.3s ease-in-out;
 }
 
-.notification-popup.show {
-    opacity: 1;
-    transform: translateX(0);
+.content-section.d-none {
+    display: none !important;
 }
 
-.notification-popup.fade-out {
-    opacity: 0;
-    transform: translateX(100%);
-}
-
-.notification-content {
-    display: flex;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    min-width: 300px;
-    max-width: 400px;
-}
-
-.notification-success {
-    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+/* Navigation active state */
+#demographics-nav .nav-link.active {
+    background-color: var(--color-primary-600);
     color: white;
 }
 
-.notification-error {
-    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-    color: white;
-}
-
-.notification-icon {
-    margin-right: 1rem;
-    font-size: 1.5rem;
-}
-
-.notification-message {
-    flex: 1;
-    font-weight: 500;
+#demographics-nav .nav-link:hover {
+    background-color: var(--color-primary-100);
+    color: var(--color-primary-700);
 }
 </style>
 {% endblock %}
@@ -689,9 +729,87 @@ class DemographicsManager {
         this.setupEventHandlers();
         this.loadData();
         this.initializeTable();
+        // Show overview section by default
+        this.switchSection('overview');
+    }
+
+    switchSection(sectionName) {
+        // Hide all sections
+        document.querySelectorAll('.content-section').forEach(section => {
+            section.classList.add('d-none');
+        });
+
+        // Show selected section
+        const targetSection = document.getElementById(`${sectionName}-section`);
+        if (targetSection) {
+            targetSection.classList.remove('d-none');
+        }
+
+        // Load section-specific data
+        this.loadSectionData(sectionName);
+    }
+
+    loadSectionData(sectionName) {
+        switch(sectionName) {
+            case 'overview':
+                this.loadOverviewData();
+                break;
+            case 'age':
+                this.loadAgeAnalysisData();
+                break;
+            case 'gender':
+                this.loadGenderAnalysisData();
+                break;
+            case 'emotion':
+                this.loadEmotionAnalysisData();
+                break;
+            case 'trends':
+                this.loadTrendsData();
+                break;
+            default:
+                this.loadOverviewData();
+        }
+    }
+
+    loadOverviewData() {
+        // Load overview charts and stats
+        this.loadData();
+    }
+
+    loadAgeAnalysisData() {
+        // Load detailed age analysis
+        console.log('Loading age analysis data...');
+    }
+
+    loadGenderAnalysisData() {
+        // Load detailed gender analysis
+        console.log('Loading gender analysis data...');
+    }
+
+    loadEmotionAnalysisData() {
+        // Load emotion analysis
+        console.log('Loading emotion analysis data...');
+    }
+
+    loadTrendsData() {
+        // Load trends data
+        console.log('Loading trends data...');
     }
 
     setupEventHandlers() {
+        // Section navigation
+        document.querySelectorAll('#demographics-nav [data-section]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const section = e.currentTarget.getAttribute('data-section');
+                this.switchSection(section);
+
+                // Update active nav link
+                document.querySelectorAll('#demographics-nav .nav-link').forEach(l => l.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+            });
+        });
+
         // Time range change
         document.getElementById('time-range').addEventListener('change', () => {
             this.loadData();
@@ -752,41 +870,7 @@ class DemographicsManager {
     }
 
     showSuccessMessage(message) {
-        this.showNotificationPopup('success', message);
-    }
-
-    showNotificationPopup(type, message) {
-        // Remove any existing notifications
-        const existingNotifications = document.querySelectorAll('.notification-popup');
-        existingNotifications.forEach(notification => notification.remove());
-
-        const popup = document.createElement('div');
-        popup.className = 'notification-popup';
-        popup.innerHTML = `
-            <div class="notification-content notification-${type}">
-                <div class="notification-icon">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
-                </div>
-                <div class="notification-message">${message}</div>
-            </div>
-        `;
-
-        document.body.appendChild(popup);
-
-        // Trigger animation
-        setTimeout(() => {
-            popup.classList.add('show');
-        }, 100);
-
-        // Auto-hide after 3 seconds
-        setTimeout(() => {
-            popup.classList.add('fade-out');
-            setTimeout(() => {
-                if (popup.parentNode) {
-                    popup.remove();
-                }
-            }, 300);
-        }, 3000);
+        showNotification(message, 'success');
     }
 
     updateCharts(data) {
