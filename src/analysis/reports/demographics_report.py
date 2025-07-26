@@ -23,8 +23,17 @@ class DemographicsReportGenerator:
     
     def __init__(self):
         """Initialize the demographics report generator"""
+        logger.info("Initializing DemographicsReportGenerator...")
+
+        logger.info("Creating DataAnalyzer...")
         self.data_analyzer = DataAnalyzer()
+        logger.info("DataAnalyzer created successfully")
+
+        logger.info("Creating ChartGenerator...")
         self.chart_generator = ChartGenerator()
+        logger.info("ChartGenerator created successfully")
+
+        logger.info("DemographicsReportGenerator initialization completed")
     
     def generate_report(self, data: Dict[str, Any], time_period: str, output_path: Optional[str] = None) -> bytes:
         """
@@ -39,24 +48,38 @@ class DemographicsReportGenerator:
             PDF bytes if output_path is None, otherwise path to saved file
         """
         try:
+            logger.info("Starting demographics report generation...")
+            logger.info(f"Input data keys: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
+
             # Analyze the data
+            logger.info("Starting data analysis...")
             analysis = self.data_analyzer.analyze_demographics_data(data)
-            
+            logger.info("Data analysis completed")
+
             if 'error' in analysis:
                 logger.error(f"Data analysis failed: {analysis['error']}")
                 return self._generate_error_report(analysis['error'], time_period, output_path)
-            
+
+            logger.info(f"Analysis results: {list(analysis.keys()) if isinstance(analysis, dict) else 'Not a dict'}")
+
             # Initialize PDF generator
+            logger.info("Initializing PDF generator...")
             pdf_gen = PDFGenerator(
                 title="Demographics Analysis Report",
                 author="ReViision Analytics System"
             )
-            
+            logger.info("PDF generator initialized")
+
             # Build the report
+            logger.info("Building report content...")
             self._build_report_content(pdf_gen, data, analysis, time_period)
-            
+            logger.info("Report content built")
+
             # Generate PDF
-            return pdf_gen.generate_pdf(output_path)
+            logger.info("Generating PDF...")
+            pdf_result = pdf_gen.generate_pdf(output_path)
+            logger.info(f"PDF generation completed, result type: {type(pdf_result)}")
+            return pdf_result
             
         except Exception as e:
             logger.error(f"Error generating demographics report: {e}")

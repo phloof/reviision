@@ -1872,15 +1872,36 @@ def generate_demographics_pdf_report():
     try:
         # Get parameters
         hours = int(request.args.get('hours', 24))
+        logger.info(f"Generating demographics PDF report for {hours} hours")
 
-        # Get data from analysis service
-        data = analysis_service.get_analytics_summary(hours=hours)
+        # Get data from analysis service - use the same pattern as historical report
+        summary_data = analysis_service.get_analytics_summary(hours=hours)
 
-        if not data.get('success', True):
+        # Also get demographic trends data for more comprehensive report
+        try:
+            demographic_trends = analysis_service.get_demographic_trends(hours=hours)
+        except Exception as e:
+            logger.warning(f"Could not get demographic trends: {e}")
+            demographic_trends = {}
+
+        logger.info(f"Summary data success: {summary_data.get('success', 'unknown')}")
+        logger.info(f"Summary data keys: {list(summary_data.keys()) if isinstance(summary_data, dict) else 'not dict'}")
+
+        if not summary_data.get('success', True):
+            logger.error(f"Failed to retrieve analytics data: {summary_data.get('message', 'Unknown error')}")
             return jsonify({
                 'success': False,
                 'message': 'Failed to retrieve analytics data'
             }), 500
+
+        # Combine data similar to historical report pattern
+        combined_data = {
+            **summary_data,
+            'demographic_trends': demographic_trends,
+            'period_hours': hours
+        }
+
+        logger.info(f"Combined data keys: {list(combined_data.keys())}")
 
         # Import report generator
         from analysis.reports import DemographicsReportGenerator
@@ -1895,9 +1916,30 @@ def generate_demographics_pdf_report():
             days = hours // 24
             time_period = f"Last {days} days"
 
-        # Generate report
+        logger.info(f"Generating report for time period: {time_period}")
+
+        # Generate report with detailed logging
+        logger.info("Creating DemographicsReportGenerator instance...")
         report_generator = DemographicsReportGenerator()
-        pdf_bytes = report_generator.generate_report(data, time_period)
+        logger.info("DemographicsReportGenerator created successfully")
+
+        logger.info("Starting PDF generation...")
+        logger.info(f"Data summary: total_visitors={combined_data.get('total_visitors', 0)}, "
+                   f"age_groups={len(combined_data.get('age_groups', {}))}, "
+                   f"gender_distribution={len(combined_data.get('gender_distribution', {}))}")
+
+        try:
+            pdf_bytes = report_generator.generate_report(combined_data, time_period)
+            logger.info("PDF generation completed")
+        except Exception as e:
+            logger.error(f"Error during PDF generation: {e}", exc_info=True)
+            raise Exception(f"PDF generation failed: {str(e)}")
+
+        if not pdf_bytes:
+            logger.error("Report generator returned empty PDF")
+            raise Exception("Report generator returned empty PDF")
+
+        logger.info(f"PDF generated successfully, size: {len(pdf_bytes)} bytes")
 
         # Create response
         response = Response(
@@ -1913,7 +1955,7 @@ def generate_demographics_pdf_report():
         return response
 
     except Exception as e:
-        logger.error(f"Error generating demographics PDF report: {e}")
+        logger.error(f"Error generating demographics PDF report: {e}", exc_info=True)
         return jsonify({
             'success': False,
             'message': f'Report generation failed: {str(e)}'

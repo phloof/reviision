@@ -75,9 +75,6 @@ class HistoricalReportGenerator:
         # Key performance metrics
         self._add_performance_metrics_section(pdf_gen, data, analysis)
         
-        # Traffic pattern analysis
-        self._add_traffic_analysis_section(pdf_gen, data, analysis)
-        
         # Performance benchmarking
         self._add_performance_benchmarking_section(pdf_gen, data, analysis)
         
@@ -193,62 +190,7 @@ class HistoricalReportGenerator:
         
         pdf_gen.add_key_metrics_table(metrics_data)
     
-    def _add_traffic_analysis_section(self, pdf_gen: PDFGenerator, data: Dict[str, Any], analysis: Dict[str, Any]):
-        """Add detailed traffic pattern analysis"""
-        pdf_gen.add_section_header("Traffic Pattern Analysis")
-        
-        traffic_data = data.get('traffic', {})
-        traffic_analysis = analysis.get('traffic_analysis', {})
-        
-        if traffic_analysis.get('error'):
-            pdf_gen.add_paragraph(f"Traffic analysis unavailable: {traffic_analysis['error']}")
-            return
-        
-        # Add traffic trend chart
-        if traffic_data:
-            chart = self.chart_generator.create_traffic_trend_chart(traffic_data)
-            pdf_gen.story.append(chart)
-            pdf_gen.add_spacer(20)
-        
-        # Analysis text
-        total_traffic = traffic_analysis.get('total_traffic', 0)
-        avg_traffic = traffic_analysis.get('avg_traffic', 0)
-        peak_traffic = traffic_analysis.get('peak_traffic', 0)
-        min_traffic = traffic_analysis.get('min_traffic', 0)
-        peak_hours = traffic_analysis.get('peak_hours', [])
-        pattern_type = traffic_analysis.get('pattern_type', 'Unknown')
-        consistency_score = traffic_analysis.get('consistency_score', 0)
-        
-        analysis_text = f"""
-        <b>Traffic Pattern Insights:</b>
-        
-        The analysis reveals {pattern_type.lower()} traffic patterns with a consistency score of 
-        {consistency_score:.2f}. Total traffic volume reached {total_traffic:,} visitors with 
-        an average of {avg_traffic:.1f} visitors per hour.
-        
-        <b>Traffic Distribution:</b>
-        • Peak traffic: {peak_traffic} visitors
-        • Minimum traffic: {min_traffic} visitors
-        • Traffic range: {peak_traffic - min_traffic} visitors
-        • Peak hours: {', '.join(peak_hours[:3]) if peak_hours else 'Not identified'}
-        """
-        
-        if pattern_type == 'Highly Variable':
-            analysis_text += """
-            
-            <b>Variability Concern:</b> The highly variable traffic pattern indicates unpredictable 
-            customer flow, which may impact staffing efficiency and customer service quality during 
-            unexpected peak periods.
-            """
-        elif pattern_type == 'Consistent':
-            analysis_text += """
-            
-            <b>Consistency Strength:</b> The consistent traffic pattern enables predictable staffing 
-            and resource allocation, supporting efficient operations and consistent customer service.
-            """
-        
-        pdf_gen.add_paragraph(analysis_text)
-        pdf_gen.add_spacer(15)
+
 
     def _add_performance_benchmarking_section(self, pdf_gen: PDFGenerator, data: Dict[str, Any], analysis: Dict[str, Any]):
         """Add performance benchmarking section"""

@@ -40,17 +40,38 @@ class DataAnalyzer:
             Dict containing analysis results and recommendations
         """
         try:
+            logger.info("Starting demographic data analysis...")
+
+            logger.info("Analyzing demographic summary...")
+            summary = self._analyze_demographic_summary(data)
+            logger.info("Demographic summary analysis completed")
+
+            logger.info("Analyzing age distribution...")
+            age_analysis = self._analyze_age_distribution(data.get('age_groups', {}))
+            logger.info("Age distribution analysis completed")
+
+            logger.info("Analyzing gender distribution...")
+            gender_analysis = self._analyze_gender_distribution(data.get('gender_distribution', {}))
+            logger.info("Gender distribution analysis completed")
+
+            logger.info("Analyzing emotions...")
+            emotion_analysis = self._analyze_emotions(data.get('emotions', {}))
+            logger.info("Emotion analysis completed")
+
             analysis = {
-                'summary': self._analyze_demographic_summary(data),
-                'age_analysis': self._analyze_age_distribution(data.get('age_groups', {})),
-                'gender_analysis': self._analyze_gender_distribution(data.get('gender_distribution', {})),
-                'emotion_analysis': self._analyze_emotions(data.get('emotions', {})),
+                'summary': summary,
+                'age_analysis': age_analysis,
+                'gender_analysis': gender_analysis,
+                'emotion_analysis': emotion_analysis,
                 'recommendations': []
             }
-            
+
             # Generate recommendations based on analysis
+            logger.info("Generating recommendations...")
             analysis['recommendations'] = self._generate_demographic_recommendations(analysis, data)
-            
+            logger.info("Recommendations generated")
+
+            logger.info("Demographic data analysis completed successfully")
             return analysis
             
         except Exception as e:
@@ -97,17 +118,27 @@ class DataAnalyzer:
             'sample_size_adequate': total_visitors >= 30
         }
     
-    def _analyze_age_distribution(self, age_groups: Dict[str, int]) -> Dict[str, Any]:
+    def _analyze_age_distribution(self, age_groups: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze age distribution patterns"""
         if not age_groups:
             return {'error': 'No age data available'}
-        
-        total = sum(age_groups.values())
+
+        # Handle both formats: Dict[str, int] and Dict[str, Dict[str, Any]]
+        counts = {}
+        for group, value in age_groups.items():
+            if isinstance(value, dict):
+                # New format: {'display_name': '18-24', 'count': 20}
+                counts[group] = value.get('count', 0)
+            else:
+                # Old format: direct integer values
+                counts[group] = value
+
+        total = sum(counts.values())
         if total == 0:
             return {'error': 'No age data available'}
-        
+
         # Calculate percentages
-        percentages = {group: (count / total) * 100 for group, count in age_groups.items()}
+        percentages = {group: (count / total) * 100 for group, count in counts.items()}
         
         # Find dominant age group
         dominant_group = max(percentages.items(), key=lambda x: x[1])
@@ -159,17 +190,27 @@ class DataAnalyzer:
             'skew_direction': 'male' if male_pct > female_pct else 'female' if female_pct > male_pct else 'balanced'
         }
     
-    def _analyze_emotions(self, emotions: Dict[str, int]) -> Dict[str, Any]:
+    def _analyze_emotions(self, emotions: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze emotion distribution and sentiment"""
         if not emotions:
             return {'error': 'No emotion data available'}
-        
-        total = sum(emotions.values())
+
+        # Handle both formats: Dict[str, int] and Dict[str, Dict[str, Any]]
+        counts = {}
+        for emotion, value in emotions.items():
+            if isinstance(value, dict):
+                # New format: {'display_name': 'Happy', 'count': 40}
+                counts[emotion] = value.get('count', 0)
+            else:
+                # Old format: direct integer values
+                counts[emotion] = value
+
+        total = sum(counts.values())
         if total == 0:
             return {'error': 'No emotion data available'}
-        
+
         # Calculate percentages
-        percentages = {emotion: (count / total) * 100 for emotion, count in emotions.items()}
+        percentages = {emotion: (count / total) * 100 for emotion, count in counts.items()}
         
         # Categorize emotions
         positive_emotions = ['happy', 'joy', 'surprise']

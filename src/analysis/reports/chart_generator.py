@@ -103,18 +103,29 @@ class ChartGenerator:
             pie.data = values
             pie.labels = [f"{label}\n({value})" for label, value in zip(labels, values)]
             
-            # Styling
-            pie.slices.strokeColor = colors.white
-            pie.slices.strokeWidth = 1
-            
-            # Assign colors
-            for i, slice in enumerate(pie.slices):
-                slice.fillColor = self.COLORS[i % len(self.COLORS)]
-            
-            # Labels
-            pie.slices.labelRadius = 1.2
-            pie.slices.fontName = "Helvetica"
-            pie.slices.fontSize = 8
+            # Styling with error handling
+            try:
+                pie.slices.strokeColor = colors.white
+                pie.slices.strokeWidth = 1
+
+                # Assign colors - handle ReportLab slice iteration issue
+                try:
+                    for i in range(len(values)):
+                        if i < len(pie.slices):
+                            pie.slices[i].fillColor = self.COLORS[i % len(self.COLORS)]
+                except (IndexError, KeyError, TypeError) as e:
+                    logger.warning(f"Could not set slice colors: {e}")
+                    # Fallback: set colors directly on pie
+                    pie.slices.fillColor = self.COLORS[0]
+
+                # Labels
+                pie.slices.labelRadius = 1.2
+                pie.slices.fontName = "Helvetica"
+                pie.slices.fontSize = 8
+
+            except Exception as e:
+                logger.warning(f"Could not apply pie chart styling: {e}")
+                # Continue without styling
             
             drawing.add(pie)
             return drawing
