@@ -2,211 +2,351 @@
 
 {% block title %}Historical Data - ReViision{% endblock %}
 
-{% block header %}Historical Data{% endblock %}
-
 {% block styles %}
 <style>
-    .historical-nav {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        padding: 1rem;
-        margin-bottom: 2rem;
+/* Historical data specific styles using design system */
+.date-range-picker {
+    background: var(--color-surface-primary);
+    border: 1px solid var(--color-border-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+}
+
+.chart-container {
+    position: relative;
+    height: 400px;
+    width: 100%;
+}
+
+.data-export-section {
+    background: var(--color-surface-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4);
+    border: 1px solid var(--color-border-primary);
+}
+
+.metric-card {
+    background: var(--color-surface-primary);
+    border: 1px solid var(--color-border-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    text-align: center;
+    transition: var(--transition-all);
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.metric-value {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary-600);
+    margin-bottom: var(--spacing-2);
+}
+
+.metric-label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.trend-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    margin-top: var(--spacing-2);
+}
+
+.trend-up { color: var(--color-success-600); }
+.trend-down { color: var(--color-danger-600); }
+.trend-neutral { color: var(--color-text-muted); }
+
+@media (max-width: 767px) {
+    .chart-container {
+        height: 300px;
     }
 
-    .historical-nav .nav-link {
-        border-radius: 8px;
-        color: #6c757d;
-        font-weight: 500;
-        padding: 0.75rem 1rem;
-        margin: 0 0.5rem 0 0;
-        display: inline-flex;
-        align-items: center;
-        transition: all 0.3s ease;
+    .metric-value {
+        font-size: var(--font-size-2xl);
     }
-
-    .historical-nav .nav-link:hover {
-        background: #f8f9fa;
-        color: #495057;
-    }
-
-    .historical-nav .nav-link.active {
-        background: linear-gradient(135deg,#3498db 0%, #2980b9 100%);
-        color: white;
-    }
-
-    .historical-nav .nav-link:last-child {
-        margin-right: 0;
-    }
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex align-items-center mb-4">
-                <div>
-                    <h1 class="h2 mb-1">Historical Data</h1>
-                    <p class="text-muted mb-0">View and analyse historical visitor data and trends</p>
-                </div>
+<div class="container py-6">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-primary mb-2">Historical Data Analysis</h1>
+        <p class="text-secondary">Comprehensive historical insights and trend analysis</p>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="card mb-6">
+        <div class="card-body p-4">
+            <nav class="nav nav-pills d-flex flex-wrap gap-2" id="historical-nav">
+                <a class="nav-link active" href="#overview" data-section="overview">
+                    <i class="fas fa-chart-area mr-2"></i>
+                    Overview
+                </a>
+                <a class="nav-link" href="#traffic" data-section="traffic">
+                    <i class="fas fa-walking mr-2"></i>
+                    Traffic Patterns
+                </a>
+                <a class="nav-link" href="#demographics" data-section="demographics">
+                    <i class="fas fa-users mr-2"></i>
+                    Demographics
+                </a>
+                <a class="nav-link" href="#dwell-time" data-section="dwell">
+                    <i class="fas fa-clock mr-2"></i>
+                    Dwell Time
+                </a>
+                <a class="nav-link" href="#reports" data-section="reports">
+                    <i class="fas fa-file-alt mr-2"></i>
+                    Reports
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Date Range and Filters -->
+    <div class="date-range-picker mb-6">
+        <h3 class="text-lg font-semibold mb-4">
+            <i class="fas fa-calendar-alt text-primary mr-2"></i>
+            Date Range & Filters
+        </h3>
+        <div class="d-grid grid-cols-1 tablet-grid-cols-2 desktop-grid-cols-4 gap-4">
+            <div class="form-group">
+                <label for="start-date" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="start-date">
+            </div>
+            <div class="form-group">
+                <label for="end-date" class="form-label">End Date</label>
+                <input type="date" class="form-control" id="end-date">
+            </div>
+            <div class="form-group">
+                <label for="time-granularity" class="form-label">Time Granularity</label>
+                <select class="form-control" id="time-granularity">
+                    <option value="hour">Hourly</option>
+                    <option value="day" selected>Daily</option>
+                    <option value="week">Weekly</option>
+                    <option value="month">Monthly</option>
+                </select>
+            </div>
+            <div class="form-group d-flex items-end">
+                <button class="btn btn-primary w-full" id="apply-date-filter">
+                    <i class="fas fa-search"></i>
+                    Apply Filter
+                </button>
             </div>
         </div>
     </div>
-    
-    <div class="row">
-        <!-- Filter Navigation -->
-        <div class="col-12 mb-4">
-            <div class="historical-nav">
-                <div class="nav nav-pills flex-row flex-wrap gap-2" id="v-pills-tab" role="tablist" aria-orientation="horizontal">
-                    <button class="nav-link active" id="v-pills-overview-tab" data-bs-toggle="pill" data-bs-target="#v-pills-overview" type="button" role="tab">
-                        <i class="fas fa-chart-line me-2"></i>Overview
-                    </button>
-                    <button class="nav-link" id="v-pills-traffic-tab" data-bs-toggle="pill" data-bs-target="#v-pills-traffic" type="button" role="tab">
-                        <i class="fas fa-users me-2"></i>Traffic Analysis
-                    </button>
-                    <button class="nav-link" id="v-pills-demographics-tab" data-bs-toggle="pill" data-bs-target="#v-pills-demographics" type="button" role="tab">
-                        <i class="fas fa-user-friends me-2"></i>Demographics
-                    </button>
-                    <button class="nav-link" id="v-pills-patterns-tab" data-bs-toggle="pill" data-bs-target="#v-pills-patterns" type="button" role="tab">
-                        <i class="fas fa-route me-2"></i>Patterns
-                    </button>
+    <!-- Content Sections -->
+    <div id="content-sections">
+        <!-- Overview Section -->
+        <div id="overview-section" class="content-section">
+            <!-- Key Metrics -->
+            <div class="d-grid grid-cols-2 desktop-grid-cols-4 gap-4 mb-8">
+                <div class="metric-card">
+                    <div class="metric-value" id="total-visitors">--</div>
+                    <div class="metric-label">Total Visitors</div>
+                    <div class="trend-indicator trend-up">
+                        <i class="fas fa-arrow-up"></i>
+                        <span id="visitors-trend">+12%</span>
+                    </div>
                 </div>
-                
-                <!-- Date Range Filter -->
-                <div class="mt-3">
-                    <label for="date-range" class="form-label">Date Range</label>
-                    <select class="form-select" id="date-range">
-                        <option value="1h">Last Hour</option>
-                        <option value="6h">Last 6 Hours</option>
-                        <option value="24h" selected>Last 24 Hours</option>
-                        <option value="7d">Last 7 Days</option>
-                        <option value="30d">Last 30 Days</option>
-                    </select>
+                <div class="metric-card">
+                    <div class="metric-value" id="avg-dwell-time">--</div>
+                    <div class="metric-label">Avg. Dwell Time</div>
+                    <div class="trend-indicator trend-down">
+                        <i class="fas fa-arrow-down"></i>
+                        <span id="dwell-trend">-3%</span>
+                    </div>
                 </div>
-                
-                <div class="mt-3">
-                    <button class="btn btn-primary w-100" id="refresh-data">
-                        <i class="fas fa-sync-alt me-2"></i>Refresh Data
-                    </button>
+                <div class="metric-card">
+                    <div class="metric-value" id="peak-hour">--</div>
+                    <div class="metric-label">Peak Hour</div>
+                    <div class="trend-indicator trend-neutral">
+                        <i class="fas fa-minus"></i>
+                        <span id="peak-trend">No change</span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="conversion-rate">--</div>
+                    <div class="metric-label">Conversion Rate</div>
+                    <div class="trend-indicator trend-up">
+                        <i class="fas fa-arrow-up"></i>
+                        <span id="conversion-trend">+8%</span>
+                    </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Historical Content -->
-        <div class="col-12">
-            <div class="tab-content" id="v-pills-tabContent">
-                
-                <!-- Overview Tab -->
-                <div class="tab-pane fade show active" id="v-pills-overview" role="tabpanel">
-                    <!-- Statistics Grid -->
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <i class="fas fa-users fa-2x mb-3" style="color: #3498db;"></i>
-                            <div class="stat-value" id="total-visitors">--</div>
-                            <div class="stat-label">Total Visitors</div>
-                        </div>
-                        <div class="stat-card">
-                            <i class="fas fa-clock fa-2x mb-3" style="color: #e74c3c;"></i>
-                            <div class="stat-value" id="avg-dwell-time">--</div>
-                            <div class="stat-label">Average Dwell Time</div>
-                        </div>
-                        <div class="stat-card">
-                            <i class="fas fa-chart-line fa-2x mb-3" style="color: #f39c12;"></i>
-                            <div class="stat-value" id="peak-hour">--</div>
-                            <div class="stat-label">Peak Hour</div>
-                        </div>
-                        <div class="stat-card">
-                            <i class="fas fa-percentage fa-2x mb-3" style="color: #2ecc71;"></i>
-                            <div class="stat-value" id="conversion-rate">--</div>
-                            <div class="stat-label">Conversion Rate</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Quick Charts -->
-                    <div class="historical-section">
-                        <h3 class="section-title">
-                            <span><i class="fas fa-chart-area me-2"></i>Traffic Overview</span>
+
+            <!-- Overview Charts -->
+            <div class="d-grid grid-cols-1 desktop-grid-cols-2 gap-6 mb-6">
+                <div class="card">
+                    <div class="card-header card-header-primary">
+                        <h3 class="card-title">
+                            <i class="fas fa-chart-area"></i>
+                            Traffic Overview
                         </h3>
+                    </div>
+                    <div class="card-body">
                         <div class="chart-container">
                             <canvas id="overview-chart"></canvas>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Traffic Analysis Tab -->
-                <div class="tab-pane fade" id="v-pills-traffic" role="tabpanel">
-                    <div class="historical-section">
-                        <h3 class="section-title">
-                            <span><i class="fas fa-users me-2"></i>Visitor Traffic Analysis</span>
+
+                <div class="card">
+                    <div class="card-header card-header-success">
+                        <h3 class="card-title">
+                            <i class="fas fa-clock"></i>
+                            Hourly Distribution
                         </h3>
-                        <div class="chart-container">
-                            <canvas id="traffic-chart"></canvas>
-                        </div>
                     </div>
-                    
-                    <div class="historical-section">
-                        <h3 class="section-title">
-                            <span><i class="fas fa-calendar-week me-2"></i>Weekly Patterns</span>
-                        </h3>
+                    <div class="card-body">
                         <div class="chart-container">
-                            <canvas id="weekly-chart"></canvas>
+                            <canvas id="hourly-chart"></canvas>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Demographics Tab -->
-                <div class="tab-pane fade" id="v-pills-demographics" role="tabpanel">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="historical-section">
-                                <h3 class="section-title">
-                                    <span><i class="fas fa-venus-mars me-2"></i>Gender Distribution</span>
-                                </h3>
-                                <div class="chart-container">
-                                    <canvas id="gender-chart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="historical-section">
-                                <h3 class="section-title">
-                                    <span><i class="fas fa-birthday-cake me-2"></i>Age Groups</span>
-                                </h3>
-                                <div class="chart-container">
-                                    <canvas id="age-chart"></canvas>
-                                </div>
-                            </div>
-                        </div>
+            </div>
+        </div>
+
+        <!-- Traffic Patterns Section -->
+        <div id="traffic-section" class="content-section d-none">
+            <div class="card mb-6">
+                <div class="card-header card-header-primary">
+                    <h3 class="card-title">
+                        <i class="fas fa-users"></i>
+                        Visitor Traffic Analysis
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="traffic-chart"></canvas>
                     </div>
-                    
-                    <div class="historical-section">
-                        <h3 class="section-title">
-                            <span><i class="fas fa-clock me-2"></i>Dwell Time Distribution</span>
+                </div>
+            </div>
+
+            <div class="d-grid grid-cols-1 desktop-grid-cols-2 gap-6">
+                <div class="card">
+                    <div class="card-header card-header-warning">
+                        <h3 class="card-title">
+                            <i class="fas fa-calendar-week"></i>
+                            Weekly Patterns
                         </h3>
-                        <div id="dwell-content">
-                            <div class="no-data-message">
-                                <i class="fas fa-clock"></i>
-                                <h5>Dwell Time Analysis</h5>
-                                <p>Dwell time distribution will be displayed here when sufficient data is available.</p>
-                            </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="weekly-patterns-chart"></canvas>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Patterns Tab -->
-                <div class="tab-pane fade" id="v-pills-patterns" role="tabpanel">
-                    <div class="historical-section">
-                        <h3 class="section-title">
-                            <span><i class="fas fa-route me-2"></i>Customer Journey Patterns</span>
+
+                <div class="card">
+                    <div class="card-header card-header-danger">
+                        <h3 class="card-title">
+                            <i class="fas fa-chart-bar"></i>
+                            Peak Hours Analysis
                         </h3>
-                        <div id="patterns-content">
-                            <div class="no-data-message">
-                                <i class="fas fa-route"></i>
-                                <h5>Pattern Analysis</h5>
-                                <p>Customer journey patterns will be displayed here when sufficient data is available.</p>
-                            </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="peak-hours-chart"></canvas>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demographics Section -->
+        <div id="demographics-section" class="content-section d-none">
+            <div class="d-grid grid-cols-1 desktop-grid-cols-2 gap-6 mb-6">
+                <div class="card">
+                    <div class="card-header card-header-primary">
+                        <h3 class="card-title">
+                            <i class="fas fa-birthday-cake"></i>
+                            Age Distribution Trends
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="age-trends-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header card-header-success">
+                        <h3 class="card-title">
+                            <i class="fas fa-venus-mars"></i>
+                            Gender Distribution Trends
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="gender-trends-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dwell Time Section -->
+        <div id="dwell-section" class="content-section d-none">
+            <div class="card mb-6">
+                <div class="card-header card-header-warning">
+                    <h3 class="card-title">
+                        <i class="fas fa-clock"></i>
+                        Dwell Time Analysis
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="dwell-time-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Section -->
+        <div id="reports-section" class="content-section d-none">
+            <div class="card">
+                <div class="card-header card-header-primary">
+                    <h3 class="card-title">
+                        <i class="fas fa-file-alt"></i>
+                        Generate Reports
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="data-export-section mb-6">
+                        <h4 class="text-lg font-semibold mb-4">Export Options</h4>
+                        <div class="d-flex flex-wrap gap-3">
+                            <button class="btn btn-outline-primary" id="export-csv">
+                                <i class="fas fa-file-csv"></i>
+                                Export CSV
+                            </button>
+                            <button class="btn btn-outline-primary" id="export-pdf">
+                                <i class="fas fa-file-pdf"></i>
+                                Export PDF
+                            </button>
+                            <button class="btn btn-outline-primary" id="export-excel">
+                                <i class="fas fa-file-excel"></i>
+                                Export Excel
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Reports will include data from the selected date range and applied filters.
                     </div>
                 </div>
             </div>
@@ -214,17 +354,68 @@
     </div>
 </div>
 
-<!-- Success Message Area -->
-<div id="success-message-area" style="display: none;">
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="fas fa-check-circle me-2"></i>
-        <span id="success-message-text">Data loaded successfully</span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
+<script>
+// Historical Data Navigation
+document.addEventListener('DOMContentLoaded', function() {
+    // Navigation handling
+    const navLinks = document.querySelectorAll('#historical-nav .nav-link');
+    const sections = document.querySelectorAll('.content-section');
+
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            // Update active nav link
+            navLinks.forEach(l => l.classList.remove('active'));
+            this.classList.add('active');
+
+            // Show corresponding section
+            const targetSection = this.getAttribute('data-section');
+            sections.forEach(section => {
+                section.classList.add('d-none');
+            });
+
+            const activeSection = document.getElementById(targetSection + '-section');
+            if (activeSection) {
+                activeSection.classList.remove('d-none');
+            }
+        });
+    });
+
+    // Date filter handling
+    document.getElementById('apply-date-filter').addEventListener('click', function() {
+        // Add loading state
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+        this.disabled = true;
+
+        // Simulate data loading
+        setTimeout(() => {
+            this.innerHTML = '<i class="fas fa-search"></i> Apply Filter';
+            this.disabled = false;
+
+            // Show success message
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show mt-4';
+            alert.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                Data updated successfully for the selected date range.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.date-range-picker').appendChild(alert);
+
+            // Auto-dismiss after 3 seconds
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 3000);
+        }, 1500);
+    });
+});
+</script>
 <!-- Chart.js is loaded globally via base.html -->
 <script>
 // Historical Data Page JavaScript

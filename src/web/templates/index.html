@@ -30,62 +30,162 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12">
-            <!-- Stats Grid (card style) -->
-            {% set stats = [
-                {'icon':'users','label':'Total Visitors','id':'total-visitors','color':'#3498db'},
-                {'icon':'clock','label':'Avg. Dwell (min)','id':'avg-dwell-time','color':'#e74c3c'},
-                {'icon':'percentage','label':'Conversion Rate','id':'conversion-rate','color':'#2ecc71'},
-                {'icon':'venus-mars','label':'M/F Ratio','id':'gender-ratio','color':'#9b59b6'}
-            ] %}
-            <div class="stats-grid mb-4">
-                {% for s in stats %}
-                <div class="stat-card text-center">
-                    <i class="fas fa-{{ s.icon }} fa-2x mb-3" data-color="{{ s.color }}"></i>
-                    <div class="stat-value" id="{{ s.id }}">--</div>
-                    <div class="stat-label">{{ s.label }}</div>
-                </div>
-                {% endfor %}
-            </div>
+<div class="container py-6">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-primary mb-2">Dashboard Overview</h1>
+        <p class="text-secondary">Real-time analytics and insights for your retail space</p>
+    </div>
 
-            <!-- Time Range Selector -->
-            <div class="demographics-nav mb-4">
-                <div class="row g-3 align-items-end">
-                    <div class="col-md-4 col-sm-6">
-                        <label for="time-range" class="form-label">Time Range</label>
-                        <select class="form-select" id="time-range">
-                            <option value="1h">Last Hour</option>
-                            <option value="6h">Last 6 Hours</option>
-                            <option value="24h" selected>Last 24 Hours</option>
-                            <option value="7d">Last 7 Days</option>
-                            <option value="30d">Last 30 Days</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2 col-sm-6">
-                        <button class="btn btn-primary w-100 mt-sm-4" id="refreshButton"><i class="fas fa-sync-alt me-2"></i>Refresh Data</button>
-                    </div>
+    <!-- Stats Grid -->
+    {% set stats = [
+        {'icon':'users','label':'Total Visitors','id':'total-visitors','variant':'primary'},
+        {'icon':'clock','label':'Avg. Dwell Time','id':'avg-dwell-time','variant':'danger'},
+        {'icon':'percentage','label':'Conversion Rate','id':'conversion-rate','variant':'success'},
+        {'icon':'venus-mars','label':'M/F Ratio','id':'gender-ratio','variant':'warning'}
+    ] %}
+
+    <div class="d-grid grid-cols-1 tablet-grid-cols-2 desktop-grid-cols-4 gap-6 mb-8">
+        {% for stat in stats %}
+        <div class="card hover:shadow-lg transition-all animate-fade-in">
+            <div class="card-body text-center p-6">
+                <div class="mb-4">
+                    <i class="fas fa-{{ stat.icon }} text-4xl text-{{ stat.variant }}"></i>
+                </div>
+                <div class="text-3xl font-bold text-primary mb-2" id="{{ stat.id }}">
+                    <span class="animate-pulse">--</span>
+                </div>
+                <div class="text-sm font-medium text-secondary uppercase tracking-wide">
+                    {{ stat.label }}
                 </div>
             </div>
+        </div>
+        {% endfor %}
+    </div>
 
-            <!-- Traffic Chart (clickable to Historical page) -->
-            <div class="demographics-section mb-4 clickable-section" role="link" tabindex="0" data-href="{{ url_for('web.historical') }}" style="cursor:pointer;">
-                <h3 class="section-title"><span><i class="fas fa-chart-line me-2"></i>Store Traffic</span></h3>
-                <div class="chart-container"><canvas id="trafficChart"></canvas></div>
-            </div>
-
-            <!-- Demographics Chart (clickable to Demographics page) -->
-            <div class="demographics-section clickable-section" role="link" tabindex="0" data-href="{{ url_for('web.demographics') }}" style="cursor:pointer;">
-                <h3 class="section-title"><span><i class="fas fa-users me-2"></i>Demographics</span></h3>
-                <div class="row">
-                    <div class="col-md-6 mb-3 mb-md-0">
-                        <div class="chart-container"><canvas id="ageChart"></canvas></div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="chart-container"><canvas id="genderChart"></canvas></div>
-                    </div>
+    <!-- Controls Section -->
+    <div class="card mb-8">
+        <div class="card-header">
+            <h2 class="card-title">
+                <i class="fas fa-sliders-h"></i>
+                Data Controls
+            </h2>
+        </div>
+        <div class="card-body">
+            <div class="d-flex flex-column desktop-flex-row gap-4 items-end">
+                <div class="form-group flex-1">
+                    <label for="time-range" class="form-label">Time Range</label>
+                    <select class="form-control" id="time-range">
+                        <option value="1h">Last Hour</option>
+                        <option value="6h">Last 6 Hours</option>
+                        <option value="24h" selected>Last 24 Hours</option>
+                        <option value="7d">Last 7 Days</option>
+                        <option value="30d">Last 30 Days</option>
+                    </select>
                 </div>
+                <div class="form-group">
+                    <button class="btn btn-primary" id="refreshButton">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="d-grid grid-cols-1 desktop-grid-cols-2 gap-6 mb-8">
+        <!-- Traffic Chart -->
+        <div class="card cursor-pointer hover:shadow-lg transition-all clickable-section"
+             role="link" tabindex="0" data-href="{{ url_for('web.historical') }}">
+            <div class="card-header card-header-primary">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-line"></i>
+                    Store Traffic
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="trafficChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demographics Chart -->
+        <div class="card cursor-pointer hover:shadow-lg transition-all clickable-section"
+             role="link" tabindex="0" data-href="{{ url_for('web.demographics') }}">
+            <div class="card-header card-header-success">
+                <h3 class="card-title">
+                    <i class="fas fa-users"></i>
+                    Demographics
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="demographicsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Additional Analytics -->
+    <div class="d-grid grid-cols-1 desktop-grid-cols-2 gap-6">
+        <!-- Age Distribution -->
+        <div class="card">
+            <div class="card-header card-header-warning">
+                <h3 class="card-title">
+                    <i class="fas fa-birthday-cake"></i>
+                    Age Distribution
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="ageChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gender Distribution -->
+        <div class="card">
+            <div class="card-header card-header-danger">
+                <h3 class="card-title">
+                    <i class="fas fa-venus-mars"></i>
+                    Gender Distribution
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="genderChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card mt-8">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-bolt"></i>
+                Quick Actions
+            </h3>
+        </div>
+        <div class="card-body">
+            <div class="d-flex flex-wrap gap-3">
+                <a href="{{ url_for('web.analysis') }}" class="btn btn-primary">
+                    <i class="fas fa-video"></i>
+                    Live Analysis
+                </a>
+                <a href="{{ url_for('web.demographics') }}" class="btn btn-secondary">
+                    <i class="fas fa-chart-pie"></i>
+                    Demographics
+                </a>
+                <a href="{{ url_for('web.historical') }}" class="btn btn-secondary">
+                    <i class="fas fa-history"></i>
+                    Historical Data
+                </a>
+                <a href="{{ url_for('web.settings') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                </a>
             </div>
         </div>
     </div>

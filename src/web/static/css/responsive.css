@@ -1,0 +1,377 @@
+/* ====================================
+   ReViision Responsive Enhancements
+   Mobile-first responsive design improvements
+   ==================================== */
+
+/* ====================================
+   Base Responsive Improvements
+   ==================================== */
+
+/* Ensure proper box-sizing for all elements */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* Improve touch targets for mobile */
+@media (max-width: 767px) {
+    .btn, .form-control, .form-select, .nav-link {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Larger tap targets for icons */
+    .clickable-icon {
+        padding: var(--spacing-3);
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ====================================
+   Navigation Responsive Improvements
+   ==================================== */
+
+/* Mobile sidebar improvements */
+@media (max-width: 991px) {
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        z-index: var(--z-index-modal);
+        width: var(--sidebar-width);
+        background: var(--color-surface-primary);
+        box-shadow: var(--shadow-xl);
+    }
+    
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: calc(var(--z-index-modal) - 1);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    
+    .sidebar-overlay.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
+/* ====================================
+   Card Responsive Improvements
+   ==================================== */
+
+/* Stack cards vertically on mobile */
+@media (max-width: 767px) {
+    .card {
+        margin-bottom: var(--spacing-4);
+    }
+    
+    .card-header {
+        padding: var(--spacing-4) var(--spacing-5);
+    }
+    
+    .card-body {
+        padding: var(--spacing-4) var(--spacing-5);
+    }
+    
+    .card-title {
+        font-size: var(--font-size-lg);
+        flex-wrap: wrap;
+        gap: var(--spacing-2);
+    }
+}
+
+/* ====================================
+   Form Responsive Improvements
+   ==================================== */
+
+/* Better form layouts on mobile */
+@media (max-width: 767px) {
+    .form-group {
+        margin-bottom: var(--spacing-5);
+    }
+    
+    .form-control, .form-select {
+        font-size: 16px; /* Prevents zoom on iOS */
+        padding: var(--spacing-3) var(--spacing-4);
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+        padding: var(--spacing-4) var(--spacing-6);
+    }
+    
+    .btn + .btn {
+        margin-top: var(--spacing-3);
+    }
+    
+    /* Horizontal button groups on larger screens */
+    @media (min-width: 576px) {
+        .btn-group-responsive {
+            display: flex;
+            gap: var(--spacing-3);
+        }
+        
+        .btn-group-responsive .btn {
+            width: auto;
+            flex: 1;
+        }
+        
+        .btn-group-responsive .btn + .btn {
+            margin-top: 0;
+        }
+    }
+}
+
+/* ====================================
+   Table Responsive Improvements
+   ==================================== */
+
+/* Responsive tables */
+@media (max-width: 767px) {
+    .table-responsive-mobile {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .table-responsive-mobile table {
+        min-width: 600px;
+    }
+    
+    /* Card-style table for very small screens */
+    .table-card-mobile {
+        display: none;
+    }
+    
+    @media (max-width: 480px) {
+        .table-responsive-mobile {
+            display: none;
+        }
+        
+        .table-card-mobile {
+            display: block;
+        }
+        
+        .table-card-item {
+            background: var(--color-surface-primary);
+            border: 1px solid var(--color-border-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-4);
+            margin-bottom: var(--spacing-3);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .table-card-item:last-child {
+            margin-bottom: 0;
+        }
+    }
+}
+
+/* ====================================
+   Chart Responsive Improvements
+   ==================================== */
+
+/* Responsive chart containers */
+.chart-container {
+    position: relative;
+    width: 100%;
+    height: 300px;
+}
+
+@media (max-width: 767px) {
+    .chart-container {
+        height: 250px;
+    }
+}
+
+@media (max-width: 480px) {
+    .chart-container {
+        height: 200px;
+    }
+}
+
+/* ====================================
+   Grid System Enhancements
+   ==================================== */
+
+/* Enhanced responsive grid */
+.responsive-grid {
+    display: grid;
+    gap: var(--spacing-6);
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 576px) {
+    .responsive-grid-sm-2 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 768px) {
+    .responsive-grid-md-2 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .responsive-grid-md-3 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 992px) {
+    .responsive-grid-lg-3 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .responsive-grid-lg-4 {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* ====================================
+   Typography Responsive Improvements
+   ==================================== */
+
+/* Responsive typography scale */
+@media (max-width: 767px) {
+    .text-4xl { font-size: var(--font-size-3xl); }
+    .text-3xl { font-size: var(--font-size-2xl); }
+    .text-2xl { font-size: var(--font-size-xl); }
+    .text-xl { font-size: var(--font-size-lg); }
+}
+
+@media (max-width: 480px) {
+    .text-3xl { font-size: var(--font-size-xl); }
+    .text-2xl { font-size: var(--font-size-lg); }
+    .text-xl { font-size: var(--font-size-base); }
+}
+
+/* ====================================
+   Spacing Responsive Improvements
+   ==================================== */
+
+/* Responsive spacing adjustments */
+@media (max-width: 767px) {
+    .py-6 { padding-top: var(--spacing-4); padding-bottom: var(--spacing-4); }
+    .px-6 { padding-left: var(--spacing-4); padding-right: var(--spacing-4); }
+    .p-6 { padding: var(--spacing-4); }
+    
+    .my-8 { margin-top: var(--spacing-6); margin-bottom: var(--spacing-6); }
+    .mx-8 { margin-left: var(--spacing-6); margin-right: var(--spacing-6); }
+    .m-8 { margin: var(--spacing-6); }
+    
+    .gap-6 { gap: var(--spacing-4); }
+    .gap-8 { gap: var(--spacing-6); }
+}
+
+/* ====================================
+   Loading States Responsive
+   ==================================== */
+
+/* Responsive loading overlays */
+@media (max-width: 767px) {
+    .loading-overlay {
+        padding: var(--spacing-4);
+    }
+    
+    .spinner-lg {
+        width: 2rem;
+        height: 2rem;
+    }
+}
+
+/* ====================================
+   Accessibility Improvements
+   ==================================== */
+
+/* Enhanced focus indicators for mobile */
+@media (max-width: 767px) {
+    .btn:focus,
+    .form-control:focus,
+    .form-select:focus,
+    .nav-link:focus {
+        outline: 3px solid var(--color-primary-500);
+        outline-offset: 2px;
+    }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .animate-fade-in,
+    .animate-slide-in-up,
+    .animate-pulse {
+        animation: none;
+    }
+}
+
+/* ====================================
+   Print Styles
+   ==================================== */
+
+@media print {
+    .sidebar,
+    .mobile-menu-toggle,
+    .btn,
+    .nav,
+    .loading-overlay {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+    
+    .card {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    .text-primary,
+    .text-secondary,
+    .text-muted {
+        color: #000 !important;
+    }
+    
+    .bg-primary,
+    .bg-secondary,
+    .bg-success,
+    .bg-warning,
+    .bg-danger {
+        background: #fff !important;
+        color: #000 !important;
+    }
+}

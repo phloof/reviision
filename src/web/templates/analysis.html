@@ -1,192 +1,398 @@
 {% extends "base.html" %}
 
-{% block title %}Analysis{% endblock %}
+{% block title %}Live Analysis - ReViision{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-page-styles.css') }}">
+<style>
+/* Analysis-specific styles using design system */
+.video-feed-container {
+    position: relative;
+    background: var(--color-neutral-900);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    aspect-ratio: 16/9;
+    min-height: 400px;
+}
+
+.video-feed {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.feed-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    height: 100%;
+    color: var(--color-neutral-400);
+    background: var(--color-neutral-800);
+}
+
+.feed-label {
+    position: absolute;
+    top: var(--spacing-3);
+    left: var(--spacing-3);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    z-index: 10;
+}
+
+.original-pip {
+    position: absolute;
+    top: var(--spacing-4);
+    right: var(--spacing-4);
+    width: 200px;
+    height: 112px;
+    border: 2px solid var(--color-primary-500);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    z-index: 20;
+    background: var(--color-neutral-800);
+}
+
+.overlay-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+}
+
+.control-panel {
+    background: var(--color-surface-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-sm);
+}
+
+.overlay-controls {
+    display: grid;
+    gap: var(--spacing-4);
+}
+
+.overlay-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3);
+    border-radius: var(--radius-lg);
+    transition: var(--transition-all);
+}
+
+.overlay-toggle:hover {
+    background: var(--color-surface-secondary);
+}
+
+.overlay-toggle input[type="radio"] {
+    margin: 0;
+}
+
+.stats-panel {
+    background: var(--color-surface-secondary);
+    padding: var(--spacing-4);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-4);
+}
+
+@media (max-width: 767px) {
+    .original-pip {
+        width: 120px;
+        height: 68px;
+        top: var(--spacing-2);
+        right: var(--spacing-2);
+    }
+
+    .video-feed-container {
+        min-height: 250px;
+    }
+}
+</style>
 {% endblock %}
 
-{% block header %}Camera Analysis{% endblock %}
-
 {% block content %}
-<div class="row mb-3">
-    <div class="col-12">
-        <div class="modern-card">
-            <div class="modern-card-header white-header d-flex justify-content-between align-items-center">
-                <span>Camera Feed Control</span>
-                <div>
-                    <button class="btn btn-sm btn-outline-primary" id="start-analysis">Start Analysis</button>
-                    <button class="btn btn-sm btn-outline-danger" id="stop-analysis" disabled>Stop</button>
-                    <button class="btn btn-sm btn-outline-warning" id="restart-video" title="Restart Video Stream">
-                        <i class="fas fa-redo"></i> Restart Stream
+<div class="container py-6">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-primary mb-2">Live Camera Analysis</h1>
+        <p class="text-secondary">Real-time computer vision analysis with customizable overlays</p>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="card mb-6">
+        <div class="card-header">
+            <h2 class="card-title">
+                <i class="fas fa-sliders-h"></i>
+                Camera Controls
+            </h2>
+        </div>
+        <div class="card-body">
+            <div class="d-flex flex-wrap gap-3 justify-between items-center">
+                <div class="d-flex gap-3">
+                    <button class="btn btn-primary" id="start-analysis">
+                        <i class="fas fa-play"></i>
+                        Start Analysis
+                    </button>
+                    <button class="btn btn-danger" id="stop-analysis" disabled>
+                        <i class="fas fa-stop"></i>
+                        Stop
                     </button>
                 </div>
+                <button class="btn btn-outline-secondary" id="restart-video" title="Restart Video Stream">
+                    <i class="fas fa-redo"></i>
+                    Restart Stream
+                </button>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Single Video Container with Picture-in-Picture -->
-<div class="row">
-    <div class="col-12">
-        <div class="modern-card">
-            <div class="modern-card-header white-header d-flex justify-content-between align-items-center">
-                <h3 class="mb-0">Live Analysis Feed</h3>
+    <!-- Video Feed -->
+    <div class="card mb-6">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-video"></i>
+                Live Analysis Feed
+            </h3>
+        </div>
+        <div class="card-body p-0">
+            <div class="video-feed-container">
+                <!-- Original feed (picture-in-picture) -->
+                <div id="original-feed" class="original-pip">
+                    <div class="feed-label">Original</div>
+                    <div class="feed-placeholder">
+                        <i class="fas fa-video fa-2x mb-2"></i>
+                        <span class="text-sm">Original Feed</span>
+                    </div>
+                </div>
+
+                <!-- Main analysis feed -->
+                <div id="analysis-feed" class="feed-placeholder relative">
+                    <div class="feed-label" id="active-overlay-label">Analysis View</div>
+                    <div class="placeholder-content">
+                    <i class="fas fa-eye fa-3x mb-3"></i>
+                    <h5 class="text-xl font-semibold mb-2">Start Analysis to Begin</h5>
+                    <p class="text-secondary">Analysis feed with overlays will appear here</p>
+                </div>
+                <div id="overlay-container" class="overlay-container"></div>
             </div>
-            <div class="modern-card-body p-0">
-                <div class="feed-container">
-                    <!-- Original feed (small picture-in-picture) -->
-                    <div id="original-feed" class="original-pip">
-                        <div class="feed-label">Original</div>
-                        <div class="placeholder-content">
-                            <i class="fas fa-video"></i>
-                            <span>Original Feed</span>
+        </div>
+    </div>
+
+    <!-- Controls Grid -->
+    <div class="d-grid grid-cols-1 desktop-grid-cols-3 gap-6">
+        <!-- Overlay Controls -->
+        <div class="desktop-col-span-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-layer-group"></i>
+                        Overlay Controls
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="overlay-controls">
+                        <div class="mb-6">
+                            <h4 class="text-lg font-semibold mb-4">Visualization Overlays</h4>
+                            <div class="d-grid grid-cols-1 tablet-grid-cols-2 gap-3">
+                                <div class="form-check overlay-toggle">
+                                    <input class="form-check-input" type="radio" name="overlay" id="none-overlay" value="none" checked>
+                                    <label class="form-check-label font-medium" for="none-overlay">
+                                        <i class="fas fa-eye-slash text-secondary mr-2"></i>
+                                        None
+                                    </label>
+                                </div>
+                                <div class="form-check overlay-toggle">
+                                    <input class="form-check-input" type="radio" name="overlay" id="facial-overlay" value="facial">
+                                    <label class="form-check-label font-medium" for="facial-overlay">
+                                        <i class="fas fa-user-circle text-primary mr-2"></i>
+                                        Facial Recognition
+                                    </label>
+                                </div>
+                                <div class="form-check overlay-toggle">
+                                    <input class="form-check-input" type="radio" name="overlay" id="heatmap-overlay" value="heatmap">
+                                    <label class="form-check-label font-medium" for="heatmap-overlay">
+                                        <i class="fas fa-fire text-danger mr-2"></i>
+                                        Traffic Heatmap
+                                    </label>
+                                </div>
+                                <div class="form-check overlay-toggle">
+                                    <input class="form-check-input" type="radio" name="overlay" id="demographic-overlay" value="demographic">
+                                    <label class="form-check-label font-medium" for="demographic-overlay">
+                                        <i class="fas fa-users text-success mr-2"></i>
+                                        Demographics
+                                    </label>
+                                </div>
+                                <div class="form-check overlay-toggle">
+                                    <input class="form-check-input" type="radio" name="overlay" id="dwell-overlay" value="dwell">
+                                    <label class="form-check-label font-medium" for="dwell-overlay">
+                                        <i class="fas fa-clock text-warning mr-2"></i>
+                                        Dwell Time
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <h4 class="text-lg font-semibold mb-4">Display Options</h4>
+                            <div class="d-flex flex-wrap gap-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="show-bounding-boxes" checked>
+                                    <label class="form-check-label font-medium" for="show-bounding-boxes">
+                                        <i class="fas fa-square text-primary mr-2"></i>
+                                        Bounding Boxes
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="show-labels" checked>
+                                    <label class="form-check-label font-medium" for="show-labels">
+                                        <i class="fas fa-tag text-success mr-2"></i>
+                                        Labels
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="show-metrics" checked>
+                                    <label class="form-check-label font-medium" for="show-metrics">
+                                        <i class="fas fa-chart-bar text-info mr-2"></i>
+                                        Metrics
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="overlay-specific-options">
+                            <!-- Heatmap Options -->
+                            <div id="heatmap-options" class="d-none">
+                                <h4 class="text-lg font-semibold mb-4">Heatmap Options</h4>
+                                <div class="mb-4">
+                                    <div class="d-flex gap-4 mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="heatmap-type" id="traffic-heatmap" checked>
+                                            <label class="form-check-label font-medium" for="traffic-heatmap">Traffic Density</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="heatmap-type" id="dwell-heatmap">
+                                            <label class="form-check-label font-medium" for="dwell-heatmap">Dwell Time</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="heatmap-opacity" class="form-label">
+                                            Opacity: <span id="opacity-value" class="font-semibold text-primary">15%</span>
+                                        </label>
+                                        <input type="range" class="form-control" min="5" max="50" value="15" id="heatmap-opacity">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Facial Analysis Options -->
+                            <div id="facial-options" class="d-none">
+                                <h4 class="text-lg font-semibold mb-4">Facial Analysis Options</h4>
+                                <div class="d-flex flex-wrap gap-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="show-age" checked>
+                                        <label class="form-check-label font-medium" for="show-age">Age</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="show-gender" checked>
+                                        <label class="form-check-label font-medium" for="show-gender">Gender</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="show-emotion" checked>
+                                        <label class="form-check-label font-medium" for="show-emotion">Emotion</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Demographic Options -->
+                            <div id="demographic-options" class="d-none">
+                                <h4 class="text-lg font-semibold mb-4">Demographic Options</h4>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    No additional options available for demographic overlay.
+                                </div>
+                            </div>
+
+                            <!-- Dwell Time Options -->
+                            <div id="dwell-options" class="d-none">
+                                <h4 class="text-lg font-semibold mb-4">Dwell Time Options</h4>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    No additional options available for dwell time overlay.
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    
-                    <!-- Main analysis feed -->
-                    <div id="analysis-feed" class="feed-placeholder" style="position: relative;">
-                        <div class="feed-label" id="active-overlay-label">Analysis View</div>
-                        <div class="placeholder-content">
-                            <i class="fas fa-eye fa-3x mb-3"></i>
-                            <h5>Start Analysis to Begin</h5>
-                            <p>Analysis feed with overlays will appear here</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Panel -->
+        <div class="card">
+            <div class="card-header card-header-primary">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-bar"></i>
+                    Real-time Statistics
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-4">
+                    <div class="stats-panel">
+                        <div class="d-flex justify-between items-center">
+                            <span class="font-medium text-secondary">Current View:</span>
+                            <span id="current-camera" class="font-semibold text-primary">Main Entrance</span>
                         </div>
-                        <div id="overlay-container" class="overlay-container"></div>
+                    </div>
+
+                    <div class="stats-panel">
+                        <div class="d-flex justify-between items-center mb-2">
+                            <span class="font-medium text-secondary">People Detected:</span>
+                            <span id="people-count" class="font-bold text-2xl text-primary">0</span>
+                        </div>
+                        <div class="d-flex justify-between items-center mb-2">
+                            <span class="font-medium text-secondary">M/F Ratio:</span>
+                            <span id="gender-ratio" class="font-semibold text-primary">0/0</span>
+                        </div>
+                        <div class="d-flex justify-between items-center">
+                            <span class="font-medium text-secondary">Average Age:</span>
+                            <span id="avg-age" class="font-semibold text-primary">--</span>
+                        </div>
+                    </div>
+
+                    <div class="stats-panel">
+                        <div class="d-flex justify-between items-center mb-2">
+                            <span class="font-medium text-secondary">Current Traffic:</span>
+                            <span id="current-traffic" class="font-semibold text-success">Low</span>
+                        </div>
+                        <div class="d-flex justify-between items-center">
+                            <span class="font-medium text-secondary">Avg. Dwell Time:</span>
+                            <span id="current-dwell-time" class="font-semibold text-primary">-- sec</span>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-primary">
+                        <i class="fas fa-info-circle"></i>
+                        Select different overlays to visualize various aspects of the vision analytics.
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="row mt-3">
-    <div class="col-md-8">
-        <div class="modern-card">
-            <div class="modern-card-header white-header">Overlay Controls</div>
-            <div class="modern-card-body">
-                <div class="overlay-controls">
-                    <div class="mb-3">
-                        <h6>Visualization Overlays</h6>
-                        <div class="overlay-toggle">
-                            <input type="radio" name="overlay" id="none-overlay" value="none" checked>
-                            <label for="none-overlay">None</label>
-                        </div>
-                        <div class="overlay-toggle">
-                            <input type="radio" name="overlay" id="facial-overlay" value="facial">
-                            <label for="facial-overlay">Facial Recognition</label>
-                        </div>
-                        <div class="overlay-toggle">
-                            <input type="radio" name="overlay" id="heatmap-overlay" value="heatmap">
-                            <label for="heatmap-overlay">Traffic Heatmap</label>
-                        </div>
-
-                        <div class="overlay-toggle">
-                            <input type="radio" name="overlay" id="demographic-overlay" value="demographic">
-                            <label for="demographic-overlay">Demographics</label>
-                        </div>
-                        <div class="overlay-toggle">
-                            <input type="radio" name="overlay" id="dwell-overlay" value="dwell">
-                            <label for="dwell-overlay">Dwell Time</label>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <h6>Display Options</h6>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="show-bounding-boxes" checked>
-                            <label class="form-check-label" for="show-bounding-boxes">Bounding Boxes</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="show-labels" checked>
-                            <label class="form-check-label" for="show-labels">Labels</label>
-                        </div>
-
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="show-metrics" checked>
-                            <label class="form-check-label" for="show-metrics">Metrics</label>
-                        </div>
-                    </div>
-                    
-                    <div id="overlay-specific-options">
-                        <!-- These options change based on selected overlay -->
-                        <div id="heatmap-options" style="display:none;">
-                            <h6>Heatmap Options</h6>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="heatmap-type" id="traffic-heatmap" checked>
-                                <label class="form-check-label" for="traffic-heatmap">Traffic Density</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="heatmap-type" id="dwell-heatmap">
-                                <label class="form-check-label" for="dwell-heatmap">Dwell Time</label>
-                            </div>
-                            <div class="mb-2">
-                                <label for="heatmap-opacity" class="form-label">Opacity: <span id="opacity-value">15%</span></label>
-                                <input type="range" class="form-range" min="5" max="50" value="15" id="heatmap-opacity">
-                            </div>
-                        </div>
-                        
-                        <div id="facial-options" style="display:none;">
-                            <h6>Facial Analysis Options</h6>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="checkbox" id="show-age" checked>
-                                <label class="form-check-label" for="show-age">Age</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="checkbox" id="show-gender" checked>
-                                <label class="form-check-label" for="show-gender">Gender</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="checkbox" id="show-emotion" checked>
-                                <label class="form-check-label" for="show-emotion">Emotion</label>
-                            </div>
-                        </div>
-                        <div id="demographic-options" style="display:none;">
-                            <h6>Demographic Options</h6>
-                            <p class="text-muted small">No specific options for this overlay.</p>
-                        </div>
-                        <div id="dwell-options" style="display:none;">
-                            <h6>Dwell Time Options</h6>
-                            <p class="text-muted small">No specific options for this overlay.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Historical Chart -->
+    <div class="card mt-6">
+        <div class="card-header card-header-success">
+            <h3 class="card-title">
+                <i class="fas fa-history"></i>
+                Historical Data
+            </h3>
         </div>
-    </div>
-    
-    <div class="col-md-4">
-        <div class="modern-card">
-            <div class="modern-card-header white-header">Real-time Statistics</div>
-            <div class="modern-card-body">
-                <div class="stats-panel">
-                    <strong>Current View:</strong> <span id="current-camera">Main Entrance</span>
-                </div>
-                <div class="stats-panel">
-                    <strong>People Detected:</strong> <span id="people-count">0</span><br>
-                    <strong>Male/Female Ratio:</strong> <span id="gender-ratio">0/0</span><br>
-                    <strong>Average Age:</strong> <span id="avg-age">--</span>
-                </div>
-                <div class="stats-panel">
-                    <strong>Current Traffic:</strong> <span id="current-traffic">Low</span><br>
-                    <strong>Average Dwell Time:</strong> <span id="current-dwell-time">-- sec</span>
-                </div>
-                <div class="alert alert-info mt-3">
-                    <i class="fas fa-info-circle"></i> Select different overlays to visualize various aspects of the vision analytics.
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-3">
-    <div class="col-12">
-        <div class="modern-card">
-            <div class="modern-card-header white-header">Historical Data</div>
-            <div class="modern-card-body">
-                <div class="chart-container" style="height: 300px;">
-                    <canvas id="historyChart"></canvas>
-                </div>
+        <div class="card-body">
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="historyChart"></canvas>
             </div>
         </div>
     </div>

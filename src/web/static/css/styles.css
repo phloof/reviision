@@ -3890,3 +3890,101 @@ header {
         display: none !important;
     }
 }
+
+/* ====================================
+   Color Contrast Fixes
+   ==================================== */
+
+/* Profile Icon - Ensure white text on blue background */
+.profile-icon,
+.profile-icon i,
+#profile-dropdown-btn .profile-icon,
+#profile-dropdown-btn .profile-icon i,
+.btn-outline-secondary .profile-icon,
+.btn-outline-secondary .profile-icon i {
+    color: #ffffff !important;
+    background: var(--primary-color) !important;
+}
+
+/* Profile dropdown button text */
+#profile-dropdown-btn,
+#profile-dropdown-btn span {
+    color: var(--text-dark) !important;
+}
+
+/* Sidebar - Ensure all text is white on blue background */
+.sidebar,
+.sidebar *,
+.sidebar a,
+.sidebar .nav-links a,
+.sidebar .nav-links a i,
+.sidebar .nav-links a .nav-text,
+.sidebar .sidebar-header,
+.sidebar .sidebar-header *,
+.sidebar .logo,
+.sidebar .logo h1,
+.sidebar .logo i,
+.sidebar .system-status,
+.sidebar .system-status *,
+.sidebar .status-text,
+.sidebar .status-indicator {
+    color: #ffffff !important;
+}
+
+/* Sidebar navigation links hover and active states */
+.sidebar .nav-links a:hover,
+.sidebar .nav-links a:focus,
+.sidebar .nav-links a.active {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Sidebar toggle buttons */
+.sidebar .sidebar-toggle,
+.sidebar .mobile-close-btn {
+    color: #ffffff !important;
+    background: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.sidebar .sidebar-toggle:hover,
+.sidebar .mobile-close-btn:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+}
+
+/* Dropdown menu items - Ensure black text on white background */
+.dropdown-menu,
+.dropdown-menu .dropdown-item {
+    color: var(--text-dark) !important;
+    background-color: #ffffff !important;
+}
+
+.dropdown-menu .dropdown-item:hover,
+.dropdown-menu .dropdown-item:focus {
+    color: var(--text-dark) !important;
+    background-color: var(--background-color) !important;
+}
+
+/* Dropdown menu icons */
+.dropdown-menu .dropdown-item i {
+    color: var(--text-muted) !important;
+}
+
+/* Mobile menu toggle button */
+.mobile-menu-toggle {
+    color: var(--text-dark) !important;
+}
+
+/* Ensure proper contrast for buttons on white backgrounds */
+.btn-outline-secondary {
+    color: var(--text-dark) !important;
+    border-color: var(--border-color) !important;
+}
+
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus {
+    color: #ffffff !important;
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
