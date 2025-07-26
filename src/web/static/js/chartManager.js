@@ -17,24 +17,48 @@
         if (global[pluginGlobalName]) {
             try {
                 global.Chart.register(global[pluginGlobalName]);
+                console.log(`Successfully registered plugin: ${pluginGlobalName}`);
             } catch (err) {
-                // Ignore if already registered
+                console.log(`Plugin ${pluginGlobalName} already registered or failed to register:`, err.message);
             }
+        } else {
+            console.log(`Plugin ${pluginGlobalName} not found in global scope`);
         }
     };
 
+    // Try different possible names for the zoom plugin
     maybeRegister("chartjsZoom");            // chartjs-plugin-zoom attaches itself under this name
     maybeRegister("ChartDataLabels");        // chartjs-plugin-datalabels
-    maybeRegister("ChartZoom"); // alternative global var name for zoom plugin
+    maybeRegister("ChartZoom");              // alternative global var name for zoom plugin
+    maybeRegister("zoomPlugin");             // another possible name
+
+    // Also try to register from window object
+    if (typeof window !== 'undefined') {
+        maybeRegister.call(null, "chartjsZoom");
+        if (window.Chart && window.Chart.Zoom) {
+            try {
+                global.Chart.register(window.Chart.Zoom);
+                console.log('Registered zoom plugin from window.Chart.Zoom');
+            } catch (err) {
+                console.log('Failed to register zoom plugin from window.Chart.Zoom:', err.message);
+            }
+        }
+    }
 
     const saveAs = global.saveAs; // Provided by FileSaver.js
 
     class ChartManager {
         constructor(canvasCtx, config, options = {}) {
+            console.log('ChartManager constructor called');
+
             // Create underlying Chart.js instance
             this.canvas = canvasCtx;
             // Deep-clone scales for restoration when switching types
             this._originalScales = config.options && config.options.scales ? JSON.parse(JSON.stringify(config.options.scales)) : undefined;
+
+            // Check if zoom plugin is available
+            console.log('Zoom plugin available:', !!global.Chart.registry.plugins.get('zoom'));
+            console.log('Available plugins:', Object.keys(global.Chart.registry.plugins.items));
 
             // Ensure zoom options are present by default - DISABLE wheel zoom to prevent unwanted scroll behavior
             const zoomDefaults = {
@@ -50,6 +74,11 @@
             config.options.plugins.zoom = Object.assign({}, zoomDefaults, config.options.plugins.zoom || {});
 
             this.chart = new global.Chart(canvasCtx, config);
+            console.log('Chart created, zoom methods available:', {
+                zoom: typeof this.chart.zoom,
+                resetZoom: typeof this.chart.resetZoom
+            });
+
             // Merge user-provided options (e.g., default filename stub, id)
             this.options = Object.assign({ filename: "chart", toolbar: true }, options);
 
@@ -60,6 +89,7 @@
             this.panEnabled = false; // Track pan mode state
 
             if (this.options.toolbar) {
+                console.log('Building toolbar...');
                 this._buildToolbar();
             }
         }
@@ -92,34 +122,79 @@
         }
 
         resetZoom() {
-            if (this.chart.resetZoom) {
-                this.chart.resetZoom();
-                this.zoomLevel = 1.0;
+            try {
+                if (this.chart.resetZoom && typeof this.chart.resetZoom === 'function') {
+                    this.chart.resetZoom();
+                    this.zoomLevel = 1.0;
+                    console.log('Zoom reset to original level');
+                } else {
+                    // Fallback: restore original scales
+                    if (this._originalScales) {
+                        this.chart.options.scales = JSON.parse(JSON.stringify(this._originalScales));
+                        this.zoomLevel = 1.0;
+                        this.chart.update('none');
+                        console.log('Used fallback zoom reset');
+                    } else {
+                        console.warn('Reset zoom method not available and no original scales stored');
+                    }
+                }
+            } catch (error) {
+                console.error('Error during zoom reset:', error);
             }
         }
 
         // New zoom in method with limits
         zoomIn() {
-            if (this.zoomLevel < this.maxZoom && this.chart.zoom) {
-                const zoomFactor = 1.2;
-                this.chart.zoom(zoomFactor);
-                this.zoomLevel *= zoomFactor;
+            try {
+                if (this.zoomLevel < this.maxZoom) {
+                    // Check if zoom plugin is available
+                    if (this.chart.zoom && typeof this.chart.zoom === 'function') {
+                        const zoomFactor = 1.2;
+                        this.chart.zoom(zoomFactor);
+                        this.zoomLevel *= zoomFactor;
+                        console.log('Zoomed in to level:', this.zoomLevel);
+                    } else {
+                        // Fallback: manually adjust scales
+                        this._fallbackZoom(1.2);
+                        console.log('Used fallback zoom in');
+                    }
+                }
+            } catch (error) {
+                console.error('Error during zoom in:', error);
             }
         }
 
         // New zoom out method with limits
         zoomOut() {
-            if (this.zoomLevel > this.minZoom && this.chart.zoom) {
-                const zoomFactor = 0.8;
-                // Don't zoom out beyond original size
-                const newZoomLevel = this.zoomLevel * zoomFactor;
-                if (newZoomLevel >= this.minZoom) {
-                    this.chart.zoom(zoomFactor);
-                    this.zoomLevel = newZoomLevel;
-                } else {
-                    // Reset to original size if we would go below minimum
-                    this.resetZoom();
+            try {
+                if (this.zoomLevel > this.minZoom) {
+                    // Check if zoom plugin is available
+                    if (this.chart.zoom && typeof this.chart.zoom === 'function') {
+                        const zoomFactor = 0.8;
+                        // Don't zoom out beyond original size
+                        const newZoomLevel = this.zoomLevel * zoomFactor;
+                        if (newZoomLevel >= this.minZoom) {
+                            this.chart.zoom(zoomFactor);
+                            this.zoomLevel = newZoomLevel;
+                            console.log('Zoomed out to level:', this.zoomLevel);
+                        } else {
+                            // Reset to original size if we would go below minimum
+                            this.resetZoom();
+                        }
+                    } else {
+                        // Fallback: manually adjust scales
+                        const zoomFactor = 0.8;
+                        const newZoomLevel = this.zoomLevel * zoomFactor;
+                        if (newZoomLevel >= this.minZoom) {
+                            this._fallbackZoom(zoomFactor);
+                            console.log('Used fallback zoom out');
+                        } else {
+                            this.resetZoom();
+                        }
+                    }
                 }
+            } catch (error) {
+                console.error('Error during zoom out:', error);
             }
         }
 
@@ -144,6 +219,29 @@
                         this.canvas.classList.remove('pan-active');
                     }
                 }
+            }
+        }
+
+        // Fallback zoom method when zoom plugin is not available
+        _fallbackZoom(factor) {
+            try {
+                if (this.chart.options.scales) {
+                    // Adjust scales manually for zoom effect
+                    Object.keys(this.chart.options.scales).forEach(scaleId => {
+                        const scale = this.chart.options.scales[scaleId];
+                        if (scale.min !== undefined && scale.max !== undefined) {
+                            const range = scale.max - scale.min;
+                            const center = (scale.max + scale.min) / 2;
+                            const newRange = range / factor;
+                            scale.min = center - newRange / 2;
+                            scale.max = center + newRange / 2;
+                        }
+                    });
+                    this.zoomLevel *= factor;
+                    this.chart.update('none');
+                }
+            } catch (error) {
+                console.error('Error in fallback zoom:', error);
             }
         }
 
@@ -172,45 +270,76 @@
 
         // ---------- Export helpers ---------- //
         exportPNG(filename) {
-            const name = filename || `${this.options.filename}.png`;
-            // Ensure the chart is rendered at current size
-            this.chart.resize();
-            this.canvas.toBlob((blob) => {
-                if (blob && saveAs) {
-                    saveAs(blob, name);
-                } else {
-                    console.error("FileSaver.js saveAs function missing or canvas blob failed");
-                }
-            }, "image/png", 1.0);
+            try {
+                const name = filename || `${this.options.filename}.png`;
+                // Ensure the chart is rendered at current size
+                this.chart.resize();
+                this.canvas.toBlob((blob) => {
+                    if (blob && saveAs && typeof saveAs === 'function') {
+                        saveAs(blob, name);
+                        console.log('PNG exported successfully:', name);
+                    } else {
+                        console.error("FileSaver.js saveAs function missing or canvas blob failed");
+                        alert('Export failed: FileSaver.js not available');
+                    }
+                }, "image/png", 1.0);
+            } catch (error) {
+                console.error('Error during PNG export:', error);
+                alert('Export failed: ' + error.message);
+            }
         }
 
         exportCSV(filename) {
-            const name = filename || `${this.options.filename}.csv`;
-            const { labels = [] } = this.chart.data;
-            const datasets = this.chart.data.datasets || [];
+            try {
+                if (!saveAs || typeof saveAs !== 'function') {
+                    console.error('FileSaver.js not available for CSV export');
+                    alert('Export failed: FileSaver.js not available');
+                    return;
+                }
 
-            // Build CSV rows (header + data rows)
-            const rows = [];
-            const header = ["Label", ...datasets.map((d) => sanitizeCSV(d.label))];
-            rows.push(header.join(","));
+                const name = filename || `${this.options.filename}.csv`;
+                const { labels = [] } = this.chart.data;
+                const datasets = this.chart.data.datasets || [];
 
-            labels.forEach((lbl, idx) => {
-                const row = [sanitizeCSV(lbl)];
-                datasets.forEach((ds) => {
-                    row.push(ds.data[idx] != null ? ds.data[idx] : "");
+                // Build CSV rows (header + data rows)
+                const rows = [];
+                const header = ["Label", ...datasets.map((d) => sanitizeCSV(d.label))];
+                rows.push(header.join(","));
+
+                labels.forEach((lbl, idx) => {
+                    const row = [sanitizeCSV(lbl)];
+                    datasets.forEach((ds) => {
+                        row.push(ds.data[idx] != null ? ds.data[idx] : "");
+                    });
+                    rows.push(row.join(","));
                 });
-                rows.push(row.join(","));
-            });
 
-            const csvBlob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8" });
-            saveAs(csvBlob, name);
+                const csvBlob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8" });
+                saveAs(csvBlob, name);
+                console.log('CSV exported successfully:', name);
+            } catch (error) {
+                console.error('Error during CSV export:', error);
+                alert('CSV export failed: ' + error.message);
+            }
         }
 
         exportJSON(filename) {
-            const name = filename || `${this.options.filename}.json`;
-            const json = JSON.stringify({ labels: this.chart.data.labels, datasets: this.chart.data.datasets }, null, 2);
-            const blob = new Blob([json], { type: "application/json;charset=utf-8" });
-            saveAs(blob, name);
+            try {
+                if (!saveAs || typeof saveAs !== 'function') {
+                    console.error('FileSaver.js not available for JSON export');
+                    alert('Export failed: FileSaver.js not available');
+                    return;
+                }
+
+                const name = filename || `${this.options.filename}.json`;
+                const json = JSON.stringify({ labels: this.chart.data.labels, datasets: this.chart.data.datasets }, null, 2);
+                const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+                saveAs(blob, name);
+                console.log('JSON exported successfully:', name);
+            } catch (error) {
+                console.error('Error during JSON export:', error);
+                alert('JSON export failed: ' + error.message);
+            }
         }
 
         destroy() {
@@ -292,43 +421,64 @@
 
             // Event delegation for toolbar actions
             toolbar.addEventListener('click', (ev) => {
-                const typeItem = ev.target.closest('[data-type]');
-                if (typeItem) {
+                try {
+                    console.log('Toolbar clicked:', ev.target);
+
+                    const typeItem = ev.target.closest('[data-type]');
+                    if (typeItem) {
+                        ev.preventDefault();
+                        const newType = typeItem.getAttribute('data-type');
+                        console.log('Switching chart type to:', newType);
+                        this.switchType(newType);
+                        return;
+                    }
+
+                    const btn = ev.target.closest('[data-action]');
+                    if (!btn) {
+                        console.log('No action button found');
+                        return;
+                    }
+
                     ev.preventDefault();
-                    const newType = typeItem.getAttribute('data-type');
-                    this.switchType(newType);
-                    return;
-                }
+                    const action = btn.getAttribute('data-action');
+                    console.log('Action button clicked:', action);
 
-                const btn = ev.target.closest('[data-action]');
-                if (!btn) return;
-
-                ev.preventDefault();
-                const action = btn.getAttribute('data-action');
-
-                // Handle export actions
-                if (action === 'png') {
-                    this.exportPNG();
-                } else if (action === 'csv') {
-                    this.exportCSV();
-                } else if (action === 'json') {
-                    this.exportJSON();
-                }
-                // Handle zoom actions
-                else if (action === 'zoom-in') {
-                    this.zoomIn();
-                } else if (action === 'zoom-out') {
-                    this.zoomOut();
-                } else if (action === 'reset-zoom') {
-                    this.resetZoom();
-                }
-                // Handle pan toggle
-                else if (action === 'toggle-pan') {
-                    this.togglePan();
-                }
-                // Handle toggle toolbar
-                else if (action === 'toggle-toolbar') {
-                    this.toggleToolbar();
+                    // Handle export actions
+                    if (action === 'png') {
+                        console.log('Exporting PNG...');
+                        this.exportPNG();
+                    } else if (action === 'csv') {
+                        console.log('Exporting CSV...');
+                        this.exportCSV();
+                    } else if (action === 'json') {
+                        console.log('Exporting JSON...');
+                        this.exportJSON();
+                    }
+                    // Handle zoom actions
+                    else if (action === 'zoom-in') {
+                        console.log('Zooming in...');
+                        this.zoomIn();
+                    } else if (action === 'zoom-out') {
+                        console.log('Zooming out...');
+                        this.zoomOut();
+                    } else if (action === 'reset-zoom') {
+                        console.log('Resetting zoom...');
+                        this.resetZoom();
+                    }
+                    // Handle pan toggle
+                    else if (action === 'toggle-pan') {
+                        console.log('Toggling pan mode...');
+                        this.togglePan();
+                    }
+                    // Handle toggle toolbar
+                    else if (action === 'toggle-toolbar') {
+                        console.log('Toggling toolbar...');
+                        this.toggleToolbar();
+                    } else {
+                        console.log('Unknown action:', action);
+                    }
+                } catch (error) {
+                    console.error('Error in toolbar click handler:', error);
                 }
             });
         }

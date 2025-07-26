@@ -182,9 +182,9 @@
                 <select class="form-control" id="time-range">
                     <option value="1h">Last Hour</option>
                     <option value="6h">Last 6 Hours</option>
-                    <option value="24h" selected>Last 24 Hours</option>
+                    <option value="24h">Last 24 Hours</option>
                     <option value="7d">Last 7 Days</option>
-                    <option value="30d">Last 30 Days</option>
+                    <option value="30d" selected>Last 30 Days</option>
                 </select>
             </div>
             <div class="form-group">
@@ -275,9 +275,9 @@
         <div id="age-section" class="content-section d-none">
             <div class="card mb-6">
                 <div class="card-header card-header-warning">
-                    <h3 class="card-title">
-                        <i class="fas fa-birthday-cake"></i>
-                        Detailed Age Analysis
+                    <h3 class="card-title" style="color: white;">
+                        <i class="fas fa-birthday-cake" style="color: white;"></i>
+                        <span style="color: white;">Detailed Age Analysis</span>
                     </h3>
                 </div>
                 <div class="card-body">
@@ -290,9 +290,9 @@
             <!-- Age Trends -->
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-chart-line"></i>
-                        Age Trends Over Time
+                    <h3 class="card-title" style="color: white;">
+                        <i class="fas fa-chart-line" style="color: white;"></i>
+                        <span style="color: white;">Age Trends Over Time</span>
                     </h3>
                 </div>
                 <div class="card-body">
@@ -322,9 +322,9 @@
 
                 <div class="card">
                     <div class="card-header card-header-danger">
-                        <h3 class="card-title">
-                            <i class="fas fa-venus"></i>
-                            Female Demographics
+                        <h3 class="card-title" style="color: white;">
+                            <i class="fas fa-venus" style="color: white;"></i>
+                            <span style="color: white;">Female Demographics</span>
                         </h3>
                     </div>
                     <div class="card-body">
@@ -355,9 +355,9 @@
         <div id="emotion-section" class="content-section d-none">
             <div class="card mb-6">
                 <div class="card-header card-header-success">
-                    <h3 class="card-title">
-                        <i class="fas fa-smile"></i>
-                        Emotion Distribution
+                    <h3 class="card-title" style="color: white;">
+                        <i class="fas fa-smile" style="color: white;"></i>
+                        <span style="color: white;">Emotion Distribution</span>
                     </h3>
                 </div>
                 <div class="card-body">
@@ -538,20 +538,12 @@ class DemographicsManager {
     constructor() {
         this.charts = {};
         this.currentData = null;
-        this.currentPage = 1;
-        this.recordsPerPage = 10;
-        this.currentSearch = '';
-        this.currentSort = 'timestamp';
-        this.currentSortOrder = 'desc';
-        this.totalRecords = 0;
-        this.totalPages = 0;
         this.init();
     }
 
     init() {
         this.setupEventHandlers();
         this.loadData();
-        this.initializeTable();
         // Show overview section by default
         this.switchSection('overview');
     }
@@ -633,17 +625,27 @@ class DemographicsManager {
             });
         });
 
-        // Time range change
+        // Filter changes - auto-apply filters when changed
         document.getElementById('time-range').addEventListener('change', () => {
             this.loadData();
-            this.currentPage = 1;
-            this.loadTableData();
+        });
+
+        document.getElementById('age-filter').addEventListener('change', () => {
+            this.loadData();
+        });
+
+        document.getElementById('gender-filter').addEventListener('change', () => {
+            this.loadData();
+        });
+
+        // Apply filters button (for manual trigger if needed)
+        document.getElementById('apply-filters').addEventListener('click', () => {
+            this.loadData();
         });
 
         // Refresh button
         document.getElementById('refresh-demographics').addEventListener('click', () => {
             this.loadData();
-            this.loadTableData();
         });
 
         // Tab changes
@@ -675,11 +677,33 @@ class DemographicsManager {
 
     async loadData() {
         try {
-            const hours = this.getHoursFromRange();
-            const response = await fetch(`/api/analytics/summary?hours=${hours}`);
+            const filterParams = this.getFilterParams();
+            const queryString = new URLSearchParams(filterParams).toString();
+            const response = await fetch(`/api/analytics/summary?${queryString}`, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
 
             if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    // Authentication issue - redirect to login
+                    window.location.href = '/login';
+                    return;
+                }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            // Check if response is actually JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                // Likely got HTML (login page) instead of JSON
+                console.warn('Received HTML instead of JSON - redirecting to login');
+                window.location.href = '/login';
+                return;
             }
 
             const data = await response.json();
@@ -691,10 +715,12 @@ class DemographicsManager {
                 this.showSuccessMessage('Demographic data loaded successfully');
             } else {
                 this.showNoDataState();
+                showNotification('No data available for the selected time period', 'warning');
             }
         } catch (error) {
             console.error('Error loading data:', error);
             this.showNoDataState();
+            showNotification('Failed to load demographic data. Please try again.', 'error');
         }
     }
 
@@ -712,8 +738,9 @@ class DemographicsManager {
         const total = Object.values(genderDist).reduce((sum, count) => sum + count, 0);
 
         if (total > 0) {
-            const maleCount = genderDist.male || 0;
-            const femaleCount = genderDist.female || 0;
+            // Handle both capitalized and lowercase keys from database
+            const maleCount = genderDist.Male || genderDist.male || 0;
+            const femaleCount = genderDist.Female || genderDist.female || 0;
             const malePercent = ((maleCount / total) * 100).toFixed(1);
             const femalePercent = ((femaleCount / total) * 100).toFixed(1);
 
@@ -825,8 +852,15 @@ class DemographicsManager {
         }
 
         const genderData = data.gender_distribution || {};
-        const labels = Object.keys(genderData).map(key => key.charAt(0).toUpperCase() + key.slice(1));
-        const values = Object.values(genderData);
+        // Normalize gender keys to handle both capitalized and lowercase
+        const normalizedGenderData = {};
+        Object.entries(genderData).forEach(([key, value]) => {
+            const normalizedKey = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+            normalizedGenderData[normalizedKey] = value;
+        });
+
+        const labels = Object.keys(normalizedGenderData);
+        const values = Object.values(normalizedGenderData);
 
         const genderConfig = {
             type: 'doughnut',
@@ -1330,6 +1364,27 @@ class DemographicsManager {
         this.attachToolbar('comprehensive-trends-chart', this.charts.comprehensiveTrends);
     }
 
+    getFilterParams() {
+        const timeMap = { '1h': 1, '6h': 6, '24h': 24, '7d': 168, '30d': 720 };
+        const timeRange = document.getElementById('time-range').value || '30d';
+        const ageFilter = document.getElementById('age-filter').value || 'all';
+        const genderFilter = document.getElementById('gender-filter').value || 'all';
+
+        const params = {
+            hours: timeMap[timeRange] || 720  // Default to 30 days
+        };
+
+        if (ageFilter !== 'all') {
+            params.age_filter = ageFilter;
+        }
+
+        if (genderFilter !== 'all') {
+            params.gender_filter = genderFilter;
+        }
+
+        return params;
+    }
+
     getHoursFromRange() {
         const range = document.getElementById('time-range').value;
         const map = {
@@ -1339,7 +1394,7 @@ class DemographicsManager {
             '7d': 168,
             '30d': 720
         };
-        return map[range] || 24;
+        return map[range] || 720;  // Default to 30 days
     }
 
     showNoDataState() {
@@ -1352,10 +1407,7 @@ class DemographicsManager {
         this.charts = {};
     }
 
-    initializeTable() {
-        // Table functionality would go here
-        console.log('Table initialized');
-    }
+
 
     attachToolbar(chartId, chart) {
         // Toolbar functionality would go here

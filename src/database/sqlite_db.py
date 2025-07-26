@@ -24,7 +24,7 @@ class SQLiteDatabase:
     def __init__(self, config):
         """
         Initialize SQLite database connection
-        
+
         Args:
             config (dict): Database configuration dictionary
         """
@@ -33,8 +33,10 @@ class SQLiteDatabase:
         self.conn = None
         self.cursor = None
         self._local = threading.local()
-        self._lock = threading.Lock()
-        
+        self._lock = threading.RLock()  # Use RLock for nested locking
+        self._connection_pool = {}  # Simple connection pool
+        self._pool_lock = threading.Lock()
+
         # Initialize database
         self._init_db()
         
@@ -1687,7 +1689,10 @@ class SQLiteDatabase:
                 conversion_rate = min(95, max(20, 30 + (avg_dwell_time * 2)))
             else:
                 conversion_rate = 0  # No data available
-            
+
+            # Get peak hour based on last 30 days
+            peak_hour = self.get_peak_hour_last_30_days()
+
             return {
                 "success": True,
                 "period_hours": hours,
@@ -1695,6 +1700,7 @@ class SQLiteDatabase:
                 "total_detections": total_detections,
                 "avg_dwell_time": avg_dwell_time,
                 "conversion_rate": round(conversion_rate, 1),
+                "peak_hour": peak_hour,
                 "gender_ratio": gender_ratio,
                 "gender_distribution": gender_summary,
                 "age_groups": age_groups,
@@ -1802,7 +1808,420 @@ class SQLiteDatabase:
                 "message": f"Failed to get hourly traffic: {str(e)}"
             }
 
-    
+    def get_peak_hour_last_30_days(self):
+        """
+        Calculate peak hour based on the last 30 days of data
+
+        Returns:
+            str: Peak hour in HH:MM format
+        """
+        try:
+            from datetime import timedelta
+
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
+            # Calculate time range for last 30 days
+            end_time = datetime.now()
+            start_time = end_time - timedelta(days=30)
+
+            # Get hourly visitor counts for last 30 days
+            cursor.execute('''
+                SELECT strftime('%H', timestamp) as hour,
+                       COUNT(DISTINCT person_id) as visitors
+                FROM detections
+                WHERE timestamp >= ? AND timestamp <= ?
+                GROUP BY strftime('%H', timestamp)
+                ORDER BY visitors DESC, hour ASC
+                LIMIT 1
+            ''', (start_time, end_time))
+
+            result = cursor.fetchone()
+            if result and result[0] is not None:
+                hour = int(result[0])
+                return f"{hour:02d}:00"
+            else:
+                return "--:--"
+
+        except Exception as e:
+            logger.error(f"Error calculating peak hour for last 30 days: {e}")
+            return "--:--"
+
+    def get_weekly_patterns(self, hours=24):
+        """
+        Get visitor patterns by day of week
+
+        Args:
+            hours (int): Number of hours to look back
+
+        Returns:
+            dict: Weekly patterns data
+        """
+        try:
+            from datetime import timedelta
+
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
+            # Calculate time range
+            end_time = datetime.now()
+            start_time = end_time - timedelta(hours=hours)
+
+            # Get visitor counts by day of week
+            cursor.execute('''
+                SELECT
+                    CASE strftime('%w', timestamp)
+                        WHEN '0' THEN 'Sunday'
+                        WHEN '1' THEN 'Monday'
+                        WHEN '2' THEN 'Tuesday'
+                        WHEN '3' THEN 'Wednesday'
+                        WHEN '4' THEN 'Thursday'
+                        WHEN '5' THEN 'Friday'
+                        WHEN '6' THEN 'Saturday'
+                    END as day_name,
+                    strftime('%w', timestamp) as day_num,
+                    COUNT(DISTINCT person_id) as visitors
+                FROM detections
+                WHERE timestamp >= ? AND timestamp <= ?
+                GROUP BY strftime('%w', timestamp)
+                ORDER BY day_num
+            ''', (start_time, end_time))
+
+            results = cursor.fetchall()
+
+            # Initialize all days with 0
+            days_order = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+            weekly_data = {day: 0 for day in days_order}
+
+            # Fill in actual data
+            for row in results:
+                if row[0]:  # day_name
+                    weekly_data[row[0]] = row[2]  # visitors
+
+            return {
+                "success": True,
+                "period_hours": hours,
+                "labels": days_order,
+                "data": [weekly_data[day] for day in days_order],
+                "weekly_data": weekly_data
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting weekly patterns: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to get weekly patterns: {str(e)}"
+            }
+
+    def get_peak_hour_analysis_by_day(self, days=30):
+        """
+        Get average peak hours by day of week over specified period
+
+        Args:
+            days (int): Number of days to analyze
+
+        Returns:
+            dict: Peak hour analysis by day
+        """
+        try:
+            from datetime import timedelta
+
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
+            # Calculate time range
+            end_time = datetime.now()
+            start_time = end_time - timedelta(days=days)
+
+            # Get peak hour for each day occurrence
+            cursor.execute('''
+                WITH daily_hourly_counts AS (
+                    SELECT
+                        DATE(timestamp) as date,
+                        strftime('%w', timestamp) as day_of_week,
+                        strftime('%H', timestamp) as hour,
+                        COUNT(DISTINCT person_id) as visitors
+                    FROM detections
+                    WHERE timestamp >= ? AND timestamp <= ?
+                    GROUP BY DATE(timestamp), strftime('%H', timestamp)
+                ),
+                daily_peaks AS (
+                    SELECT
+                        date,
+                        day_of_week,
+                        hour,
+                        visitors,
+                        ROW_NUMBER() OVER (PARTITION BY date ORDER BY visitors DESC, hour ASC) as rn
+                    FROM daily_hourly_counts
+                )
+                SELECT
+                    CASE day_of_week
+                        WHEN '0' THEN 'Sunday'
+                        WHEN '1' THEN 'Monday'
+                        WHEN '2' THEN 'Tuesday'
+                        WHEN '3' THEN 'Wednesday'
+                        WHEN '4' THEN 'Thursday'
+                        WHEN '5' THEN 'Friday'
+                        WHEN '6' THEN 'Saturday'
+                    END as day_name,
+                    day_of_week,
+                    CAST(hour AS INTEGER) as peak_hour,
+                    AVG(CAST(hour AS INTEGER)) as avg_peak_hour,
+                    AVG(visitors) as avg_visitors,
+                    COUNT(*) as occurrences
+                FROM daily_peaks
+                WHERE rn = 1
+                GROUP BY day_of_week
+                ORDER BY day_of_week
+            ''', (start_time, end_time))
+
+            results = cursor.fetchall()
+
+            # Initialize all days
+            days_order = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+            peak_hours_by_day = {}
+            averages_by_day = {}
+
+            for row in results:
+                if row[0]:  # day_name
+                    day_name = row[0]
+                    avg_peak_hour = row[3]  # avg_peak_hour
+                    avg_visitors = row[4]   # avg_visitors
+
+                    peak_hours_by_day[day_name] = f"{int(avg_peak_hour):02d}:00"
+                    averages_by_day[day_name] = round(avg_visitors, 1)
+
+            # Fill missing days with default values
+            for day in days_order:
+                if day not in peak_hours_by_day:
+                    peak_hours_by_day[day] = "--:--"
+                    averages_by_day[day] = 0
+
+            return {
+                "success": True,
+                "period_days": days,
+                "peak_hours_by_day": peak_hours_by_day,
+                "averages_by_day": averages_by_day,
+                "labels": days_order,
+                "data": [averages_by_day[day] for day in days_order]
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting peak hour analysis by day: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to get peak hour analysis: {str(e)}"
+            }
+
+    def get_historical_demographics(self, hours=24):
+        """
+        Get demographic data for historical analysis
+
+        Args:
+            hours (int): Number of hours to look back
+
+        Returns:
+            dict: Historical demographics data
+        """
+        try:
+            from datetime import timedelta
+
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
+            # Calculate time range
+            end_time = datetime.now()
+            start_time = end_time - timedelta(hours=hours)
+
+            # Get age group distribution
+            cursor.execute('''
+                SELECT ag.group_name, COUNT(*) as count
+                FROM demographics dm
+                JOIN age_groups ag ON dm.age_group_id = ag.id
+                WHERE dm.timestamp >= ? AND dm.timestamp <= ?
+                GROUP BY ag.id, ag.group_name
+                ORDER BY ag.display_order
+            ''', (start_time, end_time))
+
+            age_results = cursor.fetchall()
+            age_groups = {}
+            for row in age_results:
+                age_groups[row[0]] = {
+                    'display_name': row[0],  # Use group_name as display_name
+                    'count': row[1]
+                }
+
+            # Get gender distribution
+            cursor.execute('''
+                SELECT g.gender_name, g.display_name, COUNT(*) as count
+                FROM demographics dm
+                JOIN genders g ON dm.gender_id = g.id
+                WHERE dm.timestamp >= ? AND dm.timestamp <= ?
+                GROUP BY g.id, g.gender_name, g.display_name
+                ORDER BY g.id
+            ''', (start_time, end_time))
+
+            gender_results = cursor.fetchall()
+            gender_distribution = {}
+            for row in gender_results:
+                gender_distribution[row[0]] = {
+                    'display_name': row[1],
+                    'count': row[2]
+                }
+
+            # Get emotion distribution
+            cursor.execute('''
+                SELECT e.emotion_name, e.display_name, COUNT(*) as count
+                FROM demographics dm
+                JOIN emotions e ON dm.emotion_id = e.id
+                WHERE dm.timestamp >= ? AND dm.timestamp <= ?
+                GROUP BY e.id, e.emotion_name, e.display_name
+                ORDER BY e.id
+            ''', (start_time, end_time))
+
+            emotion_results = cursor.fetchall()
+            emotions = {}
+            for row in emotion_results:
+                emotions[row[0]] = {
+                    'display_name': row[1],
+                    'count': row[2]
+                }
+
+            return {
+                "success": True,
+                "period_hours": hours,
+                "age_groups": age_groups,
+                "gender_distribution": gender_distribution,
+                "emotions": emotions,
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat()
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting historical demographics: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to get historical demographics: {str(e)}"
+            }
+
+    def get_historical_dwell_time_stats(self, hours=24):
+        """
+        Get dwell time statistics for historical analysis
+
+        Args:
+            hours (int): Number of hours to look back
+
+        Returns:
+            dict: Dwell time statistics and trends
+        """
+        try:
+            from datetime import timedelta
+            import statistics
+
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
+            # Calculate time range
+            end_time = datetime.now()
+            start_time = end_time - timedelta(hours=hours)
+
+            # Get dwell time data
+            cursor.execute('''
+                SELECT
+                    total_time,
+                    strftime('%H', start_time) as hour,
+                    DATE(start_time) as date
+                FROM dwell_times
+                WHERE start_time >= ? AND start_time <= ?
+                AND total_time IS NOT NULL
+                AND total_time > 0
+                ORDER BY start_time
+            ''', (start_time, end_time))
+
+            results = cursor.fetchall()
+
+            if not results:
+                return {
+                    "success": True,
+                    "period_hours": hours,
+                    "avg_dwell_time": 0,
+                    "median_dwell_time": 0,
+                    "total_sessions": 0,
+                    "distribution": [],
+                    "hourly_trends": {},
+                    "start_time": start_time.isoformat(),
+                    "end_time": end_time.isoformat()
+                }
+
+            # Calculate basic statistics
+            dwell_times = [row[0] for row in results]
+            avg_dwell_time = statistics.mean(dwell_times)
+            median_dwell_time = statistics.median(dwell_times)
+            total_sessions = len(dwell_times)
+
+            # Create distribution buckets (in minutes)
+            distribution_buckets = {
+                "0-2 min": 0,
+                "2-5 min": 0,
+                "5-10 min": 0,
+                "10-20 min": 0,
+                "20+ min": 0
+            }
+
+            for dwell_time in dwell_times:
+                minutes = dwell_time / 60  # Convert seconds to minutes
+                if minutes < 2:
+                    distribution_buckets["0-2 min"] += 1
+                elif minutes < 5:
+                    distribution_buckets["2-5 min"] += 1
+                elif minutes < 10:
+                    distribution_buckets["5-10 min"] += 1
+                elif minutes < 20:
+                    distribution_buckets["10-20 min"] += 1
+                else:
+                    distribution_buckets["20+ min"] += 1
+
+            # Calculate hourly trends
+            hourly_data = {}
+            for row in results:
+                hour = row[1]
+                dwell_time = row[0]
+                if hour not in hourly_data:
+                    hourly_data[hour] = []
+                hourly_data[hour].append(dwell_time)
+
+            hourly_trends = {}
+            for hour in range(24):
+                hour_str = f"{hour:02d}:00"
+                if f"{hour:02d}" in hourly_data:
+                    hour_dwell_times = hourly_data[f"{hour:02d}"]
+                    hourly_trends[hour_str] = round(statistics.mean(hour_dwell_times) / 60, 1)  # Convert to minutes
+                else:
+                    hourly_trends[hour_str] = 0
+
+            return {
+                "success": True,
+                "period_hours": hours,
+                "avg_dwell_time": round(avg_dwell_time / 60, 1),  # Convert to minutes
+                "median_dwell_time": round(median_dwell_time / 60, 1),  # Convert to minutes
+                "total_sessions": total_sessions,
+                "distribution": {
+                    "labels": list(distribution_buckets.keys()),
+                    "data": list(distribution_buckets.values())
+                },
+                "hourly_trends": hourly_trends,
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat()
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting historical dwell time stats: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to get dwell time statistics: {str(e)}"
+            }
+
+
     def close(self):
         """Close database connection"""
         try:
@@ -2500,7 +2919,7 @@ class SQLiteDatabase:
             
             # Build the base query with proper joins to lookup tables
             base_query = '''
-                SELECT 
+                SELECT
                     d.id,
                     d.person_id,
                     d.timestamp,
@@ -2510,7 +2929,7 @@ class SQLiteDatabase:
                     r.display_name as race,
                     e.display_name as emotion,
                     d.confidence,
-                    dt.total_time as dwell_time,
+                    COALESCE(dt.total_time, 0) as dwell_time,
                     p.first_detected,
                     p.last_detected
                 FROM demographics d
@@ -2519,7 +2938,7 @@ class SQLiteDatabase:
                 JOIN genders g ON d.gender_id = g.id
                 LEFT JOIN races r ON d.race_id = r.id
                 LEFT JOIN emotions e ON d.emotion_id = e.id
-                LEFT JOIN dwell_times dt ON d.detection_id = dt.detection_id
+                LEFT JOIN dwell_times dt ON d.person_id = dt.person_id
                 WHERE d.timestamp >= ? AND d.timestamp <= ?
             '''
             

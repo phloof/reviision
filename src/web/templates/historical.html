@@ -115,10 +115,7 @@
                     <i class="fas fa-clock mr-2"></i>
                     Dwell Time
                 </a>
-                <a class="nav-link" href="#reports" data-section="reports">
-                    <i class="fas fa-file-alt mr-2"></i>
-                    Reports
-                </a>
+
             </nav>
         </div>
     </div>
@@ -131,12 +128,14 @@
         </h3>
         <div class="d-grid grid-cols-1 tablet-grid-cols-2 desktop-grid-cols-4 gap-4">
             <div class="form-group">
-                <label for="start-date" class="form-label">Start Date</label>
-                <input type="date" class="form-control" id="start-date">
-            </div>
-            <div class="form-group">
-                <label for="end-date" class="form-label">End Date</label>
-                <input type="date" class="form-control" id="end-date">
+                <label for="date-range" class="form-label">Time Range</label>
+                <select class="form-control" id="date-range">
+                    <option value="1h">Last Hour</option>
+                    <option value="6h">Last 6 Hours</option>
+                    <option value="24h">Last 24 Hours</option>
+                    <option value="7d">Last 7 Days</option>
+                    <option value="30d" selected>Last 30 Days</option>
+                </select>
             </div>
             <div class="form-group">
                 <label for="time-granularity" class="form-label">Time Granularity</label>
@@ -148,7 +147,13 @@
                 </select>
             </div>
             <div class="form-group d-flex items-end">
-                <button class="btn btn-primary w-full" id="apply-date-filter">
+                <button class="btn btn-primary w-full" id="refresh-data">
+                    <i class="fas fa-sync-alt"></i>
+                    Refresh Data
+                </button>
+            </div>
+            <div class="form-group d-flex items-end">
+                <button class="btn btn-outline-primary w-full" id="apply-date-filter">
                     <i class="fas fa-search"></i>
                     Apply Filter
                 </button>
@@ -246,9 +251,9 @@
             <div class="d-grid grid-cols-1 desktop-grid-cols-2 gap-6">
                 <div class="card">
                     <div class="card-header card-header-warning">
-                        <h3 class="card-title">
-                            <i class="fas fa-calendar-week"></i>
-                            Weekly Patterns
+                        <h3 class="card-title" style="color: white;">
+                            <i class="fas fa-calendar-week" style="color: white;"></i>
+                            <span style="color: white;">Weekly Patterns</span>
                         </h3>
                     </div>
                     <div class="card-body">
@@ -260,9 +265,9 @@
 
                 <div class="card">
                     <div class="card-header card-header-danger">
-                        <h3 class="card-title">
-                            <i class="fas fa-chart-bar"></i>
-                            Peak Hours Analysis
+                        <h3 class="card-title" style="color: white;">
+                            <i class="fas fa-chart-bar" style="color: white;"></i>
+                            <span style="color: white;">Peak Hours Analysis</span>
                         </h3>
                     </div>
                     <div class="card-body">
@@ -293,9 +298,9 @@
 
                 <div class="card">
                     <div class="card-header card-header-success">
-                        <h3 class="card-title">
-                            <i class="fas fa-venus-mars"></i>
-                            Gender Distribution Trends
+                        <h3 class="card-title" style="color: white;">
+                            <i class="fas fa-venus-mars" style="color: white;"></i>
+                            <span style="color: white;">Gender Distribution Trends</span>
                         </h3>
                     </div>
                     <div class="card-body">
@@ -311,9 +316,9 @@
         <div id="dwell-section" class="content-section d-none">
             <div class="card mb-6">
                 <div class="card-header card-header-warning">
-                    <h3 class="card-title">
-                        <i class="fas fa-clock"></i>
-                        Dwell Time Analysis
+                    <h3 class="card-title" style="color: white;">
+                        <i class="fas fa-clock" style="color: white;"></i>
+                        <span style="color: white;">Dwell Time Analysis</span>
                     </h3>
                 </div>
                 <div class="card-body">
@@ -324,41 +329,7 @@
             </div>
         </div>
 
-        <!-- Reports Section -->
-        <div id="reports-section" class="content-section d-none">
-            <div class="card">
-                <div class="card-header card-header-primary">
-                    <h3 class="card-title">
-                        <i class="fas fa-file-alt"></i>
-                        Generate Reports
-                    </h3>
-                </div>
-                <div class="card-body">
-                    <div class="data-export-section mb-6">
-                        <h4 class="text-lg font-semibold mb-4">Export Options</h4>
-                        <div class="d-flex flex-wrap gap-3">
-                            <button class="btn btn-outline-primary" id="export-csv">
-                                <i class="fas fa-file-csv"></i>
-                                Export CSV
-                            </button>
-                            <button class="btn btn-outline-primary" id="export-pdf">
-                                <i class="fas fa-file-pdf"></i>
-                                Export PDF
-                            </button>
-                            <button class="btn btn-outline-primary" id="export-excel">
-                                <i class="fas fa-file-excel"></i>
-                                Export Excel
-                            </button>
-                        </div>
-                    </div>
 
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        Reports will include data from the selected date range and applied filters.
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -444,12 +415,17 @@ class HistoricalDataManager {
         document.getElementById('date-range').addEventListener('change', () => {
             this.loadData();
         });
-        
+
         // Refresh button
         document.getElementById('refresh-data').addEventListener('click', () => {
             this.loadData(true);
         });
-        
+
+        // Apply filter button (for compatibility)
+        document.getElementById('apply-date-filter').addEventListener('click', () => {
+            this.loadData(true);
+        });
+
         // Tab changes
         document.querySelectorAll('[data-bs-toggle="pill"]').forEach(tab => {
             tab.addEventListener('shown.bs.tab', (e) => {
@@ -537,10 +513,12 @@ class HistoricalDataManager {
     
     updateCharts(data) {
         this.createOverviewChart(data);
+        this.createHourlyChart(data);
         this.createTrafficChart(data);
-        this.createWeeklyChart(data);
-        this.createGenderChart(data);
-        this.createAgeChart(data);
+        this.createWeeklyPatternsChart(data);
+        this.createPeakHourAnalysisChart(data);
+        this.createHistoricalDemographicsCharts(data);
+        this.createDwellTimeChart(data);
     }
     
     createOverviewChart(data) {
@@ -585,6 +563,77 @@ class HistoricalDataManager {
         };
         this.charts.overview = new ChartManager(ctx, overviewConfig, { filename: 'overview_traffic' });
     }
+
+    createHourlyChart(data) {
+        const ctx = document.getElementById('hourly-chart');
+        if (!ctx) return;
+
+        if (this.charts.hourly) {
+            this.charts.hourly.destroy();
+        }
+
+        const traffic = data.traffic || {};
+        const labels = traffic.labels || [];
+        const values = traffic.data || [];
+
+        // Find peak hour for highlighting
+        const maxValue = Math.max(...values);
+        const peakIndex = values.indexOf(maxValue);
+
+        // Create background colors array with peak hour highlighted
+        const backgroundColors = values.map((value, index) =>
+            index === peakIndex ? '#e74c3c' : '#3498db'
+        );
+
+        const hourlyConfig = {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Visitors',
+                    data: values,
+                    backgroundColor: backgroundColors,
+                    borderColor: backgroundColors.map(color => color === '#e74c3c' ? '#c0392b' : '#2980b9'),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function(context) {
+                                if (context.dataIndex === peakIndex) {
+                                    return 'Peak Hour';
+                                }
+                                return '';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Visitors'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Hour of Day'
+                        }
+                    }
+                }
+            }
+        };
+        this.charts.hourly = new ChartManager(ctx, hourlyConfig, { filename: 'hourly_distribution' });
+    }
     
     createTrafficChart(data) {
         const ctx = document.getElementById('traffic-chart');
@@ -623,28 +672,23 @@ class HistoricalDataManager {
         this.charts.traffic = new ChartManager(ctx, trafficConfig, { filename: 'traffic_by_hour' });
     }
     
-    createWeeklyChart(data) {
-        const ctx = document.getElementById('weekly-chart');
+    createWeeklyPatternsChart(data) {
+        const ctx = document.getElementById('weekly-patterns-chart');
         if (!ctx) return;
-        
-        if (this.charts.weekly) {
-            this.charts.weekly.destroy();
+
+        if (this.charts.weeklyPatterns) {
+            this.charts.weeklyPatterns.destroy();
         }
-        
-        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-        const values = new Array(7).fill(0);
-        
-        // Aggregate data by day of week if available
-        if (data.traffic && data.traffic.data) {
-            data.traffic.data.forEach((value, index) => {
-                values[index % 7] += value;
-            });
-        }
-        
+
+        // Use new weekly patterns data if available
+        const weeklyData = data.weekly_patterns || {};
+        const labels = weeklyData.labels || ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const values = weeklyData.data || new Array(7).fill(0);
+
         const weeklyConfig = {
             type: 'bar',
             data: {
-                labels: days,
+                labels: labels,
                 datasets: [{
                     label: 'Daily Visitors',
                     data: values,
@@ -656,35 +700,55 @@ class HistoricalDataManager {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
                 scales: {
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Visitors'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Day of Week'
+                        }
                     }
                 }
             }
         };
-        this.charts.weekly = new ChartManager(ctx, weeklyConfig, { filename: 'weekly_patterns' });
+        this.charts.weeklyPatterns = new ChartManager(ctx, weeklyConfig, { filename: 'weekly_patterns' });
     }
-    
-    createGenderChart(data) {
-        const ctx = document.getElementById('gender-chart');
+
+    createPeakHourAnalysisChart(data) {
+        const ctx = document.getElementById('peak-hours-chart');
         if (!ctx) return;
-        
-        if (this.charts.gender) {
-            this.charts.gender.destroy();
+
+        if (this.charts.peakHours) {
+            this.charts.peakHours.destroy();
         }
-        
-        const genderData = data.gender_distribution || {};
-        const labels = Object.keys(genderData);
-        const values = Object.values(genderData);
-        
-        const genderConfig = {
-            type: 'doughnut',
+
+        // Use peak hour analysis data if available
+        const peakHourData = data.peak_hour_analysis || {};
+        const labels = peakHourData.labels || ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const averages = peakHourData.data || new Array(7).fill(0);
+        const peakHours = peakHourData.peak_hours_by_day || {};
+
+        const peakHourConfig = {
+            type: 'bar',
             data: {
                 labels: labels,
                 datasets: [{
-                    data: values,
-                    backgroundColor: ['#3498db', '#e74c3c', '#f39c12']
+                    label: 'Average Peak Hour Visitors',
+                    data: averages,
+                    backgroundColor: '#e74c3c',
+                    borderColor: '#c0392b',
+                    borderWidth: 1
                 }]
             },
             options: {
@@ -692,26 +756,122 @@ class HistoricalDataManager {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: 'bottom'
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function(context) {
+                                const day = labels[context.dataIndex];
+                                const peakHour = peakHours[day] || '--:--';
+                                return `Peak Hour: ${peakHour}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Average Visitors at Peak Hour'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Day of Week'
+                        }
                     }
                 }
             }
         };
-        this.charts.gender = new ChartManager(ctx, genderConfig, { filename: 'gender_distribution_hist' });
+        this.charts.peakHours = new ChartManager(ctx, peakHourConfig, { filename: 'peak_hour_analysis' });
     }
-    
-    createAgeChart(data) {
-        const ctx = document.getElementById('age-chart');
+
+    createHistoricalDemographicsCharts(data) {
+        this.createHistoricalGenderChart(data);
+        this.createHistoricalAgeChart(data);
+    }
+
+    createHistoricalGenderChart(data) {
+        const ctx = document.getElementById('gender-trends-chart');
         if (!ctx) return;
-        
-        if (this.charts.age) {
-            this.charts.age.destroy();
+
+        if (this.charts.genderTrends) {
+            this.charts.genderTrends.destroy();
         }
-        
-        const ageData = data.age_groups || {};
-        const labels = Object.keys(ageData);
-        const values = Object.values(ageData);
-        
+
+        // Use historical demographics data if available
+        const demographicsData = data.historical_demographics || {};
+        const genderData = demographicsData.gender_distribution || data.gender_distribution || {};
+
+        const labels = [];
+        const values = [];
+        const colors = ['#3498db', '#e74c3c', '#f39c12', '#2ecc71'];
+
+        Object.entries(genderData).forEach(([key, value]) => {
+            if (typeof value === 'object' && value.display_name) {
+                labels.push(value.display_name);
+                values.push(value.count);
+            } else {
+                labels.push(key.charAt(0).toUpperCase() + key.slice(1));
+                values.push(value);
+            }
+        });
+
+        const genderConfig = {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors.slice(0, labels.length),
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        };
+        this.charts.genderTrends = new ChartManager(ctx, genderConfig, { filename: 'gender_distribution_historical' });
+    }
+
+    createHistoricalAgeChart(data) {
+        const ctx = document.getElementById('age-trends-chart');
+        if (!ctx) return;
+
+        if (this.charts.ageTrends) {
+            this.charts.ageTrends.destroy();
+        }
+
+        // Use historical demographics data if available
+        const demographicsData = data.historical_demographics || {};
+        const ageData = demographicsData.age_groups || data.age_groups || {};
+
+        const labels = [];
+        const values = [];
+
+        Object.entries(ageData).forEach(([key, value]) => {
+            if (typeof value === 'object' && value.display_name) {
+                labels.push(value.display_name);
+                values.push(value.count);
+            } else {
+                labels.push(key.replace('_', '-'));
+                values.push(value);
+            }
+        });
+
         const ageConfig = {
             type: 'bar',
             data: {
@@ -734,12 +894,130 @@ class HistoricalDataManager {
                 },
                 scales: {
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Visitors'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Age Group'
+                        }
                     }
                 }
             }
         };
-        this.charts.age = new ChartManager(ctx, ageConfig, { filename: 'age_distribution_hist' });
+        this.charts.ageTrends = new ChartManager(ctx, ageConfig, { filename: 'age_distribution_historical' });
+    }
+
+    createDwellTimeChart(data) {
+        const ctx = document.getElementById('dwell-time-chart');
+        if (!ctx) return;
+
+        if (this.charts.dwellTime) {
+            this.charts.dwellTime.destroy();
+        }
+
+        // Use dwell time statistics data if available
+        const dwellTimeData = data.dwell_time_stats || {};
+        const distribution = dwellTimeData.distribution || data.dwell_time_distribution || {};
+        const hourlyTrends = dwellTimeData.hourly_trends || {};
+
+        // Create distribution chart if we have distribution data
+        if (distribution.labels && distribution.data) {
+            const dwellConfig = {
+                type: 'bar',
+                data: {
+                    labels: distribution.labels,
+                    datasets: [{
+                        label: 'Number of Sessions',
+                        data: distribution.data,
+                        backgroundColor: '#f39c12',
+                        borderColor: '#e67e22',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Dwell Time Distribution'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Sessions'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Dwell Time Range'
+                            }
+                        }
+                    }
+                }
+            };
+            this.charts.dwellTime = new ChartManager(ctx, dwellConfig, { filename: 'dwell_time_distribution' });
+        } else if (Object.keys(hourlyTrends).length > 0) {
+            // Create hourly trends chart if we have hourly data
+            const hours = Object.keys(hourlyTrends).sort();
+            const values = hours.map(hour => hourlyTrends[hour]);
+
+            const dwellConfig = {
+                type: 'line',
+                data: {
+                    labels: hours,
+                    datasets: [{
+                        label: 'Average Dwell Time (minutes)',
+                        data: values,
+                        borderColor: '#f39c12',
+                        backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Dwell Time Trends by Hour'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Average Dwell Time (minutes)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Hour of Day'
+                            }
+                        }
+                    }
+                }
+            };
+            this.charts.dwellTime = new ChartManager(ctx, dwellConfig, { filename: 'dwell_time_trends' });
+        }
     }
     
     getHoursFromRange() {

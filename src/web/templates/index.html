@@ -347,7 +347,7 @@ const api = {
 };
 
 // Chart instances to allow destroy/redraw
-let trafficChartInstance, demographicsChartInstance;
+let trafficChartInstance, demographicsChartInstance, ageChartInstance, genderChartInstance;
 
 function getFilterParams() {
     const timeMap = { '1h': 1, '6h': 6, '24h': 24, '7d': 168, '30d': 720 };
@@ -384,8 +384,38 @@ async function refreshDashboard() {
 
     try {
         const [summaryRes, trafficRes] = await Promise.all([
-            fetch(api.summary(filterParams)).then(r=>r.json()).catch(()=>({success:false})),
-            fetch(api.traffic(filterParams)).then(r=>r.json()).catch(()=>({success:false}))
+            fetch(api.summary(filterParams), {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' }
+            }).then(async r => {
+                if (r.status === 401 || r.status === 403) {
+                    window.location.href = '/login';
+                    return { success: false };
+                }
+                const contentType = r.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    window.location.href = '/login';
+                    return { success: false };
+                }
+                return r.json();
+            }).catch(() => ({ success: false })),
+            fetch(api.traffic(filterParams), {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' }
+            }).then(async r => {
+                if (r.status === 401 || r.status === 403) {
+                    window.location.href = '/login';
+                    return { success: false };
+                }
+                const contentType = r.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    window.location.href = '/login';
+                    return { success: false };
+                }
+                return r.json();
+            }).catch(() => ({ success: false }))
         ]);
 
         // Update stat cards
@@ -395,6 +425,8 @@ async function refreshDashboard() {
             document.getElementById('conversion-rate').textContent = summaryRes.conversion_rate ? summaryRes.conversion_rate+'%' : '--';
             document.getElementById('gender-ratio').textContent = summaryRes.gender_ratio || '--';
             drawDemographics(summaryRes.age_groups || {}, summaryRes.gender_distribution || {});
+            drawAge(summaryRes.age_groups || {});
+            drawGender(summaryRes.gender_distribution || {});
         }
         drawTraffic(trafficRes);
 
@@ -514,6 +546,146 @@ function drawDemographics(ageData,genderData){
 
     demographicsChartInstance = new ChartManager(demographicsCanvas, demographicsCfg, {filename: 'demographics_overview'});
     attachToolbar('demographicsChart', demographicsChartInstance);
+}
+
+function drawAge(ageData) {
+    const ageCanvas = document.getElementById('ageChart');
+    if (!ageCanvas) return;
+
+    if (ageChartInstance) ageChartInstance.destroy();
+
+    const hasData = ageData && Object.keys(ageData).length > 0;
+
+    if (!hasData) {
+        // Show no data message
+        const ctx = ageCanvas.getContext('2d');
+        ctx.clearRect(0, 0, ageCanvas.width, ageCanvas.height);
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('No age data available', ageCanvas.width/2, ageCanvas.height/2);
+        return;
+    }
+
+    const ageConfig = {
+        type: 'bar',
+        data: {
+            labels: Object.keys(ageData),
+            datasets: [{
+                label: 'Age Distribution',
+                data: Object.values(ageData),
+                backgroundColor: [
+                    'rgba(52, 152, 219, 0.8)',
+                    'rgba(46, 204, 113, 0.8)',
+                    'rgba(155, 89, 182, 0.8)',
+                    'rgba(241, 196, 15, 0.8)',
+                    'rgba(230, 126, 34, 0.8)',
+                    'rgba(231, 76, 60, 0.8)',
+                    'rgba(149, 165, 166, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(52, 152, 219, 1)',
+                    'rgba(46, 204, 113, 1)',
+                    'rgba(155, 89, 182, 1)',
+                    'rgba(241, 196, 15, 1)',
+                    'rgba(230, 126, 34, 1)',
+                    'rgba(231, 76, 60, 1)',
+                    'rgba(149, 165, 166, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Visitors'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Age Groups'
+                    }
+                }
+            }
+        }
+    };
+
+    ageChartInstance = new ChartManager(ageCanvas, ageConfig, {filename: 'age_distribution'});
+    attachToolbar('ageChart', ageChartInstance);
+}
+
+function drawGender(genderData) {
+    const genderCanvas = document.getElementById('genderChart');
+    if (!genderCanvas) return;
+
+    if (genderChartInstance) genderChartInstance.destroy();
+
+    const hasData = genderData && Object.keys(genderData).length > 0;
+
+    if (!hasData) {
+        // Show no data message
+        const ctx = genderCanvas.getContext('2d');
+        ctx.clearRect(0, 0, genderCanvas.width, genderCanvas.height);
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('No gender data available', genderCanvas.width/2, genderCanvas.height/2);
+        return;
+    }
+
+    // Normalize gender keys to handle both capitalized and lowercase
+    const normalizedGenderData = {};
+    Object.entries(genderData).forEach(([key, value]) => {
+        const normalizedKey = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+        normalizedGenderData[normalizedKey] = value;
+    });
+
+    const genderConfig = {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(normalizedGenderData),
+            datasets: [{
+                label: 'Gender Distribution',
+                data: Object.values(normalizedGenderData),
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(255, 206, 86, 0.8)',
+                    'rgba(75, 192, 192, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    };
+
+    genderChartInstance = new ChartManager(genderCanvas, genderConfig, {filename: 'gender_distribution'});
+    attachToolbar('genderChart', genderChartInstance);
 }
 
 // Enhanced toolbar util with new controls and export dropdown

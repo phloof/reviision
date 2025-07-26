@@ -387,7 +387,7 @@
         <div class="card-header card-header-primary">
             <h3 class="card-title" style="color: white;">
                 <i class="fas fa-history" style="color: white;"></i>
-                Historical Data
+                Historical Data - Visitors per Hour
             </h3>
         </div>
         <div class="card-body">
@@ -412,6 +412,9 @@
     
     // Enable debug mode to see dwell time logs
     window.DEBUG_MODE = true;
+
+    // Historical chart instance
+    let historyChart = null;
     
     // Initialize on document ready
     document.addEventListener('DOMContentLoaded', function() {
@@ -453,6 +456,9 @@
             });
         });
         
+        // Initialize historical chart
+        initializeHistoricalChart();
+
         // Auto-start analysis by default
         setTimeout(() => {
             startAnalysis();
@@ -1260,6 +1266,174 @@
         ctx.globalAlpha = 1.0;
     }
     
+    // Historical Data Chart Functions
+    async function initializeHistoricalChart() {
+        try {
+            const response = await fetch('/api/historical-data');
+            const data = await response.json();
+            createHistoricalChart(data);
+        } catch (error) {
+            console.error('Error loading historical data:', error);
+            // Create empty chart with placeholder data
+            createHistoricalChart({});
+        }
+    }
+
+    function createHistoricalChart(data) {
+        const ctx = document.getElementById('historyChart');
+        if (!ctx) return;
+
+        // Destroy existing chart if it exists
+        if (historyChart) {
+            historyChart.destroy();
+        }
+
+        // Prepare data - use hourly data if available, otherwise create sample data
+        const hourlyData = data.hourly_distribution || {};
+        const labels = [];
+        const values = [];
+
+        if (Object.keys(hourlyData).length > 0) {
+            // Use real data
+            for (let hour = 0; hour < 24; hour++) {
+                const hourStr = hour.toString().padStart(2, '0') + ':00';
+                labels.push(hourStr);
+                values.push(hourlyData[hourStr] || 0);
+            }
+        } else {
+            // Create sample data for demonstration
+            for (let hour = 0; hour < 24; hour++) {
+                const hourStr = hour.toString().padStart(2, '0') + ':00';
+                labels.push(hourStr);
+                // Generate realistic sample data with peaks during business hours
+                let value = 0;
+                if (hour >= 8 && hour <= 18) {
+                    value = Math.floor(Math.random() * 50) + 10;
+                } else if (hour >= 19 && hour <= 22) {
+                    value = Math.floor(Math.random() * 30) + 5;
+                } else {
+                    value = Math.floor(Math.random() * 10);
+                }
+                values.push(value);
+            }
+        }
+
+        const config = {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Total Visitors',
+                    data: values,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                    pointBorderColor: 'white',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Hourly Visitor Distribution Throughout the Day',
+                        color: 'white',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            top: 10,
+                            bottom: 20
+                        }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: 'white',
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            title: function(context) {
+                                return 'Time: ' + context[0].label;
+                            },
+                            label: function(context) {
+                                return 'Visitors: ' + context.parsed.y;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time of Day (24-Hour Format)',
+                            color: 'white',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        ticks: {
+                            color: 'white',
+                            font: {
+                                size: 12
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Total Number of Visitors',
+                            color: 'white',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        ticks: {
+                            color: 'white',
+                            font: {
+                                size: 12
+                            },
+                            callback: function(value) {
+                                return Math.floor(value); // Show only whole numbers
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+        };
+
+        historyChart = new ChartManager(ctx, config, { filename: 'historical_data' });
+    }
+
     // Helper functions
     function getRandomInt(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;

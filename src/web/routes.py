@@ -1693,13 +1693,19 @@ def get_historical_analytics():
     """
     try:
         hours = int(request.args.get('hours', 24))
-        
+
         # Get analytics summary
         summary_data = analysis_service.get_analytics_summary(hours=hours)
-        
+
         # Get traffic data
         traffic_data = analysis_service.get_traffic_data(hours=hours)
-        
+
+        # Get additional historical data
+        weekly_patterns = analysis_service.database.get_weekly_patterns(hours=hours)
+        peak_hour_analysis = analysis_service.database.get_peak_hour_analysis_by_day(days=30)
+        historical_demographics = analysis_service.database.get_historical_demographics(hours=hours)
+        dwell_time_stats = analysis_service.database.get_historical_dwell_time_stats(hours=hours)
+
         # Combine the data as expected by the frontend
         combined_data = {
             "success": True,
@@ -1714,20 +1720,89 @@ def get_historical_analytics():
             "avg_age": summary_data.get("avg_age", 0),
             "traffic": traffic_data,
             "weekly_traffic": traffic_data,  # Frontend expects this field
-            "dwell_time_distribution": {
-                "0-30s": 20,
-                "30s-1m": 35,
-                "1-3m": 25,
-                "3-5m": 15,
-                "5m+": 5
-            },
+            "weekly_patterns": weekly_patterns,
+            "peak_hour_analysis": peak_hour_analysis,
+            "historical_demographics": historical_demographics,
+            "dwell_time_stats": dwell_time_stats,
+            "dwell_time_distribution": dwell_time_stats.get("distribution", {
+                "labels": ["0-2 min", "2-5 min", "5-10 min", "10-20 min", "20+ min"],
+                "data": [0, 0, 0, 0, 0]
+            }),
             "start_time": summary_data.get("start_time", ""),
             "end_time": summary_data.get("end_time", "")
         }
-        
+
         return jsonify(combined_data)
     except Exception as e:
         logger.error(f"Error getting historical analytics: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@web_bp.route('/api/analytics/weekly-patterns', methods=['GET'])
+@require_auth()
+def get_weekly_patterns():
+    """
+    Get weekly visitor patterns data
+    """
+    try:
+        hours = int(request.args.get('hours', 24))
+
+        # Get weekly patterns data from database
+        weekly_data = analysis_service.database.get_weekly_patterns(hours=hours)
+
+        return jsonify(weekly_data)
+    except Exception as e:
+        logger.error(f"Error getting weekly patterns: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@web_bp.route('/api/analytics/peak-hour-analysis', methods=['GET'])
+@require_auth()
+def get_peak_hour_analysis():
+    """
+    Get peak hour analysis by day of week
+    """
+    try:
+        days = int(request.args.get('days', 30))
+
+        # Get peak hour analysis data from database
+        peak_hour_data = analysis_service.database.get_peak_hour_analysis_by_day(days=days)
+
+        return jsonify(peak_hour_data)
+    except Exception as e:
+        logger.error(f"Error getting peak hour analysis: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@web_bp.route('/api/analytics/historical-demographics', methods=['GET'])
+@require_auth()
+def get_historical_demographics():
+    """
+    Get historical demographics data
+    """
+    try:
+        hours = int(request.args.get('hours', 24))
+
+        # Get historical demographics data from database
+        demographics_data = analysis_service.database.get_historical_demographics(hours=hours)
+
+        return jsonify(demographics_data)
+    except Exception as e:
+        logger.error(f"Error getting historical demographics: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@web_bp.route('/api/analytics/historical-dwell-time', methods=['GET'])
+@require_auth()
+def get_historical_dwell_time():
+    """
+    Get historical dwell time statistics
+    """
+    try:
+        hours = int(request.args.get('hours', 24))
+
+        # Get historical dwell time data from database
+        dwell_time_data = analysis_service.database.get_historical_dwell_time_stats(hours=hours)
+
+        return jsonify(dwell_time_data)
+    except Exception as e:
+        logger.error(f"Error getting historical dwell time: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
 # ============================================================================
