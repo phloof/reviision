@@ -43,10 +43,11 @@ paramiko>=3.3.0
 bcrypt>=4.0.1
 argon2-cffi>=23.1.0
 
-# Visualization and Analysis
+# Visualisation and Analysis
 plotly>=5.18.0
 seaborn>=0.13.0
 networkx>=3.2.0
+reportlab>=3.6.8
 
 # Utilities
 tqdm>=4.66.0
