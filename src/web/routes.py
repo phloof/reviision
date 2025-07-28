@@ -1706,12 +1706,14 @@ def get_historical_analytics():
         peak_hour_analysis = analysis_service.database.get_peak_hour_analysis_by_day(days=30)
         historical_demographics = analysis_service.database.get_historical_demographics(hours=hours)
         dwell_time_stats = analysis_service.database.get_historical_dwell_time_stats(hours=hours)
+        peak_day_data = analysis_service.database.get_peak_day_for_period(hours=hours)
 
         # Combine the data as expected by the frontend
         combined_data = {
             "success": True,
             "total_visitors": summary_data.get("total_visitors", 0),
-            "avg_dwell_time": summary_data.get("avg_dwell_time", 0),
+            "peak_day": peak_day_data.get("peak_date", "--"),
+            "peak_day_visitors": peak_day_data.get("peak_visitors", 0),
             "conversion_rate": summary_data.get("conversion_rate", 0),
             "peak_hour": summary_data.get("peak_hour", "--:--"),
             "gender_distribution": summary_data.get("gender_distribution", {}),

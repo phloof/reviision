@@ -65,6 +65,25 @@
     pointer-events: none;
 }
 
+.person-element {
+    position: absolute;
+    pointer-events: none;
+    z-index: 20;
+    box-sizing: border-box;
+}
+
+.person-info div {
+    color: white !important;
+}
+
+.person-label-container {
+    color: white !important;
+}
+
+.person-label-container * {
+    color: white !important;
+}
+
 .control-panel {
     background: var(--color-surface-primary);
     border-radius: var(--radius-xl);
@@ -249,14 +268,14 @@
                                     </label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="show-labels" checked>
+                                    <input class="form-check-input" type="checkbox" id="show-labels">
                                     <label class="form-check-label font-medium" for="show-labels">
                                         <i class="fas fa-tag text-success mr-2"></i>
                                         Labels
                                     </label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="show-metrics" checked>
+                                    <input class="form-check-input" type="checkbox" id="show-metrics">
                                     <label class="form-check-label font-medium" for="show-metrics">
                                         <i class="fas fa-chart-bar text-info mr-2"></i>
                                         Metrics
@@ -294,15 +313,15 @@
                                 <h4 class="text-lg font-semibold mb-4">Facial Analysis Options</h4>
                                 <div class="d-flex flex-wrap gap-4">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="show-age" checked>
+                                        <input class="form-check-input" type="checkbox" id="show-age">
                                         <label class="form-check-label font-medium" for="show-age">Age</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="show-gender" checked>
+                                        <input class="form-check-input" type="checkbox" id="show-gender">
                                         <label class="form-check-label font-medium" for="show-gender">Gender</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="show-emotion" checked>
+                                        <input class="form-check-input" type="checkbox" id="show-emotion">
                                         <label class="form-check-label font-medium" for="show-emotion">Emotion</label>
                                     </div>
                                 </div>
@@ -382,21 +401,6 @@
         </div>
     </div>
 
-    <!-- Historical Chart -->
-    <div class="card mt-6">
-        <div class="card-header card-header-primary">
-            <h3 class="card-title" style="color: white;">
-                <i class="fas fa-history" style="color: white;"></i>
-                Historical Data - Visitors per Hour
-            </h3>
-        </div>
-        <div class="card-body">
-            <div class="chart-container" style="height: 300px;">
-                <canvas id="historyChart"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
@@ -872,6 +876,13 @@
                 console.error('Overlay container not found!');
                 return;
             }
+
+            console.log('Overlay container info:', {
+                width: overlayContainer.offsetWidth,
+                height: overlayContainer.offsetHeight,
+                position: overlayContainer.style.position,
+                display: overlayContainer.style.display
+            });
             
             // Get actual analysis image display dimensions for proper scaling
             const analysisImage = document.getElementById('analysis-feed-image');
@@ -942,6 +953,12 @@
                 if (window.DEBUG_MODE) console.error('Unexpected response structure:', result);
                 return;
             }
+
+            console.log('Analysis result received:', {
+                peopleCount: result.detections.people.length,
+                people: result.detections.people,
+                frameInfo: result.frame_info
+            });
             
             // Calculate scaling factors from backend frame resolution to display resolution
             // Use actual frame info from backend instead of hardcoded 1280x720
@@ -970,20 +987,21 @@
                 
                 // Scale bounding box from backend resolution (1280x720) to display resolution
                 // Backend always sends [x, y, width, height] format
-                const scaledX = person.bbox[0] * scaleX;
-                const scaledY = person.bbox[1] * scaleY;
-                const scaledWidth = person.bbox[2] * scaleX;
-                const scaledHeight = person.bbox[3] * scaleY;
+                const scaledX = Math.max(0, person.bbox[0] * scaleX);
+                const scaledY = Math.max(0, person.bbox[1] * scaleY);
+                const scaledWidth = Math.max(20, person.bbox[2] * scaleX); // Minimum 20px width
+                const scaledHeight = Math.max(20, person.bbox[3] * scaleY); // Minimum 20px height
                 
-                if (window.DEBUG_MODE) {
-                    console.log(`Person ${personId} coordinates:`, {
-                        original: person.bbox,
-                        scaled: [scaledX, scaledY, scaledWidth, scaledHeight],
-                        scaleFactors: [scaleX, scaleY],
-                        displaySize: [displayWidth, displayHeight],
-                        backendResolution: [backendWidth, backendHeight]
-                    });
-                }
+                console.log(`Person ${personId} coordinates:`, {
+                    original: person.bbox,
+                    scaled: [scaledX, scaledY, scaledWidth, scaledHeight],
+                    scaleFactors: [scaleX, scaleY],
+                    displaySize: [displayWidth, displayHeight],
+                    backendResolution: [backendWidth, backendHeight],
+                    demographics: person.demographics,
+                    isVisible: scaledX >= 0 && scaledY >= 0 && scaledX < displayWidth && scaledY < displayHeight,
+                    isValidSize: scaledWidth > 0 && scaledHeight > 0
+                });
                 
                 // Find existing person data for continuity
                 const existingPerson = detectedObjects.find(obj => obj.id === personId);
@@ -1266,18 +1284,7 @@
         ctx.globalAlpha = 1.0;
     }
     
-    // Historical Data Chart Functions
-    async function initializeHistoricalChart() {
-        try {
-            const response = await fetch('/api/historical-data');
-            const data = await response.json();
-            createHistoricalChart(data);
-        } catch (error) {
-            console.error('Error loading historical data:', error);
-            // Create empty chart with placeholder data
-            createHistoricalChart({});
-        }
-    }
+
 
     function createHistoricalChart(data) {
         const ctx = document.getElementById('historyChart');
@@ -2037,7 +2044,8 @@
         console.log('Update detected objects:', {
             detectedObjects: detectedObjects.length,
             showBoxes,
-            showLabels
+            showLabels,
+            detectedObjectsData: detectedObjects
         });
         
         // Always show person elements for overlays to work, just control borders/labels
@@ -2071,13 +2079,12 @@
             if (personElement) {
                 // Update existing element smoothly
                 updatePersonElement(personElement, obj, showBoxes, showLabels);
+                console.log('Updated existing person element for ID:', obj.id, 'showBoxes:', showBoxes);
             } else {
                 // Create new element for new detection
                 personElement = createPersonElement(obj, showBoxes, showLabels);
                 container.appendChild(personElement);
-                if (window.DEBUG_MODE) {
-                console.log('Created new person element for ID:', obj.id);
-            }
+                console.log('Created new person element for ID:', obj.id, 'showBoxes:', showBoxes, 'element:', personElement);
             }
         });
         
@@ -2123,11 +2130,11 @@
         
         // Update border visibility
         if (showBoxes) {
-            element.style.border = '2px solid #00ff00';
-            element.style.background = 'rgba(0, 255, 0, 0.1)';
+            element.style.border = '3px solid #ff0000'; // Bright red for debugging
+            element.style.background = 'rgba(255, 0, 0, 0.2)';
         } else {
-            element.style.border = 'none';
-            element.style.background = 'none';
+            element.style.border = '1px solid rgba(255, 255, 255, 0.3)'; // Subtle border even when unchecked
+            element.style.background = 'rgba(255, 255, 255, 0.05)';
         }
         
         // Update or remove enhanced label
@@ -2194,11 +2201,13 @@
                 const primaryInfo = document.createElement('div');
                 primaryInfo.style.fontSize = '11px';
                 primaryInfo.style.fontWeight = 'bold';
-                
+                primaryInfo.style.color = 'white !important';
+
                 const secondaryInfo = document.createElement('div');
                 secondaryInfo.style.fontSize = '9px';
                 secondaryInfo.style.opacity = '0.8';
                 secondaryInfo.style.marginTop = '1px';
+                secondaryInfo.style.color = 'white !important';
                 
                 const demographics = obj.demographics || {};
                 const gender = demographics.gender && demographics.gender !== 'unknown' && demographics.gender !== 'analyzing...' ? demographics.gender : 'Unknown';
@@ -2282,6 +2291,16 @@
     }, 60000); // Run every minute
     
     function createPersonElement(obj, showBoxes, showLabels) {
+        console.log('Creating person element:', {
+            id: obj.id,
+            x: obj.x,
+            y: obj.y,
+            width: obj.width,
+            height: obj.height,
+            showBoxes: showBoxes,
+            showLabels: showLabels
+        });
+
         const personElement = document.createElement('div');
         personElement.className = 'person-element';
         personElement.style.position = 'absolute';
@@ -2307,11 +2326,11 @@
         
         // Set border and background based on showBoxes
         if (showBoxes) {
-            personElement.style.border = '2px solid #00ff00';
-            personElement.style.background = 'rgba(0, 255, 0, 0.1)';
+            personElement.style.border = '3px solid #ff0000'; // Bright red for debugging
+            personElement.style.background = 'rgba(255, 0, 0, 0.2)';
         } else {
-            personElement.style.border = 'none';
-            personElement.style.background = 'none';
+            personElement.style.border = '1px solid rgba(255, 255, 255, 0.3)'; // Subtle border even when unchecked
+            personElement.style.background = 'rgba(255, 255, 255, 0.05)';
         }
         
         // Add enhanced label with face thumbnail if needed
@@ -2356,12 +2375,14 @@
             const primaryInfo = document.createElement('div');
             primaryInfo.style.fontSize = '11px';
             primaryInfo.style.fontWeight = 'bold';
-            
+            primaryInfo.style.color = 'white !important';
+
             // Secondary info line
             const secondaryInfo = document.createElement('div');
             secondaryInfo.style.fontSize = '9px';
             secondaryInfo.style.opacity = '0.8';
             secondaryInfo.style.marginTop = '1px';
+            secondaryInfo.style.color = 'white !important';
             
             // Set initial content
             const demographics = obj.demographics || {};

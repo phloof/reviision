@@ -32,27 +32,27 @@ class FaceTracker:
         
         # ReID configuration (more lenient thresholds for better performance)
         self.reid_enabled = config.get('reid_enabled', True)
-        self.reid_max_age = config.get('reid_max_age', 180)  # Longer time to keep lost tracks
-        self.reid_distance_threshold = config.get('reid_distance_threshold', 300)  # Increased for better coverage
-        self.reid_embedding_threshold = config.get('reid_embedding_threshold', 0.45)  # Less strict similarity
-        self.reid_max_lost_tracks = config.get('reid_max_lost_tracks', 50)  # More tracks to remember
+        self.reid_max_age = config.get('reid_max_age', 240)  # Even longer time to keep lost tracks
+        self.reid_distance_threshold = config.get('reid_distance_threshold', 400)  # Much larger for better coverage
+        self.reid_embedding_threshold = config.get('reid_embedding_threshold', 0.35)  # Much less strict similarity
+        self.reid_max_lost_tracks = config.get('reid_max_lost_tracks', 100)  # More tracks to remember
 
         # Tracking parameters optimized for faces
-        self.max_age = config.get('max_age', 5)
-        self.min_hits = config.get('min_hits', 1)  # Lower for better face detection
-        self.iou_threshold = config.get('iou_threshold', 0.25)  # Lower for face boxes
-        self.embedding_similarity_threshold = config.get('embedding_similarity_threshold', 0.4)  # Less strict
+        self.max_age = config.get('max_age', 8)  # Longer to prevent losing faces
+        self.min_hits = config.get('min_hits', 1)  # Keep at 1 for immediate tracking
+        self.iou_threshold = config.get('iou_threshold', 0.15)  # Much lower for face boxes
+        self.embedding_similarity_threshold = config.get('embedding_similarity_threshold', 0.3)  # Less strict
 
         # Face-specific settings
-        self.face_quality_threshold = config.get('face_quality_threshold', 0.3)  # Lower for more faces
+        self.face_quality_threshold = config.get('face_quality_threshold', 0.1)  # Much lower for more faces
         self.embedding_cache_size = config.get('embedding_cache_size', 1000)
         
         # Enhanced embedding parameters for better ReID
-        self.embedding_weight = config.get('embedding_weight', 0.8)  # Higher weight for embeddings
-        self.position_weight = config.get('position_weight', 0.2)  # Lower weight for position  
-        self.min_track_confidence = config.get('min_track_confidence', 0.3)  # Lower for more detections
-        self.confirmation_frames = config.get('confirmation_frames', 3)  # Faster confirmation
-        self.distance_threshold = config.get('distance_threshold', 150)  # Larger for face movement
+        self.embedding_weight = config.get('embedding_weight', 0.9)  # Even higher weight for embeddings
+        self.position_weight = config.get('position_weight', 0.1)  # Lower weight for position
+        self.min_track_confidence = config.get('min_track_confidence', 0.15)  # Much lower for more detections
+        self.confirmation_frames = config.get('confirmation_frames', 1)  # Immediate confirmation
+        self.distance_threshold = config.get('distance_threshold', 200)  # Larger for face movement
         self.embedding_update_rate = config.get('embedding_update_rate', 0.3)  # Rate for embedding updates
 
         # State variables

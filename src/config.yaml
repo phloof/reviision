@@ -10,8 +10,8 @@ analysis:
     
     # Simple two-tier system: InsightFace primary, DeepFace fallback
     use_insightface: true
-    min_face_size: 32
-    detection_interval: 5
+    min_face_size: 15  # Smaller faces
+    detection_interval: 2  # More frequent detection
     one_time_demographics: true
     
     # Basic attributes to analyze
@@ -145,26 +145,26 @@ face_storage:
   auto_cleanup_old_faces: true  # Automatically clean up old/low-quality faces
 detection:
   # Common settings
-  confidence_threshold: 0.5
+  confidence_threshold: 0.3  # Reduced for better detection
   detection_interval: 1  # Run detection every N frames
-  
+
   # Person detection settings (YOLO)
   person:
     iou_threshold: 0.45
     model: yolov8n.pt
     device: cpu
     image_size: 640
-  
+
   # Face detection settings (InsightFace)
   face:
     model_name: buffalo_l
     model_dir: ./models
-    min_face_size: 30
+    min_face_size: 15  # Reduced for smaller faces
     max_face_size: 1000
     det_size: [640, 640]
     ctx_id: 0  # GPU context ID (-1 for CPU)
     enable_quality_check: true
-    min_quality_score: 0.3
+    min_quality_score: 0.15  # Much lower for more faces
 heatmap:
   decay_factor: 0.1
   grid_size: 0.5
@@ -189,37 +189,37 @@ tracking:
     min_track_confidence: 0.3  # Lowered for better detection
     position_weight: 0.6
     reid_distance_threshold: 250
-    reid_feature_threshold: 0.7  # Slightly lowered for better matching
+    reid_feature_threshold: 0.6  # Lowered for better matching
     reid_max_age: 120
     spatial_threshold: 100
     temporal_window: 30.0
     # Enhanced re-identification settings
-    reid_similarity_threshold: 0.7  # Face/feature similarity threshold for re-ID
+    reid_similarity_threshold: 0.6  # Face/feature similarity threshold for re-ID (reduced)
     reid_temporal_window: 300.0  # 5 minute window for re-identification
     reid_spatial_threshold: 200  # Larger spatial threshold for re-ID
     reid_confidence_boost: 0.1  # Confidence boost for re-identified persons
     reid_demographic_weight: 0.25  # Weight for demographic similarity in re-ID
     enable_face_embedding_reid: true  # Use face embeddings for re-ID
-    face_embedding_threshold: 0.65  # Face embedding similarity threshold
+    face_embedding_threshold: 0.55  # Face embedding similarity threshold (reduced)
     enable_progressive_reid: true  # Progressive re-identification
     enable_cached_reid: true  # Use cached results for re-identification
   
   # Face tracking settings (optimized for face boxes)
   face:
-    max_age: 30  # Shorter for faces
-    min_hits: 3  # Lower for faces
-    iou_threshold: 0.3  # Higher for face boxes
-    distance_threshold: 100  # Smaller for faces
-    embedding_weight: 0.7  # Higher weight for embeddings
-    position_weight: 0.3  # Lower weight for position
-    min_track_confidence: 0.4  # Higher for faces
-    confirmation_frames: 5  # Lower for faces
-    reid_distance_threshold: 200  # Max distance for face re-identification
-    reid_embedding_threshold: 0.6  # Face similarity threshold
-    reid_max_age: 60  # Max age for re-identification attempts
-    min_face_quality: 0.3  # Minimum quality for tracking
-    embedding_update_rate: 0.2  # Rate for embedding updates
-    face_size_weight: 0.1  # Weight for face size in matching
+    max_age: 45  # Longer to prevent losing faces
+    min_hits: 1  # Much lower for immediate tracking
+    iou_threshold: 0.2  # Lower for better matching
+    distance_threshold: 150  # Larger for face movement
+    embedding_weight: 0.8  # Higher weight for embeddings
+    position_weight: 0.2  # Lower weight for position
+    min_track_confidence: 0.2  # Much lower for more faces
+    confirmation_frames: 2  # Faster confirmation
+    reid_distance_threshold: 300  # Larger distance for re-identification
+    reid_embedding_threshold: 0.4  # Lower similarity threshold
+    reid_max_age: 120  # Longer age for re-identification
+    min_face_quality: 0.1  # Much lower quality requirement
+    embedding_update_rate: 0.3  # Higher rate for better updates
+    face_size_weight: 0.05  # Lower weight for face size
 web:
   create_default_admin: true
   debug: true

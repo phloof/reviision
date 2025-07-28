@@ -37,10 +37,10 @@ class FaceQualityScorer:
             'detection_conf': self.config.get('detection_weight', 0.10) # Detection confidence
         }
         
-        # Quality thresholds
-        self.min_face_size = self.config.get('min_face_size', 48)
-        self.optimal_face_size = self.config.get('optimal_face_size', 112)
-        self.max_face_size = self.config.get('max_face_size', 300)
+        # Quality thresholds (more lenient)
+        self.min_face_size = self.config.get('min_face_size', 20)  # Much smaller minimum
+        self.optimal_face_size = self.config.get('optimal_face_size', 80)  # Lower optimal size
+        self.max_face_size = self.config.get('max_face_size', 500)  # Higher max size
         
         logger.info("Face quality scorer initialized")
     

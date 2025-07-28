@@ -1717,11 +1717,8 @@ class SQLiteDatabase:
             else:
                 conversion_rate = 0  # No data available
 
-            # Get peak hour based on last 30 days
-            peak_hour = self.get_peak_hour_last_30_days()
-
-            # Calculate trends by comparing with previous period
-            trends = self._calculate_trends(hours, total_visitors, avg_dwell_time, conversion_rate, demographic_filter, demographic_params, day_filter)
+            # Get peak hour based on the specified time period and day filter
+            peak_hour = self.get_peak_hour_for_period(hours, day_of_week)
 
             return {
                 "success": True,
@@ -1737,7 +1734,6 @@ class SQLiteDatabase:
                 "avg_age": avg_age,
                 "emotions": emotions,
                 "races": races,
-                "trends": trends,
                 "start_time": start_time.isoformat(),
                 "end_time": end_time.isoformat()
             }
@@ -1983,6 +1979,72 @@ class SQLiteDatabase:
             logger.error(f"Error calculating peak hour for last 30 days: {e}")
             return "--:--"
 
+    def get_peak_hour_for_period(self, hours=24, day_of_week=None):
+        """
+        Calculate peak hour based on the specified time period and optional day filter
+
+        Args:
+            hours (int): Number of hours to look back
+            day_of_week (str): Day of week filter ('monday', 'tuesday', etc., 'weekdays', 'weekends', or None for all)
+
+        Returns:
+            str: Peak hour in HH:MM format
+        """
+        try:
+            from datetime import timedelta
+
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
+            # Calculate time range
+            end_time = datetime.now()
+            start_time = end_time - timedelta(hours=hours)
+
+            # Build day of week filter
+            day_filter = ""
+            day_params = []
+
+            if day_of_week:
+                if day_of_week == 'weekdays':
+                    day_filter = "AND CAST(strftime('%w', timestamp) AS INTEGER) BETWEEN 1 AND 5"
+                elif day_of_week == 'weekends':
+                    day_filter = "AND CAST(strftime('%w', timestamp) AS INTEGER) IN (0, 6)"
+                else:
+                    # Map day names to numbers (0=Sunday, 1=Monday, etc.)
+                    day_map = {
+                        'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+                        'thursday': 4, 'friday': 5, 'saturday': 6
+                    }
+                    if day_of_week.lower() in day_map:
+                        day_filter = "AND CAST(strftime('%w', timestamp) AS INTEGER) = ?"
+                        day_params.append(day_map[day_of_week.lower()])
+
+            # Get hourly visitor counts for the specified period
+            query = '''
+                SELECT strftime('%H', timestamp) as hour,
+                       COUNT(DISTINCT person_id) as visitors
+                FROM detections
+                WHERE timestamp >= ? AND timestamp <= ?
+                {}
+                GROUP BY strftime('%H', timestamp)
+                ORDER BY visitors DESC, hour ASC
+                LIMIT 1
+            '''.format(day_filter)
+
+            params = [start_time, end_time] + day_params
+            cursor.execute(query, params)
+
+            result = cursor.fetchone()
+            if result and result[0] is not None:
+                hour = int(result[0])
+                return f"{hour:02d}:00"
+            else:
+                return "--:--"
+
+        except Exception as e:
+            logger.error(f"Error calculating peak hour for period {hours}h: {e}")
+            return "--:--"
+
     def get_weekly_patterns(self, hours=24):
         """
         Get visitor patterns by day of week
@@ -2047,6 +2109,73 @@ class SQLiteDatabase:
             return {
                 "success": False,
                 "message": f"Failed to get weekly patterns: {str(e)}"
+            }
+
+    def get_peak_day_for_period(self, hours=24):
+        """
+        Calculate peak day within the specified time period
+
+        Args:
+            hours (int): Number of hours to look back
+
+        Returns:
+            dict: Peak day information with date and visitor count
+        """
+        try:
+            from datetime import timedelta
+
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
+            # Calculate time range
+            end_time = datetime.now()
+            start_time = end_time - timedelta(hours=hours)
+
+            # Get daily visitor counts for the specified period
+            cursor.execute('''
+                SELECT DATE(timestamp) as day,
+                       COUNT(DISTINCT person_id) as visitors
+                FROM detections
+                WHERE timestamp >= ? AND timestamp <= ?
+                GROUP BY DATE(timestamp)
+                ORDER BY visitors DESC, day DESC
+                LIMIT 1
+            ''', (start_time, end_time))
+
+            result = cursor.fetchone()
+            if result and result[0] is not None:
+                peak_date = result[0]
+                peak_visitors = result[1]
+
+                # Format the date nicely
+                from datetime import datetime as dt
+                try:
+                    date_obj = dt.strptime(peak_date, '%Y-%m-%d')
+                    formatted_date = date_obj.strftime('%b %d')
+                except:
+                    formatted_date = peak_date
+
+                return {
+                    "success": True,
+                    "peak_date": formatted_date,
+                    "peak_visitors": peak_visitors,
+                    "raw_date": peak_date
+                }
+            else:
+                return {
+                    "success": True,
+                    "peak_date": "--",
+                    "peak_visitors": 0,
+                    "raw_date": None
+                }
+
+        except Exception as e:
+            logger.error(f"Error calculating peak day for period {hours}h: {e}")
+            return {
+                "success": False,
+                "peak_date": "--",
+                "peak_visitors": 0,
+                "raw_date": None
             }
 
     def get_peak_hour_analysis_by_day(self, days=30):

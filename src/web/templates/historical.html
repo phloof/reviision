@@ -175,34 +175,18 @@
                 <div class="metric-card">
                     <div class="metric-value" id="total-visitors">--</div>
                     <div class="metric-label">Total Visitors</div>
-                    <div class="trend-indicator trend-up">
-                        <i class="fas fa-arrow-up"></i>
-                        <span id="visitors-trend">+12%</span>
-                    </div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-value" id="avg-dwell-time">--</div>
-                    <div class="metric-label">Avg. Dwell Time</div>
-                    <div class="trend-indicator trend-down">
-                        <i class="fas fa-arrow-down"></i>
-                        <span id="dwell-trend">-3%</span>
-                    </div>
+                    <div class="metric-value" id="peak-day">--</div>
+                    <div class="metric-label">Peak Day</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value" id="peak-hour">--</div>
                     <div class="metric-label">Peak Hour</div>
-                    <div class="trend-indicator trend-neutral">
-                        <i class="fas fa-minus"></i>
-                        <span id="peak-trend">No change</span>
-                    </div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value" id="conversion-rate">--</div>
                     <div class="metric-label">Conversion Rate</div>
-                    <div class="trend-indicator trend-up">
-                        <i class="fas fa-arrow-up"></i>
-                        <span id="conversion-trend">+8%</span>
-                    </div>
                 </div>
             </div>
 
@@ -519,84 +503,11 @@ class HistoricalDataManager {
     
     updateStatistics(data) {
         document.getElementById('total-visitors').textContent = (data.total_visitors || 0).toLocaleString();
-        document.getElementById('avg-dwell-time').textContent = this.formatDwellTime(data.avg_dwell_time || 0);
+        document.getElementById('peak-day').textContent = data.peak_day || '--';
         document.getElementById('peak-hour').textContent = data.peak_hour || '--:--';
         document.getElementById('conversion-rate').textContent = data.conversion_rate ? `${data.conversion_rate}%` : '--';
-
-        // Update trends if available
-        if (data.trends) {
-            this.updateTrends(data.trends);
-        }
     }
 
-    updateTrends(trends) {
-        // Update visitor trend
-        if (trends.visitors) {
-            const visitorTrendElement = document.getElementById('visitors-trend');
-            if (visitorTrendElement) {
-                const change = trends.visitors.change;
-                const direction = trends.visitors.direction;
-
-                visitorTrendElement.textContent = `${change > 0 ? '+' : ''}${change}%`;
-
-                // Update trend indicator
-                const trendIndicator = visitorTrendElement.closest('.trend-indicator');
-                if (trendIndicator) {
-                    trendIndicator.className = `trend-indicator trend-${direction}`;
-                    const icon = trendIndicator.querySelector('i');
-                    if (icon) {
-                        icon.className = direction === 'up' ? 'fas fa-arrow-up' :
-                                       direction === 'down' ? 'fas fa-arrow-down' : 'fas fa-minus';
-                    }
-                }
-            }
-        }
-
-        // Update dwell time trend
-        if (trends.dwell_time) {
-            const dwellTrendElement = document.getElementById('dwell-trend');
-            if (dwellTrendElement) {
-                const change = trends.dwell_time.change;
-                const direction = trends.dwell_time.direction;
-
-                dwellTrendElement.textContent = `${change > 0 ? '+' : ''}${change}%`;
-
-                // Update trend indicator
-                const trendIndicator = dwellTrendElement.closest('.trend-indicator');
-                if (trendIndicator) {
-                    trendIndicator.className = `trend-indicator trend-${direction}`;
-                    const icon = trendIndicator.querySelector('i');
-                    if (icon) {
-                        icon.className = direction === 'up' ? 'fas fa-arrow-up' :
-                                       direction === 'down' ? 'fas fa-arrow-down' : 'fas fa-minus';
-                    }
-                }
-            }
-        }
-
-        // Update conversion rate trend
-        if (trends.conversion_rate) {
-            const conversionTrendElement = document.getElementById('conversion-trend');
-            if (conversionTrendElement) {
-                const change = trends.conversion_rate.change;
-                const direction = trends.conversion_rate.direction;
-
-                conversionTrendElement.textContent = `${change > 0 ? '+' : ''}${change}%`;
-
-                // Update trend indicator
-                const trendIndicator = conversionTrendElement.closest('.trend-indicator');
-                if (trendIndicator) {
-                    trendIndicator.className = `trend-indicator trend-${direction}`;
-                    const icon = trendIndicator.querySelector('i');
-                    if (icon) {
-                        icon.className = direction === 'up' ? 'fas fa-arrow-up' :
-                                       direction === 'down' ? 'fas fa-arrow-down' : 'fas fa-minus';
-                    }
-                }
-            }
-        }
-    }
-    
     updateCharts(data) {
         this.createOverviewChart(data);
         this.createHourlyChart(data);
@@ -1157,7 +1068,7 @@ class HistoricalDataManager {
     
     showNoDataState() {
         document.getElementById('total-visitors').textContent = '0';
-        document.getElementById('avg-dwell-time').textContent = '0s';
+        document.getElementById('peak-day').textContent = '--';
         document.getElementById('peak-hour').textContent = '--:--';
         document.getElementById('conversion-rate').textContent = '0%';
         

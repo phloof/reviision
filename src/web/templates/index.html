@@ -158,7 +158,7 @@
     <!-- Stats Grid -->
     {% set stats = [
         {'icon':'users','label':'Total Visitors','id':'total-visitors','variant':'primary'},
-        {'icon':'clock','label':'Avg. Dwell Time','id':'avg-dwell-time','variant':'danger'},
+        {'icon':'clock','label':'Peak Hour','id':'peak-hour','variant':'danger'},
         {'icon':'percentage','label':'Conversion Rate','id':'conversion-rate','variant':'success'},
         {'icon':'venus-mars','label':'M/F Ratio','id':'gender-ratio','variant':'warning'}
     ] %}
@@ -421,7 +421,7 @@ async function refreshDashboard() {
         // Update stat cards
         if (summaryRes.success) {
             document.getElementById('total-visitors').textContent = (summaryRes.total_visitors||0).toLocaleString();
-            document.getElementById('avg-dwell-time').textContent = summaryRes.avg_dwell_time || '--';
+            document.getElementById('peak-hour').textContent = summaryRes.peak_hour || '--:--';
             document.getElementById('conversion-rate').textContent = summaryRes.conversion_rate ? summaryRes.conversion_rate+'%' : '--';
             document.getElementById('gender-ratio').textContent = summaryRes.gender_ratio || '--';
             drawDemographics(summaryRes.age_groups || {}, summaryRes.gender_distribution || {});

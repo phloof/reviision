@@ -34,8 +34,8 @@ class FaceDetector:
         self.config = config
         self.model_name = config.get('model_name', 'buffalo_l')
         self.model_dir = config.get('model_dir', './models')
-        self.confidence_threshold = config.get('confidence_threshold', 0.5)
-        self.min_face_size = config.get('min_face_size', 30)  # Minimum face size in pixels
+        self.confidence_threshold = config.get('confidence_threshold', 0.3)  # Lower for more faces
+        self.min_face_size = config.get('min_face_size', 15)  # Much smaller minimum face size
         self.max_face_size = config.get('max_face_size', 1000)  # Maximum face size in pixels
         self.det_size = config.get('det_size', (640, 640))  # Detection input size
         self.ctx_id = config.get('ctx_id', 0)  # GPU context ID (-1 for CPU)
@@ -46,7 +46,7 @@ class FaceDetector:
         
         # Quality control
         self.enable_quality_check = config.get('enable_quality_check', True)
-        self.min_quality_score = config.get('min_quality_score', 0.3)
+        self.min_quality_score = config.get('min_quality_score', 0.1)  # Much lower quality requirement
         
         # Initialize the model
         self._load_model()

@@ -124,9 +124,9 @@ class FrameAnalysisService:
             # Use simplified demographic analyzer as fallback
             fallback_config = {
                 'model_dir': './models',
-                'confidence_threshold': 0.6,
-                'min_face_size': 48,
-                'detection_interval': 15,
+                'confidence_threshold': 0.3,  # Lower for better detection
+                'min_face_size': 15,  # Smaller faces
+                'detection_interval': 2,  # More frequent detection
                 'one_time_demographics': True
             }
             self.demographic_analyzer = DemographicAnalyzer(fallback_config)
@@ -164,16 +164,16 @@ class FrameAnalysisService:
         # Frame processing optimization settings - optimized to prevent RTSP overload
         self.processing_config = {
             'analysis_resolution': (960, 540),  # Reduced resolution for better performance
-            'frame_skip_factor': 3,  # Process every 3rd frame for reduced load
-            'demographic_skip_factor': 5,  # Reduced for more frequent analysis with simplified model
-            'motion_threshold': 1000,  # Higher threshold for better stability
+            'frame_skip_factor': 1,  # Process every frame for best detection
+            'demographic_skip_factor': 2,  # More frequent analysis
+            'motion_threshold': 500,  # Lower threshold for better sensitivity
             'max_processing_time': 2.0,  # Increased for more stability
-            'enable_motion_detection': True,
+            'enable_motion_detection': False,  # Disabled for better face detection
             'enable_frame_skipping': True,
             'enable_fast_yolo': True,
             'enable_async_demographics': False,  # Disabled for simplified synchronous processing
             'enable_demographic_caching': True,  # Keep caching enabled
-            'yolo_confidence': 0.4,  # Higher for fewer false positives
+            'yolo_confidence': 0.25,  # Even lower for better detection
             'yolo_iou': 0.5,  # Higher for better tracking
             'yolo_imgsz': 416  # Smaller input size for faster processing
         }
@@ -245,13 +245,13 @@ class FrameAnalysisService:
         # Enhanced re-identification settings for maintaining person identity
         self.reid_settings = {
             'enable_reid': True,
-            'reid_similarity_threshold': 0.7,  # Slightly lowered for better matching
+            'reid_similarity_threshold': 0.6,  # Lowered for better matching
             'reid_temporal_window': 300.0,  # 5 minute window for re-identification
             'reid_spatial_threshold': 200,  # Larger spatial threshold for re-ID
             'reid_confidence_boost': 0.1,  # Confidence boost for re-identified persons
             'reid_demographic_weight': 0.25,  # Reduced weight for faster processing
             'enable_face_embedding_reid': True,  # Use face embeddings for re-ID
-            'face_embedding_threshold': 0.65,  # Lowered threshold for better matching
+            'face_embedding_threshold': 0.55,  # Lowered threshold for better matching
             'enable_progressive_reid': True,  # New: progressive re-identification
             'enable_cached_reid': True  # New: use cached results for re-identification
         }
@@ -762,7 +762,7 @@ class FrameAnalysisService:
             
             # Calculate difference between frames
             frame_diff = cv2.absdiff(last_frame, gray_frame)
-            thresh = cv2.threshold(frame_diff, 25, 255, cv2.THRESH_BINARY)[1]
+            thresh = cv2.threshold(frame_diff, 15, 255, cv2.THRESH_BINARY)[1]  # Lower threshold for more sensitivity
             
             # Count non-zero pixels
             motion_pixels = cv2.countNonZero(thresh)
@@ -985,7 +985,7 @@ class FrameAnalysisService:
                 scale_x = scale_y = 1.0
             
             # Run YOLO detection with optimized parameters
-            yolo_conf = self.processing_config.get('yolo_confidence', 0.3)
+            yolo_conf = self.processing_config.get('yolo_confidence', 0.2)  # Even lower default
             yolo_iou = self.processing_config.get('yolo_iou', 0.4)
             yolo_imgsz = self.processing_config.get('yolo_imgsz', 416)
             
@@ -1370,7 +1370,7 @@ class FrameAnalysisService:
                                         logger.error(f"Failed to update person {track_id} in database: {e}")
                                     
                                     # Process improved face snapshot if confidence is good enough
-                                    if new_confidence >= 0.5:  # Higher threshold for updates
+                                    if new_confidence >= 0.2:  # Even lower threshold for updates
                                         try:
                                             face_bbox = track['bbox']
                                             detection_confidence = track.get('confidence', 0.7)
@@ -1426,6 +1426,9 @@ class FrameAnalysisService:
                     'last_seen': person_data.get('last_seen', frame_time),
                     'total_detections': person_data.get('total_detections', 1)
                 }
+
+                # Debug logging for bbox format
+                logger.info(f"Person {track_id} bbox data: original={track['bbox']}, frontend={bbox_frontend}, center={center}, detection_mode={self.detection_mode}")
                 
                 # Add zone information if zone manager is available
                 if self.zone_manager:

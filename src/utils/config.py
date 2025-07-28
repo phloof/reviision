@@ -56,9 +56,9 @@ class ConfigManager:
             },
             'analysis': {
                 'demographics': {
-                    'min_face_size': 50,
-                    'confidence_threshold': 0.8,
-                    'detection_interval': 30
+                    'min_face_size': 15,  # Smaller faces
+                    'confidence_threshold': 0.3,  # Lower threshold
+                    'detection_interval': 2  # More frequent detection
                 },
                 'path': {
                     'max_path_history': 100,
