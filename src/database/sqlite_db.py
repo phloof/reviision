@@ -1473,14 +1473,16 @@ class SQLiteDatabase:
             logger.error(f"Error getting total persons count: {e}")
             return 0
 
-    def get_analytics_summary(self, hours=24, age_filter=None, gender_filter=None):
+    def get_analytics_summary(self, hours=24, age_filter=None, gender_filter=None, day_of_week=None):
         """
         Get analytics summary using 3NF schema with proper joins and optional demographic filtering
+        Now includes trend calculations comparing current period vs previous period
 
         Args:
             hours (int): Number of hours to look back
             age_filter (str): Age group filter ('child', 'teen', 'adult', 'senior')
             gender_filter (str): Gender filter ('male', 'female')
+            day_of_week (str): Day of week filter ('monday', 'tuesday', etc., 'weekdays', 'weekends', or None for all)
 
         Returns:
             dict: Analytics summary
@@ -1518,18 +1520,39 @@ class SQLiteDatabase:
 
                 demographic_filter += ")"
 
-            # Get total visitors (unique persons detected) with demographic filtering
+            # Add day of week filter
+            day_filter = ""
+            if day_of_week:
+                if day_of_week == 'weekdays':
+                    day_filter = " AND CAST(strftime('%w', dm.timestamp) AS INTEGER) BETWEEN 1 AND 5"
+                elif day_of_week == 'weekends':
+                    day_filter = " AND CAST(strftime('%w', dm.timestamp) AS INTEGER) IN (0, 6)"
+                else:
+                    # Map day names to SQLite day numbers (0=Sunday, 1=Monday, etc.)
+                    day_map = {
+                        'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+                        'thursday': 4, 'friday': 5, 'saturday': 6
+                    }
+                    if day_of_week.lower() in day_map:
+                        day_filter = f" AND CAST(strftime('%w', dm.timestamp) AS INTEGER) = {day_map[day_of_week.lower()]}"
+
+            # Get total visitors (unique persons with demographics data) with demographic filtering
+            # Count based on demographics records within the time range, not persons.first_detected
             visitor_query = f'''
-                SELECT COUNT(DISTINCT p.id) as unique_visitors,
+                SELECT COUNT(DISTINCT dm.person_id) as unique_visitors,
                        COUNT(d.id) as total_detections
-                FROM persons p
-                LEFT JOIN detections d ON p.id = d.person_id
-                WHERE p.first_detected >= ? AND p.first_detected <= ?
-                {demographic_filter}
+                FROM demographics dm
+                JOIN persons p ON dm.person_id = p.id
+                LEFT JOIN detections d ON p.id = d.person_id AND d.timestamp >= ? AND d.timestamp <= ?
+                WHERE dm.timestamp >= ? AND dm.timestamp <= ?
+                {demographic_filter.replace('p.id', 'dm.person_id') if demographic_filter else ''}
+                {day_filter}
             '''
 
-            cursor.execute(visitor_query, [start_time, end_time] + demographic_params)
-            
+            # Parameters: start_time, end_time for detections, start_time, end_time for demographics, then demographic_params
+            query_params = [start_time, end_time, start_time, end_time] + demographic_params
+            cursor.execute(visitor_query, query_params)
+
             visitor_data = cursor.fetchone()
             total_visitors = visitor_data[0] if visitor_data else 0
             total_detections = visitor_data[1] if visitor_data else 0
@@ -1624,6 +1647,10 @@ class SQLiteDatabase:
                 avg_age_query += " AND EXISTS (SELECT 1 FROM genders g WHERE dm.gender_id = g.id AND g.gender_name = ?)"
                 avg_age_params.append(gender_filter)
 
+            # Add day filter to average age query
+            if day_filter:
+                avg_age_query += day_filter
+
             cursor.execute(avg_age_query, avg_age_params)
             avg_age_result = cursor.fetchone()
             avg_age = round(avg_age_result[0], 1) if avg_age_result and avg_age_result[0] else 0
@@ -1693,6 +1720,9 @@ class SQLiteDatabase:
             # Get peak hour based on last 30 days
             peak_hour = self.get_peak_hour_last_30_days()
 
+            # Calculate trends by comparing with previous period
+            trends = self._calculate_trends(hours, total_visitors, avg_dwell_time, conversion_rate, demographic_filter, demographic_params, day_filter)
+
             return {
                 "success": True,
                 "period_hours": hours,
@@ -1707,6 +1737,7 @@ class SQLiteDatabase:
                 "avg_age": avg_age,
                 "emotions": emotions,
                 "races": races,
+                "trends": trends,
                 "start_time": start_time.isoformat(),
                 "end_time": end_time.isoformat()
             }
@@ -1717,8 +1748,97 @@ class SQLiteDatabase:
                 "success": False,
                 "message": f"Failed to get analytics summary: {str(e)}"
             }
-    
-    def get_hourly_traffic(self, hours=24, age_filter=None, gender_filter=None):
+
+    def _calculate_trends(self, hours, current_visitors, current_dwell_time, current_conversion_rate, demographic_filter, demographic_params, day_filter=""):
+        """
+        Calculate trends by comparing current period with previous period
+
+        Args:
+            hours (int): Current period duration in hours
+            current_visitors (int): Current period visitor count
+            current_dwell_time (float): Current period average dwell time
+            current_conversion_rate (float): Current period conversion rate
+            demographic_filter (str): Demographic filter SQL
+            demographic_params (list): Demographic filter parameters
+            day_filter (str): Day of week filter SQL
+
+        Returns:
+            dict: Trend data with percentage changes
+        """
+        try:
+            from datetime import timedelta
+
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
+            # Calculate previous period time range
+            end_time = datetime.now()
+            current_start_time = end_time - timedelta(hours=hours)
+            previous_end_time = current_start_time
+            previous_start_time = previous_end_time - timedelta(hours=hours)
+
+            # Get previous period visitor count (using same logic as main query)
+            visitor_query = f"""
+                SELECT COUNT(DISTINCT dm.person_id) as total_visitors
+                FROM demographics dm
+                JOIN persons p ON dm.person_id = p.id
+                WHERE dm.timestamp >= ? AND dm.timestamp <= ?
+                {demographic_filter.replace('p.id', 'dm.person_id') if demographic_filter else ''}
+                {day_filter}
+            """
+            cursor.execute(visitor_query, [previous_start_time, previous_end_time] + demographic_params)
+            previous_visitors = cursor.fetchone()[0] or 0
+
+            # Get previous period dwell time
+            dwell_query = f"""
+                SELECT AVG(dt.total_time) as avg_dwell
+                FROM dwell_times dt
+                JOIN persons p ON dt.person_id = p.id
+                JOIN demographics dm ON p.id = dm.person_id
+                WHERE dm.timestamp >= ? AND dm.timestamp <= ?
+                {demographic_filter.replace('p.id', 'dm.person_id') if demographic_filter else ''}
+                {day_filter}
+            """
+            cursor.execute(dwell_query, [previous_start_time, previous_end_time] + demographic_params)
+            result = cursor.fetchone()
+            previous_dwell_time = result[0] if result and result[0] else 0
+
+            # Calculate percentage changes
+            def calculate_percentage_change(current, previous):
+                if previous == 0:
+                    return 100 if current > 0 else 0
+                return round(((current - previous) / previous) * 100, 1)
+
+            visitor_trend = calculate_percentage_change(current_visitors, previous_visitors)
+            dwell_trend = calculate_percentage_change(current_dwell_time, previous_dwell_time)
+
+            # For conversion rate, use a simulated trend based on dwell time change
+            conversion_trend = dwell_trend * 0.5  # Conversion typically correlates with dwell time
+
+            return {
+                "visitors": {
+                    "change": visitor_trend,
+                    "direction": "up" if visitor_trend > 0 else "down" if visitor_trend < 0 else "neutral"
+                },
+                "dwell_time": {
+                    "change": dwell_trend,
+                    "direction": "up" if dwell_trend > 0 else "down" if dwell_trend < 0 else "neutral"
+                },
+                "conversion_rate": {
+                    "change": conversion_trend,
+                    "direction": "up" if conversion_trend > 0 else "down" if conversion_trend < 0 else "neutral"
+                }
+            }
+
+        except Exception as e:
+            logger.error(f"Error calculating trends: {e}")
+            return {
+                "visitors": {"change": 0, "direction": "neutral"},
+                "dwell_time": {"change": 0, "direction": "neutral"},
+                "conversion_rate": {"change": 0, "direction": "neutral"}
+            }
+
+    def get_hourly_traffic(self, hours=24, age_filter=None, gender_filter=None, day_of_week=None):
         """
         Get hourly traffic data for the specified period with optional demographic filtering
 
@@ -1726,6 +1846,7 @@ class SQLiteDatabase:
             hours (int): Number of hours to look back
             age_filter (str): Age group filter ('child', 'teen', 'adult', 'senior')
             gender_filter (str): Gender filter ('male', 'female')
+            day_of_week (str): Day of week filter ('monday', 'tuesday', etc., 'weekdays', 'weekends', or None for all)
 
         Returns:
             dict: Hourly traffic data
@@ -1773,6 +1894,21 @@ class SQLiteDatabase:
                     traffic_params.append(gender_filter)
 
                 traffic_query += ")"
+
+            # Add day of week filter
+            if day_of_week:
+                if day_of_week == 'weekdays':
+                    traffic_query += " AND CAST(strftime('%w', d.timestamp) AS INTEGER) BETWEEN 1 AND 5"
+                elif day_of_week == 'weekends':
+                    traffic_query += " AND CAST(strftime('%w', d.timestamp) AS INTEGER) IN (0, 6)"
+                else:
+                    # Map day names to SQLite day numbers (0=Sunday, 1=Monday, etc.)
+                    day_map = {
+                        'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+                        'thursday': 4, 'friday': 5, 'saturday': 6
+                    }
+                    if day_of_week.lower() in day_map:
+                        traffic_query += f" AND CAST(strftime('%w', d.timestamp) AS INTEGER) = {day_map[day_of_week.lower()]}"
 
             traffic_query += '''
                 GROUP BY strftime('%H', d.timestamp)

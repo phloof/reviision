@@ -848,6 +848,33 @@ class DemographicsManager {
             document.getElementById('male-percentage').textContent = '--';
             document.getElementById('female-percentage').textContent = '--';
         }
+
+        // Update trends if available
+        if (data.trends) {
+            this.updateTrends(data.trends);
+        }
+    }
+
+    updateTrends(trends) {
+        // Update visitor trend if element exists
+        const visitorTrendElement = document.getElementById('visitors-trend');
+        if (visitorTrendElement && trends.visitors) {
+            const change = trends.visitors.change;
+            const direction = trends.visitors.direction;
+
+            visitorTrendElement.textContent = `${change > 0 ? '+' : ''}${change}%`;
+
+            // Update trend indicator
+            const trendIndicator = visitorTrendElement.closest('.trend-indicator');
+            if (trendIndicator) {
+                trendIndicator.className = `trend-indicator trend-${direction}`;
+                const icon = trendIndicator.querySelector('i');
+                if (icon) {
+                    icon.className = direction === 'up' ? 'fas fa-arrow-up' :
+                                   direction === 'down' ? 'fas fa-arrow-down' : 'fas fa-minus';
+                }
+            }
+        }
     }
 
     updateCharts(data) {
@@ -938,7 +965,6 @@ class DemographicsManager {
         };
 
         this.charts.overviewAge = new ChartManager(ctx, ageConfig, { filename: 'age_distribution' });
-        this.attachToolbar('overview-age-chart', this.charts.overviewAge);
     }
 
     createOverviewGenderChart(data) {
@@ -992,7 +1018,6 @@ class DemographicsManager {
         };
 
         this.charts.overviewGender = new ChartManager(ctx, genderConfig, { filename: 'gender_distribution' });
-        this.attachToolbar('overview-gender-chart', this.charts.overviewGender);
     }
 
     createEmotionCharts(data) {
@@ -1060,7 +1085,6 @@ class DemographicsManager {
             };
 
             this.charts.emotion = new ChartManager(emotionCtx, emotionConfig, { filename: 'emotion_distribution' });
-            this.attachToolbar('emotion-chart', this.charts.emotion);
         }
     }
 
@@ -1121,7 +1145,6 @@ class DemographicsManager {
         };
 
         this.charts.trends = new ChartManager(ctx, trendsConfig, { filename: 'demographic_trends' });
-        this.attachToolbar('demographic-trends-chart', this.charts.trends);
     }
 
     createDetailedAgeChart(data) {
@@ -1161,7 +1184,6 @@ class DemographicsManager {
         };
 
         this.charts.detailedAge = new ChartManager(ctx, detailedAgeConfig, { filename: 'detailed_age_analysis' });
-        this.attachToolbar('detailed-age-chart', this.charts.detailedAge);
     }
 
     createAgeTrendsChart(data) {
@@ -1200,7 +1222,6 @@ class DemographicsManager {
         };
 
         this.charts.ageTrends = new ChartManager(ctx, ageTrendsConfig, { filename: 'age_trends' });
-        this.attachToolbar('age-trends-chart', this.charts.ageTrends);
     }
 
     createMaleDemographicsChart(data) {
@@ -1237,7 +1258,6 @@ class DemographicsManager {
         };
 
         this.charts.maleDemographics = new ChartManager(ctx, maleConfig, { filename: 'male_demographics' });
-        this.attachToolbar('male-demographics-chart', this.charts.maleDemographics);
     }
 
     createFemaleDemographicsChart(data) {
@@ -1274,7 +1294,6 @@ class DemographicsManager {
         };
 
         this.charts.femaleDemographics = new ChartManager(ctx, femaleConfig, { filename: 'female_demographics' });
-        this.attachToolbar('female-demographics-chart', this.charts.femaleDemographics);
     }
 
     createGenderTrendsChart(data) {
@@ -1313,7 +1332,6 @@ class DemographicsManager {
         };
 
         this.charts.genderTrends = new ChartManager(ctx, genderTrendsConfig, { filename: 'gender_trends' });
-        this.attachToolbar('gender-trends-chart', this.charts.genderTrends);
     }
 
     createEmotionByAgeChart(data) {
@@ -1354,7 +1372,6 @@ class DemographicsManager {
         };
 
         this.charts.emotionAge = new ChartManager(ctx, emotionAgeConfig, { filename: 'emotion_by_age' });
-        this.attachToolbar('emotion-age-chart', this.charts.emotionAge);
     }
 
     createEmotionByGenderChart(data) {
@@ -1395,7 +1412,6 @@ class DemographicsManager {
         };
 
         this.charts.emotionGender = new ChartManager(ctx, emotionGenderConfig, { filename: 'emotion_by_gender' });
-        this.attachToolbar('emotion-gender-chart', this.charts.emotionGender);
     }
 
     createComprehensiveTrendsChart(data) {
@@ -1459,7 +1475,6 @@ class DemographicsManager {
         };
 
         this.charts.comprehensiveTrends = new ChartManager(ctx, comprehensiveConfig, { filename: 'comprehensive_trends' });
-        this.attachToolbar('comprehensive-trends-chart', this.charts.comprehensiveTrends);
     }
 
     getFilterParams() {
@@ -1507,10 +1522,7 @@ class DemographicsManager {
 
 
 
-    attachToolbar(chartId, chart) {
-        // Toolbar functionality would go here
-        console.log('Toolbar attached for', chartId);
-    }
+
 
     async generateReport() {
         console.log('🚀 Demographics generateReport method called');

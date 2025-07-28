@@ -1693,12 +1693,13 @@ def get_historical_analytics():
     """
     try:
         hours = int(request.args.get('hours', 24))
+        day_of_week = request.args.get('day_of_week', None)
 
-        # Get analytics summary
-        summary_data = analysis_service.get_analytics_summary(hours=hours)
+        # Get analytics summary with day of week filter
+        summary_data = analysis_service.get_analytics_summary(hours=hours, day_of_week=day_of_week)
 
-        # Get traffic data
-        traffic_data = analysis_service.get_traffic_data(hours=hours)
+        # Get traffic data with day of week filter
+        traffic_data = analysis_service.get_traffic_data(hours=hours, day_of_week=day_of_week)
 
         # Get additional historical data
         weekly_patterns = analysis_service.database.get_weekly_patterns(hours=hours)

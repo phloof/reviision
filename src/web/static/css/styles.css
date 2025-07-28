@@ -3457,7 +3457,7 @@ header {
     top: -25px;
     left: 0;
     background: rgba(0, 0, 0, 0.8);
-    color: white;
+    color: white !important;
     padding: 2px 6px;
     border-radius: 3px;
     font-size: 11px;
@@ -3500,6 +3500,23 @@ header {
 .dwell-summary {
     z-index: 25;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: white !important;
+}
+
+.facial-analysis-summary {
+    color: white !important;
+}
+
+.facial-analysis-summary * {
+    color: white !important;
+}
+
+.demographic-overlay * {
+    color: white !important;
+}
+
+.dwell-summary * {
+    color: white !important;
 }
 
 .timer-circle {

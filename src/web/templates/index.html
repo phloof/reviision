@@ -463,7 +463,6 @@ function drawTraffic(res){
         options:{responsive:true,maintainAspectRatio:false}
     };
     trafficChartInstance = new ChartManager(ctx,config,{filename:'traffic_overview'});
-    attachToolbar('trafficChart',trafficChartInstance);
 }
 function drawDemographics(ageData,genderData){
     const demographicsCanvas = document.getElementById('demographicsChart');
@@ -545,7 +544,6 @@ function drawDemographics(ageData,genderData){
     };
 
     demographicsChartInstance = new ChartManager(demographicsCanvas, demographicsCfg, {filename: 'demographics_overview'});
-    attachToolbar('demographicsChart', demographicsChartInstance);
 }
 
 function drawAge(ageData) {
@@ -622,7 +620,6 @@ function drawAge(ageData) {
     };
 
     ageChartInstance = new ChartManager(ageCanvas, ageConfig, {filename: 'age_distribution'});
-    attachToolbar('ageChart', ageChartInstance);
 }
 
 function drawGender(genderData) {
@@ -685,60 +682,9 @@ function drawGender(genderData) {
     };
 
     genderChartInstance = new ChartManager(genderCanvas, genderConfig, {filename: 'gender_distribution'});
-    attachToolbar('genderChart', genderChartInstance);
 }
 
-// Enhanced toolbar util with new controls and export dropdown
-function attachToolbar(canvasId, chartManager){
-    const canvas=document.getElementById(canvasId);
-    if(!canvas) return;
-    const container=canvas.closest('.chart-container');
-    if(!container || container.querySelector('.chart-toolbar')) return;
 
-    // Ensure container positioning for absolute toolbar
-    if (getComputedStyle(container).position === 'static') {
-        container.style.position = 'relative';
-    }
-
-    const tb=document.createElement('div');
-    tb.className='chart-toolbar text-end mt-1';
-    tb.innerHTML=`
-        <button class="btn btn-sm btn-outline-secondary me-1" data-action="zoom-in" title="Zoom In"><i class="fas fa-search-plus"></i></button>
-        <button class="btn btn-sm btn-outline-secondary me-1" data-action="zoom-out" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
-        <button class="btn btn-sm btn-outline-secondary me-1" data-action="reset-zoom" title="Reset Zoom"><i class="fas fa-expand-arrows-alt"></i></button>
-        <button class="btn btn-sm btn-outline-secondary me-1" data-action="toggle-pan" title="Enable Pan Mode"><i class="fas fa-hand-paper"></i></button>
-        <div class="btn-group">
-            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="Export Options">
-                <i class="fas fa-download"></i>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" data-action="png" href="#"><i class="fas fa-image me-2"></i>PNG Image</a></li>
-                <li><a class="dropdown-item" data-action="csv" href="#"><i class="fas fa-file-csv me-2"></i>CSV Data</a></li>
-                <li><a class="dropdown-item" data-action="json" href="#"><i class="fas fa-code me-2"></i>JSON Data</a></li>
-            </ul>
-        </div>
-    `;
-    container.appendChild(tb);
-
-    tb.addEventListener('click',ev=>{
-        const btn=ev.target.closest('[data-action]');
-        if(!btn) return;
-
-        ev.preventDefault();
-        const act=btn.getAttribute('data-action');
-
-        // Handle export actions
-        if(act==='png') chartManager.exportPNG();
-        else if(act==='csv') chartManager.exportCSV();
-        else if(act==='json') chartManager.exportJSON();
-        // Handle zoom actions
-        else if(act==='zoom-in') chartManager.zoomIn();
-        else if(act==='zoom-out') chartManager.zoomOut();
-        else if(act==='reset-zoom') chartManager.resetZoom();
-        // Handle pan toggle
-        else if(act==='toggle-pan') chartManager.togglePan();
-    });
-}
 
 document.addEventListener('DOMContentLoaded',()=>{
     // Event listeners for filter controls

@@ -138,12 +138,18 @@
                 </select>
             </div>
             <div class="form-group">
-                <label for="time-granularity" class="form-label">Time Granularity</label>
-                <select class="form-control" id="time-granularity">
-                    <option value="hour">Hourly</option>
-                    <option value="day" selected>Daily</option>
-                    <option value="week">Weekly</option>
-                    <option value="month">Monthly</option>
+                <label for="day-of-week" class="form-label">Day of Week</label>
+                <select class="form-control" id="day-of-week">
+                    <option value="all" selected>All Days</option>
+                    <option value="monday">Monday</option>
+                    <option value="tuesday">Tuesday</option>
+                    <option value="wednesday">Wednesday</option>
+                    <option value="thursday">Thursday</option>
+                    <option value="friday">Friday</option>
+                    <option value="saturday">Saturday</option>
+                    <option value="sunday">Sunday</option>
+                    <option value="weekdays">Weekdays (Mon-Fri)</option>
+                    <option value="weekends">Weekends (Sat-Sun)</option>
                 </select>
             </div>
             <div class="form-group d-flex items-end">
@@ -416,6 +422,11 @@ class HistoricalDataManager {
             this.loadData();
         });
 
+        // Day of week filter change
+        document.getElementById('day-of-week').addEventListener('change', () => {
+            this.loadData();
+        });
+
         // Refresh button
         document.getElementById('refresh-data').addEventListener('click', () => {
             this.loadData(true);
@@ -457,7 +468,9 @@ class HistoricalDataManager {
             }
             
             const hours = this.getHoursFromRange();
-            const response = await fetch(`/api/analytics/historical?hours=${hours}`, {
+            const dayOfWeek = this.getDayOfWeekFilter();
+            const url = `/api/analytics/historical?hours=${hours}${dayOfWeek ? `&day_of_week=${dayOfWeek}` : ''}`;
+            const response = await fetch(url, {
                 method: 'GET',
                 credentials: 'same-origin',
                 headers: {
@@ -509,6 +522,79 @@ class HistoricalDataManager {
         document.getElementById('avg-dwell-time').textContent = this.formatDwellTime(data.avg_dwell_time || 0);
         document.getElementById('peak-hour').textContent = data.peak_hour || '--:--';
         document.getElementById('conversion-rate').textContent = data.conversion_rate ? `${data.conversion_rate}%` : '--';
+
+        // Update trends if available
+        if (data.trends) {
+            this.updateTrends(data.trends);
+        }
+    }
+
+    updateTrends(trends) {
+        // Update visitor trend
+        if (trends.visitors) {
+            const visitorTrendElement = document.getElementById('visitors-trend');
+            if (visitorTrendElement) {
+                const change = trends.visitors.change;
+                const direction = trends.visitors.direction;
+
+                visitorTrendElement.textContent = `${change > 0 ? '+' : ''}${change}%`;
+
+                // Update trend indicator
+                const trendIndicator = visitorTrendElement.closest('.trend-indicator');
+                if (trendIndicator) {
+                    trendIndicator.className = `trend-indicator trend-${direction}`;
+                    const icon = trendIndicator.querySelector('i');
+                    if (icon) {
+                        icon.className = direction === 'up' ? 'fas fa-arrow-up' :
+                                       direction === 'down' ? 'fas fa-arrow-down' : 'fas fa-minus';
+                    }
+                }
+            }
+        }
+
+        // Update dwell time trend
+        if (trends.dwell_time) {
+            const dwellTrendElement = document.getElementById('dwell-trend');
+            if (dwellTrendElement) {
+                const change = trends.dwell_time.change;
+                const direction = trends.dwell_time.direction;
+
+                dwellTrendElement.textContent = `${change > 0 ? '+' : ''}${change}%`;
+
+                // Update trend indicator
+                const trendIndicator = dwellTrendElement.closest('.trend-indicator');
+                if (trendIndicator) {
+                    trendIndicator.className = `trend-indicator trend-${direction}`;
+                    const icon = trendIndicator.querySelector('i');
+                    if (icon) {
+                        icon.className = direction === 'up' ? 'fas fa-arrow-up' :
+                                       direction === 'down' ? 'fas fa-arrow-down' : 'fas fa-minus';
+                    }
+                }
+            }
+        }
+
+        // Update conversion rate trend
+        if (trends.conversion_rate) {
+            const conversionTrendElement = document.getElementById('conversion-trend');
+            if (conversionTrendElement) {
+                const change = trends.conversion_rate.change;
+                const direction = trends.conversion_rate.direction;
+
+                conversionTrendElement.textContent = `${change > 0 ? '+' : ''}${change}%`;
+
+                // Update trend indicator
+                const trendIndicator = conversionTrendElement.closest('.trend-indicator');
+                if (trendIndicator) {
+                    trendIndicator.className = `trend-indicator trend-${direction}`;
+                    const icon = trendIndicator.querySelector('i');
+                    if (icon) {
+                        icon.className = direction === 'up' ? 'fas fa-arrow-up' :
+                                       direction === 'down' ? 'fas fa-arrow-down' : 'fas fa-minus';
+                    }
+                }
+            }
+        }
     }
     
     updateCharts(data) {
@@ -1030,6 +1116,11 @@ class HistoricalDataManager {
             '30d': 720
         };
         return map[range] || 24;
+    }
+
+    getDayOfWeekFilter() {
+        const dayOfWeek = document.getElementById('day-of-week').value;
+        return dayOfWeek === 'all' ? null : dayOfWeek;
     }
     
     formatDwellTime(seconds) {

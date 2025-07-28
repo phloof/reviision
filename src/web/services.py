@@ -2309,7 +2309,7 @@ class FrameAnalysisService:
         """Set the database reference for direct access"""
         self.database = database
 
-    def get_analytics_summary(self, hours=24, age_filter=None, gender_filter=None):
+    def get_analytics_summary(self, hours=24, age_filter=None, gender_filter=None, day_of_week=None):
         """
         Get analytics summary data with optional demographic filtering
 
@@ -2317,6 +2317,7 @@ class FrameAnalysisService:
             hours (int): Number of hours to look back
             age_filter (str): Age group filter ('child', 'teen', 'adult', 'senior')
             gender_filter (str): Gender filter ('male', 'female')
+            day_of_week (str): Day of week filter ('monday', 'tuesday', etc., 'weekdays', 'weekends', or None for all)
 
         Returns:
             dict: Analytics summary data
@@ -2327,7 +2328,8 @@ class FrameAnalysisService:
                 return self.database.get_analytics_summary(
                     hours=hours,
                     age_filter=age_filter,
-                    gender_filter=gender_filter
+                    gender_filter=gender_filter,
+                    day_of_week=day_of_week
                 )
 
             # Fallback to Flask context
@@ -2337,7 +2339,8 @@ class FrameAnalysisService:
                 return db.get_analytics_summary(
                     hours=hours,
                     age_filter=age_filter,
-                    gender_filter=gender_filter
+                    gender_filter=gender_filter,
+                    day_of_week=day_of_week
                 )
             else:
                 logger.warning("Database not available, returning empty analytics summary")
@@ -2346,7 +2349,7 @@ class FrameAnalysisService:
             logger.error(f"Error getting analytics summary: {e}")
             return self._get_empty_analytics_summary()
 
-    def get_traffic_data(self, hours=24, age_filter=None, gender_filter=None):
+    def get_traffic_data(self, hours=24, age_filter=None, gender_filter=None, day_of_week=None):
         """
         Get traffic data for charts with optional demographic filtering
 
@@ -2354,6 +2357,7 @@ class FrameAnalysisService:
             hours (int): Number of hours to look back
             age_filter (str): Age group filter ('child', 'teen', 'adult', 'senior')
             gender_filter (str): Gender filter ('male', 'female')
+            day_of_week (str): Day of week filter ('monday', 'tuesday', etc., 'weekdays', 'weekends', or None for all)
 
         Returns:
             dict: Traffic data for charts
@@ -2364,7 +2368,8 @@ class FrameAnalysisService:
                 return self.database.get_hourly_traffic(
                     hours=hours,
                     age_filter=age_filter,
-                    gender_filter=gender_filter
+                    gender_filter=gender_filter,
+                    day_of_week=day_of_week
                 )
 
             # Fallback to Flask context
@@ -2374,7 +2379,8 @@ class FrameAnalysisService:
                 return db.get_hourly_traffic(
                     hours=hours,
                     age_filter=age_filter,
-                    gender_filter=gender_filter
+                    gender_filter=gender_filter,
+                    day_of_week=day_of_week
                 )
             else:
                 logger.warning("Database not available, returning empty traffic data")
