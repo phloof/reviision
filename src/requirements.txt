@@ -1,7 +1,0 @@
-insightface
-numpy
-scipy
-av
-reportlab
-matplotlib
-pillow
