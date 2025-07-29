@@ -402,7 +402,43 @@
             }
 
             .form-panel {
-                padding: 2rem;
+                padding: 1rem 2rem 2rem 2rem; /* Reduced top padding further */
+                justify-content: flex-start; /* Align to top instead of center */
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* Adjust form header spacing for laptop */
+            .form-header {
+                margin-top: 1.5rem; /* Move "Welcome Back" down */
+                margin-bottom: 2rem; /* Reduce bottom margin */
+            }
+
+            .form-title {
+                font-size: 1.75rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .form-subtitle {
+                font-size: 0.95rem;
+                margin-bottom: 1rem;
+            }
+
+            /* Reduce form group spacing */
+            .form-group {
+                margin-bottom: 1.5rem; /* Reduced from 2rem */
+            }
+
+            /* Optimize form control height for laptop */
+            .form-control {
+                height: 55px; /* Slightly smaller */
+                font-size: 1rem;
+            }
+
+            .btn-login {
+                height: 55px;
+                font-size: 1rem;
+                margin-top: 1rem; /* Add some space above button */
             }
 
             .brand-logo {
@@ -415,6 +451,32 @@
 
             .brand-subtitle {
                 font-size: 1rem;
+            }
+
+            /* Ensure proper white space from borders */
+            .login-card {
+                padding: 0; /* Remove any default padding */
+            }
+
+            .form-panel {
+                position: relative;
+            }
+
+            /* Add breathing room at bottom of form */
+            .form-footer {
+                margin-top: 1.5rem;
+                padding-top: 1rem;
+            }
+
+            /* Adjust submit button spacing */
+            .btn-login {
+                margin-top: 1.5rem;
+                margin-bottom: 1rem; /* Add bottom margin for spacing from border */
+            }
+
+            /* Ensure form has proper bottom spacing */
+            form {
+                margin-bottom: 1rem;
             }
         }
 
