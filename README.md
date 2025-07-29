@@ -1,422 +1,924 @@
 # ReViision
+## Retail Vision + Reiterative Improvement
 
-**ReViision** is an advanced retail analytics system that provides comprehensive customer behavior analysis through computer vision. The name embodies our dual mission:
-- **Retail Vision**: Advanced computer vision technology for retail analytics
-- **Reiterative Improvement**: Enabling continuous optimization of store layout and customer experience through data-driven insights: Customer Behavior Analysis
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 
-## Project Overview
-This project implements a computer vision-based retail analytics system that tracks customer behavior in physical stores to provide data for store owners to optimise store layout, products, etc. The system analyzes customer demographics, walking paths, dwell time, and generates insights through heatmaps and correlation analysis.
+**ReViision** is a comprehensive retail analytics platform that leverages advanced computer vision and machine learning to provide actionable insights into customer behaviour. The system enables retailers to optimise store layouts, improve customer experience, and make data-driven decisions through real-time analysis of foot traffic patterns, demographic insights, and behavioural analytics.
 
-## Work Completed
-- System architecture design with clean modular structure
-- Camera input module supporting integrated video, RTSP, and RTSPS streams
-- Person detection and tracking implementation with advanced smoothing
-- Demographic analysis (race, gender, age, emotion)
-- Path analysis and visualization with common pattern detection
-- Dwell time measurement and analysis across zones
-- Heatmap generation for store traffic visualization
-- Correlation analysis between customer behavior and demographic factors
-- Secure local web server for data visualization and insights
-- VLAN network segmentation for enhanced security
-- **Recent Improvements (2024):**
-  - Complete code cleanup and reorganization (Phase 2)
-  - Service layer architecture for better maintainability
-  - Reduced codebase size by 1000+ lines through deduplication and optimization
-  - Simplified complex analysis modules (correlation.py: 744→400 lines)
-  - Removed unnecessary files and duplicate dependencies
-  - Enhanced configuration management with proper file references
-  - Improved logging and error handling throughout
-  - Enhanced path management for cross-platform compatibility
-  - Added comprehensive .gitignore for better version control
+## Key Features
 
-## 1.4: Methods Used to Engineer the Software Engineering Solution
+### Computer Vision & Analytics
+- **Person Detection & Tracking**: YOLOv8-powered real-time person detection with advanced multi-object tracking
+- **Demographic Analysis**: Age, gender, and emotion recognition using InsightFace and DeepFace models
+- **Path Analysis**: Customer movement pattern detection and common route identification
+- **Dwell Time Analysis**: Zone-based time spent analysis with configurable areas of interest
+- **Heat Map Generation**: Visual traffic density mapping for store layout optimisation
+- **Correlation Analysis**: Statistical analysis of relationships between demographics and behaviour
 
-The development of this retail analytics system employed a hybrid Agile/DevOps methodology to ensure both flexibility and robustness. Initial requirements were gathered through stakeholder interviews and competitive analysis of existing retail analytics solutions.
+### Camera & Input Support
+- **Multiple Camera Types**: USB cameras, RTSP/RTSPS IP cameras, and video file analysis
+- **Secure Streaming**: Encrypted RTSP support with credential management
+- **Real-time Processing**: Low-latency frame analysis with configurable performance settings
+- **Cross-platform Compatibility**: Windows, Linux, and macOS support
 
-Python was selected as the primary language due to its extensive machine learning and computer vision libraries, facilitating rapid development. The software architecture follows a clean modular design pattern with enhanced separation of concerns:
+### Web Interface & Visualisation
+- **Interactive Dashboard**: Real-time analytics with customisable charts and graphs
+- **User Management**: Role-based access control (Admin, Manager, Viewer)
+- **Export Capabilities**: Data export in multiple formats (CSV, JSON, PDF reports)
+- **Mobile-responsive Design**: Access analytics from any device
 
-**Core Architecture:**
-- **Data Collection Layer:** Camera interfaces with unified factory pattern
-- **Processing Layer:** ML models with optimized detection and tracking
-- **Business Logic Layer:** Service-oriented architecture for frame analysis
-- **Analysis Layer:** Statistical algorithms for behavior analysis
-- **Presentation Layer:** Clean web interface with organized routing
+### Security & Privacy
+- **Encrypted Credential Storage**: Secure management of camera and database credentials
+- **Privacy-first Design**: Demographic analysis without storing personally identifiable information
+- **Local Processing**: On-premises data processing with optional cloud integration
+- **Audit Logging**: Comprehensive activity logging for compliance and monitoring
 
-**Recent Architectural Improvements:**
-- **Service Layer Implementation:** Extracted complex business logic from web routes into dedicated services
-- **Code Deduplication:** Eliminated redundant files and consolidated functionality
-- **Enhanced Error Handling:** Comprehensive logging with configurable levels
-- **Path Management:** Cross-platform compatibility with relative path resolution
-- **Configuration Management:** Centralized config loading with secure credential handling
+### Deployment Options
+- **Desktop/Server Installation**: Full-featured deployment for high-performance analytics
+- **Raspberry Pi Testbench**: Portable field deployment with WiFi hotspot management
+- **Docker Support**: Containerised deployment for easy scaling and management
 
-Development utilized continuous integration with automated testing to ensure reliability. The codebase has been significantly cleaned and optimized, reducing complexity while improving maintainability. Version control through Git with feature branches enabled parallel development of different system components while maintaining code quality through peer reviews.
+## 🏗️ System Architecture
 
-For machine learning components, transfer learning was applied to leverage pre-trained models (YOLOv8, RetinaFace), reducing training time while maintaining high accuracy for person detection, tracking, and demographic analysis.
-
-## Section 2: Justification of the selection and use of tools and resources
-
-### 2.1: Allocation of Resources to Support Development
-
-Resource allocation prioritized computational efficiency and security. The system uses a distributed processing approach where edge devices (Raspberry Pi) handle initial video processing and person detection, reducing bandwidth requirements for transmitting full video streams.
-
-For machine learning tasks requiring higher computational power, optimized models were selected that balance accuracy and performance on consumer hardware. Python's multiprocessing and concurrent.futures libraries enable parallel processing of video frames.
-
-Storage resources were allocated based on retention requirements, with processed metadata stored long-term while raw video footage is temporarily cached and then discarded after analysis to address privacy concerns and minimize storage costs.
-
-Development resources were prioritized for the core computer vision algorithms and security implementation, as these represent both the primary value proposition and the most critical concerns for retail deployment.
-
-### 2.2: Justification of Modelling Tools Used
-
-For person detection and tracking, YOLOv8 was selected due to its superior balance of speed and accuracy compared to alternatives like Faster R-CNN or SSD. YOLOv8 processes video frames in real-time even on modest hardware while maintaining high detection precision in varied lighting conditions common in retail environments.
-
-RetinaFace was chosen for facial analysis due to its robust performance on demographic attribute detection across diverse populations, addressing potential bias concerns. The model's lightweight architecture allows deployment on edge devices while maintaining acceptable inference times.
-
-For path analysis, a custom implementation using OpenCV's tracking algorithms combined with Kalman filtering provides reliable trajectory estimation even with temporary occlusions. This approach was selected over alternatives like DeepSORT as it requires less computational resources while meeting accuracy requirements for retail environments.
-
-NetworkX was implemented for graph-based analysis of customer movements, enabling identification of common paths and bottlenecks. This lightweight library was preferred over more complex solutions as it provides the necessary functionality without unnecessary overhead.
-
-### 2.3: Contribution of Back-End Engineering to Success and Ease of Use
-
-The back-end architecture significantly contributes to the system's success through a carefully designed data pipeline that processes, analyzes, and stores information efficiently. The implementation uses SQLite for reliable relational data storage, providing efficient storage of analytics data (trajectories, demographics, dwell times) with ACID compliance and zero-configuration deployment.
-
-**Enhanced API Architecture:**
-- **Service Layer Pattern:** Business logic extracted into dedicated service classes for better testability and maintainability
-- **Clean Route Organization:** Web routes organized by functionality with consistent error handling
-- **Modular Design:** Clear separation between data processing, analysis, and presentation layers
-- **Optimized Performance:** Reduced code complexity and eliminated redundant processing
-
-The Flask-based API provides clean separation between data processing and visualization layers, allowing independent scaling and maintenance. The recent architectural improvements include:
-
-- **Frame Analysis Service:** Dedicated service for real-time video processing and object detection
-- **Centralized Configuration:** Environment-aware configuration management with secure credential handling  
-- **Enhanced Error Recovery:** Graceful degradation and comprehensive logging throughout the system
-- **Cross-Platform Compatibility:** Proper path handling for different operating systems
-
-This refined architecture enables easy integration with existing retail management systems through standardized REST endpoints while providing improved reliability and maintainability for store staff operations.
-
-### 2.4: Methodologies Used to Test and Evaluate Code
-
-The testing strategy employed multiple complementary approaches to ensure system reliability. Unit tests were implemented using pytest to verify individual components like camera interfaces, tracking algorithms, and analysis modules. Integration tests validated the interactions between system components, particularly the accuracy of data flow from capture to visualization.
-
-Performance testing used benchmarking tools to evaluate system throughput under various loads, ensuring the solution can handle multiple camera streams simultaneously. This approach identified and resolved potential bottlenecks before deployment.
-
-For machine learning components, evaluation used standard computer vision metrics including precision, recall, and F1-score on diverse test datasets representative of retail environments. Cross-validation ensured model performance consistency across different demographic groups.
-
-User acceptance testing with retail staff validated the usability of the visualization interface, leading to iterative improvements in dashboard design and report generation. This human-centered testing approach ensured the technical capabilities translated to practical business value.
-
-## Section 3: Evaluation of the approach undertaken to safely and securely collect, use and store data
-
-### 3.1: Design and Development of Secure Code
-
-Security was integrated from the project's inception through a secure-by-design approach. All communication channels, including the local web server and RTSP streams, implement TLS encryption with proper certificate validation to prevent man-in-the-middle attacks.
-
-The implementation follows the principle of least privilege, with fine-grained access controls limiting system component permissions to only what's necessary for operation. Database access is restricted through parameterized queries to prevent SQL injection vulnerabilities.
-
-For video processing, face detection occurs on-device with only anonymized metadata transmitted to the central server, minimizing privacy risks. Demographic data is stored separately from trajectory information and protected through advanced encryption (AES-256) with secure key management.
-
-Regular dependency audits using tools like Safety and Bandit identify and remediate potential vulnerabilities in third-party libraries. Containerization with Docker further improves security by isolating the application from the host system.
-
-### 3.2: Impact of the Safe and Secure Software Developed
-
-The security measures implemented have significant positive impacts on both business operations and customer privacy. By creating a segmented VLAN for camera communications, the system prevents unauthorized access to video feeds, protecting both customer privacy and sensitive business data from potential breaches.
-
-The privacy-preserving approach to demographic analysis enhances customer trust by analyzing attributes without storing personally identifiable information. This enables retailers to gain valuable insights without compromising ethical standards or violating increasingly strict privacy regulations.
-
-From a business perspective, the secure implementation provides confidence in data accuracy and integrity, ensuring business decisions based on the analytics are founded on reliable information. The security measures also reduce liability risks associated with customer data collection and storage.
-
-The local-first processing approach with minimal cloud dependencies gives retailers complete control over their data, addressing concerns about third-party access and reducing ongoing operational costs associated with cloud-based alternatives.
-
-## Technologies and Libraries Used
-
-### Core Technologies
-- Python 3.9+ with optimized package management
-- OpenCV 4.5+ for image processing and computer vision
-- PyTorch 1.10+ for ML model inference (YOLOv8)
-- Flask with service layer architecture for web implementation
-- SQLite for reliable relational data storage
-- Pathlib for cross-platform file handling
-- Comprehensive logging with configurable levels
-
-### Machine Learning Models
-- YOLOv8 for person detection
-- RetinaFace for facial analysis
-- Custom CNN for demographic classification
-- Kalman filtering for trajectory smoothing
-
-### Visualization
-- Plotly/Dash for interactive dashboards
-- NetworkX for path graph analysis
-- Matplotlib/Seaborn for static visualizations
-
-### Security
-- OpenSSL for TLS/SSL implementation
-- PyJWT for token-based authentication
-- Paramiko for secure SFTP operations
-- UFW firewall configuration
-
-## Codebase Architecture
-
-### Clean Modular Structure
-The system has been architected with a clean, maintainable structure:
+ReViision follows a modular, service-oriented architecture designed for scalability and maintainability:
 
 ```
-src/
-├── main.py              # Application entry point with improved logging
-├── config.yaml          # Centralized configuration
-├── camera/              # Camera interface modules
-│   ├── __init__.py      # Factory pattern for camera creation
-│   ├── base.py          # Abstract base class
-│   ├── usb_camera.py    # USB camera implementation
-│   ├── rtsp_camera.py   # RTSP camera implementation
-│   ├── rtsps_camera.py  # Secure RTSP implementation
-│   └── mp4_camera.py    # Video file implementation
-├── detection/           # Object detection and tracking
-│   ├── detector.py      # YOLOv8-based person detection
-│   └── tracker.py       # Multi-object tracking with Kalman filtering
-├── analysis/            # Customer behavior analysis
-│   ├── demographics.py  # Age, gender, emotion analysis
-│   ├── path.py          # Movement pattern analysis
-│   ├── dwell.py         # Dwell time measurement
-│   ├── heatmap.py       # Traffic heatmap generation
-│   └── correlation.py   # Behavioral correlation analysis
-├── web/                 # Clean web interface
-│   ├── __init__.py      # Flask app factory
-│   ├── routes.py        # Organized route definitions (436 lines)
-│   ├── services.py      # Business logic service layer
-│   ├── templates/       # HTML templates
-│   └── static/          # CSS, JS, and configuration files
-├── utils/               # System utilities
-│   ├── config.py        # Configuration management
-│   └── credentials.py   # Secure credential handling
-└── database/            # Database abstraction layer
-    └── sqlite_db.py     # SQLite implementation
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Camera Layer  │    │  Processing     │    │   Analysis      │
+│                 │    │     Layer       │    │     Layer       │
+│ • USB Cameras   │───▶│ • Person        │───▶│ • Demographics  │
+│ • RTSP Streams  │    │   Detection     │    │ • Path Analysis │
+│ • Video Files   │    │ • Tracking      │    │ • Dwell Time    │
+│ • Live Feeds    │    │ • Re-ID         │    │ • Heatmaps      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Web Interface │    │    Database     │    │   Security      │
+│                 │    │     Layer       │    │     Layer       │
+│ • Dashboard     │◀───│ • SQLite        │    │ • Encryption    │
+│ • API Endpoints │    │ • Analytics     │    │ • Authentication│
+│ • Real-time     │    │ • Metadata      │    │ • Audit Logs   │
+│   Streaming     │    │ • Reporting     │    │ • Access Control│
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-### Key Architectural Improvements
-- **68% Code Reduction:** Eliminated duplicate and redundant code
-- **Service Layer Pattern:** Clean separation of business logic from web routes
-- **Unified Factories:** Consistent object creation patterns throughout
-- **Enhanced Error Handling:** Comprehensive logging and graceful degradation
-- **Cross-Platform Support:** Proper path handling for all operating systems
+### Core Components
 
-## Installation and Setup
-Detailed installation instructions are provided in the INSTALL.md file, covering:
-1. Hardware requirements
-2. VLAN network configuration  
-3. Camera setup (integrated, RTSP, RTSPS)
-4. Software installation and dependency management
-5. Model initialization and optimization
-6. Security configuration and credential management
+- **Camera Module**: Unified interface supporting multiple camera types with factory pattern
+- **Detection Module**: YOLOv8-based person detection with Kalman filter tracking
+- **Analysis Module**: Comprehensive behavioural analysis including demographics and patterns
+- **Web Module**: Flask-based interface with real-time streaming and interactive dashboards
+- **Database Module**: SQLite storage with optimised schema for analytics data
+- **Security Module**: Encrypted credential management and secure communication protocols
 
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+## 📋 Requirements
 
-## Secure Credential Management
+### Hardware Requirements
 
-The system includes a secure credential management system for handling sensitive information like RTSP camera credentials, database passwords, and API keys. 
+#### Minimum System Requirements
+- **CPU**: Intel i5 or AMD Ryzen 5 (4+ cores recommended)
+- **RAM**: 8GB 
+- **Storage**: 10GB free space (additional space for analytics data)
+- **GPU**: Optional NVIDIA GPU with CUDA support for enhanced performance
 
-### Features of the Credential Manager
+#### Camera Requirements
+- **USB Cameras**: Any UVC-compatible USB camera
+- **IP Cameras**: RTSP/RTSPS-enabled cameras (H.264/H.265 support recommended)
+- **Supported Formats**: MP4, AVI, MOV video files for analysis
 
-- **Encryption**: All credentials are encrypted using Fernet symmetric encryption
-- **Environment Variables**: Encryption keys can be securely provided via environment variables
-- **File Permissions**: Credential files use restricted file permissions (0600)
-- **Credential References**: Configuration files can reference credentials by ID rather than including them directly
-- **Temporary Decryption**: Credentials are only decrypted when needed and can be cached in memory
-- **URL Sanitization**: URLs with embedded credentials are sanitized in logs
+#### Raspberry Pi Requirements (Testbench Deployment)
+- **Model**: Raspberry Pi 4B (4GB RAM minimum, 8GB recommended)
+- **Storage**: 32GB+ Class 10 microSD card
+- **Network**: WiFi adapter for dual-interface setup or Ethernet connection
+- **Power**: 5V 3A power supply
 
-### Setting Up Credentials
+### Software Requirements
 
-You can set up credentials using the interactive command-line tool:
+#### Operating System Support
+- **Windows**: 10/11 (64-bit)
+- **Linux**: Ubuntu 20.04+, Debian 11+, CentOS 8+
+- **macOS**: 10.15+ (Intel/Apple Silicon)
+- **Raspberry Pi OS**: 64-bit (recommended for Pi deployment)
 
+#### Python Environment
+- **Python**: 3.8 to 3.11 (3.10-3.11 recommended)
+- **Package Manager**: pip 21.0+ or conda
+- **Virtual Environment**: venv or conda environment recommended
+
+#### Dependencies
+Core dependencies are automatically installed via `requirements.txt`:
+- **Computer Vision**: OpenCV 4.8+, ultralytics 8.0+
+- **Machine Learning**: PyTorch 2.1+, TensorFlow 2.15, InsightFace 0.7+
+- **Web Framework**: Flask 3.0+, Flask-SocketIO 5.3+
+- **Database**: SQLAlchemy 2.0+
+- **Security**: cryptography 41.0+, PyJWT 2.8+
+
+## 🚀 Quick Start
+
+### 1. Clone the Repository
 ```bash
-python src/main.py --setup-credentials
+git clone https://github.com/your-org/reviision.git
+cd reviision
 ```
 
-This will guide you through setting up credentials for an RTSP camera.
-
-### Environment Variables
-
-You can also import credentials from environment variables:
-
+### 2. Set Up Python Environment
 ```bash
-# Set credentials in environment variables
-export RA_CRED_RTSP_URL="rtsp://example.com/stream"
-export RA_CRED_RTSP_USERNAME="user"
-export RA_CRED_RTSP_PASSWORD="password"
-
-# Import them into the credential store
-python src/main.py --import-env-credentials
-```
-
-Environment variables should follow the format `RA_CRED_SERVICE_KEY=value`.
-
-### Encryption Key
-
-For production use, set one of these environment variables to enable secure encryption:
-
-- `RETAIL_ANALYTICS_KEY`: A base64-encoded Fernet key
-- `RETAIL_ANALYTICS_PASSPHRASE`: A passphrase used to derive an encryption key
-
-Example:
-
-```bash
-# Generate a key
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-
-# Set the key in the environment
-export RETAIL_ANALYTICS_KEY="generated_key_here"
-```
-
-If neither of these is set, the system will still function but will show warnings about using temporary encryption that isn't persistent between runs.
-
-### Using Credentials in Configuration
-
-In your configuration files, you can reference credentials using placeholders:
-
-```yaml
-camera:
-  type: rtsp
-  credential_ref: rtsp_cam1
-```
-
-or:
-
-```yaml
-database:
-  type: mysql
-  host: localhost
-  database: retail_db
-  user: ${database:username}
-  password: ${database:password}
-```
-
-The placeholders will be replaced with the actual credentials when the configuration is loaded.
-
-## Usage
-
-Start the system with:
-
-```bash
-python src/main.py
-```
-
-Additional command-line options:
-
-- `--config PATH`: Specify the configuration file path
-- `--debug`: Enable debug mode for more verbose logging
-- `--setup-credentials`: Run interactive credential setup
-- `--import-env-credentials`: Import credentials from environment variables
-
-## Security Best Practices
-
-- **Never store sensitive credentials in configuration files**: Use the credential manager instead
-- **Use environment variables for encryption keys**: Don't hardcode keys in files
-- **Restrict file permissions**: Credential files should have restricted permissions
-- **Use HTTPS/TLS**: For web interface access, enable HTTPS
-- **Regular key rotation**: Change encryption keys periodically
-- **Monitor log files**: Check for unauthorized access attempts
-- **Network segmentation**: RTSP cameras should be on a separate network segment
-- **Minimal privileges**: Run the system with minimal required privileges
-
-## Architecture
-
-The system consists of several components:
-
-- **Camera Module**: Handles connections to different camera types (USB, RTSP, RTSPS)
-- **Detection Module**: Detects and tracks persons in camera frames
-- **Analysis Module**: Performs various analyses on detected persons
-- **Database Module**: Stores analysis results for later retrieval
-- **Web Module**: Provides a web interface for viewing analytics
-- **Utils Module**: Provides utility functions, including secure credential management
-
-## License
-
-[MIT License](LICENSE)
-
-## Python Version Requirements
-
-This system is designed to work with Python 3.8 to 3.11. Python 3.12+ support is experimental and may require manual dependency adjustments. We recommend:
-
-- Python 3.8-3.9: If using older hardware or need maximum compatibility with all dependencies
-- Python 3.10-3.11: For the best balance of performance and compatibility with modern dependencies
-
-### PyTorch Compatibility
-
-PyTorch version requirements depend on your Python version:
-
-- Python 3.8-3.9: PyTorch 1.9.x to 1.12.x recommended
-- Python 3.10-3.11: PyTorch 1.13.x or newer (up to 2.x) recommended
-
-If you encounter PyTorch installation issues, use the official PyTorch website's installation selector to get the right command for your system: [https://pytorch.org/get-started/locally/](https://pytorch.org/get-started/locally/)
-
-## Dependency Management
-
-The system dependencies are specified in `requirements.txt`. To install them:
-
-```bash
-# Create a virtual environment (recommended)
+# Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Activate virtual environment
+# Windows:
+venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
-
-# If PyTorch installation fails, use the appropriate command from pytorch.org
-# Example for Python 3.10+ with CUDA:
-# pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 ```
 
-### Platform-Specific Dependencies
+### 3. Download Required Models
+```bash
+# YOLOv8 model will be downloaded automatically on first run
+# For manual download:
+mkdir -p models
+wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt -O models/yolov8n.pt
+```
 
-Some dependencies require platform-specific installation:
+### 4. Configure the System
+```bash
+# Copy and edit configuration
+cp src/config.yaml src/config_local.yaml
+# Edit src/config_local.yaml with your camera settings
+```
 
-#### TensorFlow
-TensorFlow is optional and used only for certain preprocessing tasks. Install as needed:
+### 5. Run the Application
+```bash
+cd src
+python main.py --config config_local.yaml
+```
 
-- Windows: `pip install tensorflow-cpu`
-- Linux/macOS: `pip install tensorflow`
-- With CUDA support: `pip install tensorflow[gpu]`
+### 6. Access the Web Interface
+Open your browser and navigate to:
+- **Local access**: http://localhost:5000
+- **Network access**: http://YOUR_IP:5000
 
-#### OpenCV with CUDA
-For CUDA-accelerated video processing:
+**Default login credentials:**
+- Username: `admin`
+- Password: `admin`
+
+> ⚠️ **Security Note**: Change default credentials immediately in production environments.
+
+## 📦 Installation Guide
+
+### Desktop/Server Installation
+
+#### 1. System Preparation
+```bash
+# Update system packages (Linux)
+sudo apt update && sudo apt upgrade -y
+
+# Install system dependencies (Ubuntu/Debian)
+sudo apt install -y python3-pip python3-venv git build-essential \
+    libopencv-dev python3-opencv ffmpeg
+
+# For CentOS/RHEL
+sudo yum groupinstall -y "Development Tools"
+sudo yum install -y python3-pip python3-devel opencv-devel ffmpeg
+```
+
+#### 2. Python Environment Setup
+```bash
+# Clone repository
+git clone https://github.com/your-org/reviision.git
+cd reviision
+
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate  # Linux/macOS
+# OR
+venv\Scripts\activate     # Windows
+
+# Upgrade pip and install dependencies
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+#### 3. GPU Support (Optional)
+For NVIDIA GPU acceleration:
+```bash
+# Install CUDA-enabled PyTorch
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+
+# Install CUDA-enabled OpenCV (optional)
+pip uninstall opencv-python
+pip install opencv-python-headless
+```
+
+#### 4. Database Initialisation
+```bash
+# Database will be created automatically on first run
+# For manual initialisation:
+cd src
+python -c "from database import get_database; db = get_database({'type': 'sqlite', 'path': '../data/reviision.db'})"
+```
+
+### Raspberry Pi Testbench Installation
+
+The Pi Testbench provides a portable, field-deployable version of ReViision with WiFi hotspot capabilities.
+
+#### 1. Prepare Raspberry Pi
+```bash
+# Flash Raspberry Pi OS Lite (64-bit) to SD card
+# Enable SSH and configure WiFi during imaging
+
+# SSH into Pi and update
+sudo apt update && sudo apt upgrade -y
+```
+
+#### 2. Automated Setup
+```bash
+# Clone repository
+git clone https://github.com/your-org/reviision.git
+cd reviision/pi_testbench
+
+# Run automated setup (SSH-safe version)
+bash scripts/complete_network_setup_ssh_safe.sh
+```
+
+#### 3. Manual Setup (Alternative)
+```bash
+# Install dependencies
+sudo apt install -y hostapd dnsmasq python3-pip python3-venv \
+    wireless-tools net-tools iptables-persistent
+
+# Set up Python environment
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Configure network services
+sudo bash scripts/complete_network_setup.sh
+
+# Set up systemd service
+sudo cp services/reviision-pi.service /etc/systemd/system/
+sudo systemctl enable reviision-pi
+sudo systemctl start reviision-pi
+```
+
+#### 4. Pi Testbench Features
+- **WiFi Hotspot**: Creates `ReViision-TestBench` network
+- **Dual WiFi**: Connects to internet while serving hotspot
+- **Remote Access**: Web interface accessible at `192.168.4.1:5000`
+- **Data Synchronisation**: Forwards analytics to main server
+- **System Monitoring**: Health checks and performance monitoring
+
+## ⚙️ Configuration
+
+### Basic Configuration
+
+ReViision uses YAML configuration files for system settings. The main configuration file is `src/config.yaml`.
+
+#### Camera Configuration
+```yaml
+camera:
+  type: usb                    # Camera type: usb, rtsp, rtsps, mp4
+  device: 0                    # USB device ID or video file path
+  fps: 30                      # Frames per second
+  resolution: [1920, 1080]     # Camera resolution
+
+  # For RTSP cameras
+  url: "rtsp://camera-ip/stream"
+  username: "camera_user"      # Use credential_ref for security
+  password: "camera_pass"      # Use credential_ref for security
+
+  # Performance settings
+  buffer_size: 1               # Frame buffer size
+  connection_timeout: 15.0     # Connection timeout in seconds
+```
+
+#### Detection & Analysis Configuration
+```yaml
+detection:
+  # Person detection settings
+  person:
+    model: yolov8n.pt          # YOLO model file
+    confidence_threshold: 0.5   # Detection confidence
+    iou_threshold: 0.45        # Non-maximum suppression threshold
+    device: cpu                # cpu or cuda
+
+  # Face detection settings
+  face:
+    model_name: buffalo_l      # InsightFace model
+    min_face_size: 15          # Minimum face size in pixels
+    confidence_threshold: 0.3   # Face detection confidence
+
+tracking:
+  max_age: 30                  # Maximum frames to keep lost tracks
+  min_hits: 3                  # Minimum detections before confirming track
+  iou_threshold: 0.3           # Intersection over Union threshold
+  reid_enabled: true           # Enable re-identification
+
+analysis:
+  demographics:
+    enabled: true
+    detection_interval: 2      # Analyse every N frames
+    min_face_size: 15         # Minimum face size for analysis
+
+  path:
+    enabled: true
+    max_path_history: 100     # Maximum path points to store
+    min_path_points: 5        # Minimum points for valid path
+
+  dwell_time:
+    enabled: true
+    min_dwell_time: 3.0       # Minimum seconds for dwell detection
+
+  heatmap:
+    enabled: true
+    resolution: [640, 480]    # Heatmap resolution
+    decay_factor: 0.1         # Heat decay rate
+```
+
+#### Web Interface Configuration
+```yaml
+web:
+  host: 0.0.0.0               # Bind address (0.0.0.0 for all interfaces)
+  port: 5000                  # Web server port
+  debug: false                # Debug mode
+  secret_key: "your-secret-key"  # Session encryption key
+
+  # Authentication settings
+  session_timeout_hours: 2    # Session timeout
+  max_login_attempts: 5       # Maximum failed login attempts
+  lockout_duration_minutes: 15  # Account lockout duration
+```
+
+### Secure Credential Management
+
+ReViision includes a comprehensive credential management system for secure handling of sensitive information.
+
+#### Setting Up Credentials
+```bash
+# Interactive credential setup
+python src/main.py --setup-credentials
+
+# Import from environment variables
+export RA_CRED_RTSP_URL="rtsp://camera.local/stream"
+export RA_CRED_RTSP_USERNAME="admin"
+export RA_CRED_RTSP_PASSWORD="password123"
+python src/main.py --import-env-credentials
+```
+
+#### Encryption Key Setup
+```bash
+# Generate encryption key
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+
+# Set encryption key
+export RETAIL_ANALYTICS_KEY="your-generated-key"
+# OR use passphrase
+export RETAIL_ANALYTICS_PASSPHRASE="your-secure-passphrase"
+```
+
+#### Using Credentials in Configuration
+```yaml
+camera:
+  type: rtsp
+  credential_ref: rtsp_cam1    # Reference to stored credentials
+
+# OR use placeholder syntax
+database:
+  host: localhost
+  username: ${db:username}     # Replaced with actual credential
+  password: ${db:password}     # Replaced with actual credential
+```
+
+### Environment-Specific Configuration
+
+Create environment-specific configuration files:
+- `config_development.yaml` - Development settings
+- `config_production.yaml` - Production settings
+- `config_testing.yaml` - Testing settings
 
 ```bash
-# Uninstall the CPU-only version
-pip uninstall opencv-python
-
-# Install CUDA-enabled version
-pip install opencv-python-headless-cuda
+# Use specific configuration
+python src/main.py --config config_production.yaml
 ```
 
-## Test Data
+## 🖥️ Usage
 
-ReViision includes 3 sample video files for testing and demonstration:
+### Starting the System
 
-- **`asianstoremulti.mp4`** - Asian store scene with multiple customers for comprehensive multi-person tracking and analysis
-- **`manpushtrolleymulti.mp4`** - Shopping scenario with person pushing trolley in multi-scene environment  
-- **`manpushtrolley.mp4`** - Single scene of person with shopping trolley for focused analysis
+#### Basic Usage
+```bash
+cd src
+python main.py
+```
 
-These video files are optimized for retail analytics testing and demonstrate various customer behavior patterns including:
-- Multi-person detection and tracking
-- Shopping cart/trolley interaction
-- Customer movement patterns
-- Dwell time analysis
-- Traffic flow visualization 
+#### Command-Line Options
+```bash
+python main.py --help
 
-## Default Users
+# Common options:
+python main.py --config config_production.yaml  # Use specific config
+python main.py --debug                          # Enable debug logging
+python main.py --setup-credentials              # Interactive credential setup
+python main.py --import-env-credentials         # Import from environment
+```
 
-The system is initialized with the following default users for demonstration and testing purposes:
+### Web Interface
 
-| Username   | Password   | Role     | Email                    |
-|------------|------------|----------|--------------------------|
-| admin      | admin      | admin    | admin@reviision.com      |
-| manager    | manager    | manager  | manager@reviision.com    |
-| manager2   | manager2   | manager  | manager2@reviision.com   |
-| viewer     | viewer     | viewer   | viewer@reviision.com     |
-| viewer2    | viewer2    | viewer   | viewer2@reviision.com    |
+#### Accessing the Dashboard
+1. Start the ReViision system
+2. Open web browser and navigate to `http://localhost:5000`
+3. Log in with your credentials
 
-- **admin**: Full system access, can manage users and data.
-- **manager/manager2**: Can access management features, but not all admin functions.
-- **viewer/viewer2**: Read-only access to analytics and reports.
+#### Default User Accounts
+| Username | Password | Role    | Permissions |
+|----------|----------|---------|-------------|
+| admin    | admin    | Admin   | Full system access, user management |
+| manager  | manager  | Manager | Analytics access, configuration |
+| viewer   | viewer   | Viewer  | Read-only analytics access |
 
-> **Note:** Change these credentials in production environments for security. 
+> ⚠️ **Important**: Change default passwords immediately in production environments.
+
+#### Dashboard Features
+
+**Real-time Analytics**
+- Live camera feed with detection overlays
+- Real-time person count and demographics
+- Current activity heatmap
+- Zone-based dwell time monitoring
+
+**Historical Analysis**
+- Traffic patterns over time
+- Demographic trends and insights
+- Path analysis and common routes
+- Correlation analysis between variables
+
+**Configuration Management**
+- Camera settings and stream configuration
+- Detection and tracking parameter tuning
+- Zone definition and management
+- User account administration
+
+### API Endpoints
+
+ReViision provides RESTful API endpoints for integration with external systems:
+
+#### Analytics Endpoints
+```bash
+# Get current analytics summary
+GET /api/analytics/summary
+
+# Get demographic data
+GET /api/analytics/demographics?start_date=2024-01-01&end_date=2024-01-31
+
+# Get traffic patterns
+GET /api/analytics/traffic_patterns?interval=hourly
+
+# Get heatmap data
+GET /api/analytics/heatmap?zone_id=1
+
+# Get path analysis
+GET /api/analytics/paths?min_length=5
+```
+
+#### System Endpoints
+```bash
+# System status
+GET /api/system/status
+
+# Camera stream
+GET /api/camera/stream
+
+# Configuration
+GET /api/config
+POST /api/config
+```
+
+#### Authentication
+```bash
+# Login
+POST /api/auth/login
+{
+  "username": "admin",
+  "password": "admin"
+}
+
+# Logout
+POST /api/auth/logout
+```
+
+### Data Export
+
+#### Export Options
+- **CSV**: Tabular data for spreadsheet analysis
+- **JSON**: Structured data for API integration
+- **PDF**: Formatted reports for presentations
+
+#### Export Methods
+```bash
+# Via Web Interface
+Dashboard → Export → Select Format → Download
+
+# Via API
+GET /api/export/demographics?format=csv&start_date=2024-01-01
+GET /api/export/traffic_patterns?format=json&interval=daily
+GET /api/export/report?format=pdf&template=summary
+```
+
+### Performance Optimisation
+
+#### System Tuning
+```yaml
+# config.yaml performance settings
+performance:
+  frame_analysis:
+    min_interval_ms: 100        # Minimum time between analyses
+    frame_skip_factor: 3        # Process every Nth frame
+    enable_motion_detection: true  # Skip processing when no motion
+
+  yolo:
+    batch_size: 1              # Batch size for detection
+    half_precision: true       # Use FP16 for faster inference
+
+  database:
+    batch_insert_size: 100     # Batch database operations
+    connection_pool_size: 5    # Database connection pool
+```
+
+#### Hardware Optimisation
+```bash
+# GPU acceleration (NVIDIA)
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+
+# Update config for GPU
+detection:
+  person:
+    device: cuda              # Use GPU for detection
+  face:
+    ctx_id: 0                 # GPU context for face analysis
+```
+
+## 🔒 Security & Privacy
+
+### Security Features
+
+#### Credential Management
+- **Encrypted Storage**: All credentials encrypted using Fernet symmetric encryption
+- **Environment Variables**: Secure key management via environment variables
+- **Access Control**: Role-based permissions (Admin, Manager, Viewer)
+- **Session Management**: Configurable session timeouts and login attempt limits
+
+#### Network Security
+- **HTTPS Support**: TLS encryption for web interface
+- **Secure RTSP**: RTSPS support for encrypted camera streams
+- **Network Isolation**: Recommended VLAN segmentation for camera networks
+- **Firewall Configuration**: Minimal port exposure with configurable access
+
+#### Data Protection
+- **Privacy-First Design**: No personally identifiable information stored
+- **Local Processing**: On-premises analytics with optional cloud integration
+- **Audit Logging**: Comprehensive activity logging for compliance
+- **Data Retention**: Configurable data retention policies
+
+### Security Best Practices
+
+#### Production Deployment
+```bash
+# 1. Change default credentials immediately
+# 2. Set strong encryption keys
+export RETAIL_ANALYTICS_KEY="$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
+
+# 3. Use HTTPS with proper certificates
+# 4. Configure firewall rules
+sudo ufw allow 5000/tcp  # Web interface
+sudo ufw enable
+
+# 5. Set restrictive file permissions
+chmod 600 config/credentials.enc
+chmod 700 config/
+```
+
+#### Network Security
+- **Camera Isolation**: Place cameras on separate VLAN
+- **Access Control**: Limit web interface access to authorised networks
+- **Regular Updates**: Keep system and dependencies updated
+- **Monitoring**: Enable audit logging and monitor for suspicious activity
+
+#### Privacy Compliance
+- **Data Minimisation**: Only collect necessary analytics data
+- **Anonymisation**: Demographic analysis without identity storage
+- **Consent Management**: Implement appropriate consent mechanisms
+- **Data Subject Rights**: Provide data access and deletion capabilities
+
+## 🛠️ Development
+
+### Development Environment Setup
+
+#### Prerequisites
+```bash
+# Install development dependencies
+pip install -r requirements.txt
+pip install pytest pytest-cov black isort flake8 mypy pre-commit
+
+# Set up pre-commit hooks
+pre-commit install
+```
+
+#### Code Quality Tools
+```bash
+# Code formatting
+black src/
+isort src/
+
+# Linting
+flake8 src/
+mypy src/
+
+# Testing
+pytest tests/ --cov=src/
+```
+
+### Project Structure
+```
+reviision/
+├── src/                     # Main application source
+│   ├── main.py             # Application entry point
+│   ├── config.yaml         # Default configuration
+│   ├── camera/             # Camera interface modules
+│   ├── detection/          # Object detection and tracking
+│   ├── analysis/           # Behavioural analysis modules
+│   ├── web/                # Web interface and API
+│   ├── database/           # Database abstraction layer
+│   └── utils/              # Utility functions and helpers
+├── pi_testbench/           # Raspberry Pi deployment
+│   ├── src/                # Pi-specific source code
+│   ├── scripts/            # Setup and management scripts
+│   ├── services/           # Systemd service files
+│   └── config/             # Pi configuration files
+├── tests/                  # Test suite
+├── docs/                   # Documentation
+├── models/                 # ML model storage
+├── data/                   # Database and data files
+└── requirements.txt        # Python dependencies
+```
+
+### Contributing Guidelines
+
+#### Code Standards
+- **Python Style**: Follow PEP 8 with Black formatting
+- **Documentation**: Comprehensive docstrings for all public functions
+- **Testing**: Minimum 80% test coverage for new features
+- **Type Hints**: Use type annotations for better code clarity
+
+#### Development Workflow
+1. **Fork** the repository
+2. **Create** feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** changes (`git commit -m 'Add amazing feature'`)
+4. **Push** to branch (`git push origin feature/amazing-feature`)
+5. **Open** Pull Request with detailed description
+
+#### Testing
+```bash
+# Run full test suite
+pytest tests/
+
+# Run specific test categories
+pytest tests/unit/          # Unit tests
+pytest tests/integration/   # Integration tests
+pytest tests/performance/   # Performance tests
+
+# Generate coverage report
+pytest --cov=src/ --cov-report=html
+```
+
+### API Development
+
+#### Adding New Endpoints
+```python
+# src/web/routes.py
+@web_bp.route('/api/new-feature')
+@require_auth('manager')
+def new_feature():
+    """New API endpoint with proper authentication"""
+    try:
+        # Implementation
+        return jsonify({'status': 'success', 'data': result})
+    except Exception as e:
+        logger.error(f"Error in new_feature: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+```
+
+#### Database Schema Changes
+```python
+# src/database/sqlite_db.py
+def create_new_table(self):
+    """Add new table with proper constraints"""
+    self.cursor.execute('''
+        CREATE TABLE IF NOT EXISTS new_table (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            -- Add columns with appropriate constraints
+        )
+    ''')
+```
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### Installation Problems
+
+**PyTorch Installation Fails**
+```bash
+# Solution: Use platform-specific installation
+# For CUDA support:
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+
+# For CPU only:
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+# For macOS with Apple Silicon:
+pip install torch torchvision
+```
+
+**OpenCV Import Error**
+```bash
+# Solution: Reinstall OpenCV
+pip uninstall opencv-python opencv-python-headless
+pip install opencv-python
+
+# For headless servers:
+pip install opencv-python-headless
+```
+
+**Permission Denied Errors**
+```bash
+# Solution: Fix file permissions
+chmod +x scripts/*.sh
+chmod 600 config/credentials.enc
+sudo chown -R $USER:$USER data/
+```
+
+#### Runtime Issues
+
+**Camera Connection Failed**
+```yaml
+# Check camera configuration in config.yaml
+camera:
+  type: usb
+  device: 0  # Try different device numbers: 0, 1, 2...
+
+# For RTSP cameras, verify URL and credentials
+camera:
+  type: rtsp
+  url: "rtsp://camera-ip:554/stream"
+  # Test with VLC or ffplay first
+```
+
+**High CPU/Memory Usage**
+```yaml
+# Optimise performance settings
+performance:
+  frame_analysis:
+    frame_skip_factor: 5      # Process every 5th frame
+    min_interval_ms: 200      # Increase processing interval
+
+detection:
+  person:
+    image_size: 416           # Reduce from 640 for faster processing
+```
+
+**Web Interface Not Accessible**
+```bash
+# Check if service is running
+python src/main.py --debug
+
+# Verify network configuration
+netstat -tlnp | grep 5000
+
+# Check firewall settings
+sudo ufw status
+sudo ufw allow 5000/tcp
+```
+
+#### Database Issues
+
+**Database Locked Error**
+```bash
+# Solution: Check for multiple instances
+ps aux | grep python | grep main.py
+kill <process_id>
+
+# Reset database if corrupted
+mv data/reviision.db data/reviision.db.backup
+# Restart application to recreate database
+```
+
+**Migration Errors**
+```bash
+# Solution: Manual database reset
+cd src
+python -c "
+from database import get_database
+import os
+if os.path.exists('../data/reviision.db'):
+    os.remove('../data/reviision.db')
+db = get_database({'type': 'sqlite', 'path': '../data/reviision.db'})
+print('Database recreated successfully')
+"
+```
+
+### Performance Tuning
+
+#### System Optimisation
+```yaml
+# config.yaml optimisation
+performance:
+  frame_analysis:
+    enable_motion_detection: true    # Skip processing when no motion
+    motion_threshold: 1000          # Adjust sensitivity
+    cache_duration_ms: 1000         # Cache results
+
+  yolo:
+    batch_size: 1                   # Reduce for lower memory usage
+    half_precision: true            # Use FP16 for speed
+
+camera:
+  fps: 15                          # Reduce FPS for better performance
+  buffer_size: 1                   # Minimal buffering
+```
+
+#### Hardware Recommendations
+- **CPU**: Intel i7 or AMD Ryzen 7 for multiple cameras
+- **RAM**: 16GB+ for optimal performance
+- **GPU**: NVIDIA GTX 1660+ for GPU acceleration
+- **Storage**: SSD for database and model storage
+
+### Raspberry Pi Specific Issues
+
+#### WiFi Hotspot Not Working
+```bash
+# Check network services
+sudo systemctl status hostapd
+sudo systemctl status dnsmasq
+
+# Restart network services
+sudo systemctl restart reviision-network-prep
+sudo systemctl restart hostapd
+sudo systemctl restart dnsmasq
+```
+
+#### Pi Performance Issues
+```bash
+# Check system resources
+htop
+free -h
+df -h
+
+# Optimise Pi configuration
+echo "arm_freq=1800" | sudo tee -a /boot/config.txt
+echo "gpu_mem=128" | sudo tee -a /boot/config.txt
+sudo reboot
+```
+
+### Logging and Debugging
+
+#### Enable Debug Logging
+```bash
+# Run with debug mode
+python src/main.py --debug
+
+# Check log files
+tail -f reviision.log
+tail -f pi_testbench/logs/pi_testbench.log
+```
+
+#### Log Locations
+- **Main System**: `reviision.log`
+- **Pi Testbench**: `pi_testbench/logs/pi_testbench.log`
+- **Web Server**: `web.log`
+- **Database**: `database.log`
+
+## 📚 Additional Resources
+
+### Third-Party Licenses
+- **YOLOv8**: AGPL-3.0 License
+- **InsightFace**: MIT License
+- **OpenCV**: Apache 2.0 License
+- **Flask**: BSD-3-Clause License
+
+## 🙏 Acknowledgements
+
+- **Ultralytics** for the YOLOv8 object detection framework
+- **InsightFace** for facial analysis capabilities
+- **OpenCV** community for computer vision tools
+- **Flask** team for the web framework
+- **Contributors** who have helped improve ReViision
+
+---
+
+**ReViision** - Transforming retail analytics through intelligent computer vision.
