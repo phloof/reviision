@@ -106,6 +106,7 @@
 .settings-sidebar-container {
     position: sticky;
     top: var(--spacing-6);
+    align-self: start; /* Ensure sidebar aligns to top */
 }
 
 .settings-content-container {
@@ -124,6 +125,17 @@
     .settings-page-layout {
         grid-template-columns: 280px 1fr;
         gap: 1.5rem;
+        align-items: start; /* Ensure both sidebar and content align to top */
+    }
+
+    /* Fix sidebar alignment on laptop */
+    .settings-sidebar-container {
+        top: 0; /* Remove top offset on laptop */
+        position: sticky;
+    }
+
+    .settings-sidebar {
+        margin-top: 0; /* Ensure no extra top margin */
     }
 
     /* Fix database management card overflow */

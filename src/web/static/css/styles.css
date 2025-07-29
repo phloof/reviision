@@ -1330,8 +1330,10 @@ header {
 /* Laptop Desktop (1200px-1600px) - Optimized for laptop screens */
 @media (min-width: 1200px) and (max-width: 1600px) {
     .container-fluid {
-        padding-left: 1rem;
-        padding-right: 1rem;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .dashboard-grid {

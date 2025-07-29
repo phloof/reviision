@@ -494,6 +494,19 @@
         overflow: hidden;
         text-overflow: ellipsis;
     }
+
+    /* Margin consistency utilities */
+    .laptop-container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .laptop-equal-margins {
+        margin-left: auto;
+        margin-right: auto;
+    }
 }
 
 .section {

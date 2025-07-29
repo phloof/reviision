@@ -470,7 +470,7 @@
 
     .dashboard-stats-grid {
         grid-template-columns: repeat(4, 1fr);
-        gap: 1.5rem;
+        gap: 1rem; /* Reduced gap for laptop screens */
     }
 
     .dashboard-charts-grid {
@@ -478,8 +478,19 @@
         gap: 1.5rem;
     }
 
-    /* Reduce container padding for better space utilization */
+    /* Ensure equal left/right margins on laptop */
     .container-fluid {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    /* Ensure main content has consistent margins */
+    .content {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .page-header {
         padding-left: 1rem;
         padding-right: 1rem;
     }
