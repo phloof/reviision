@@ -147,6 +147,26 @@ body {
     width: var(--sidebar-width-collapsed);
 }
 
+/* Laptop-specific sidebar adjustments */
+@media screen and (min-width: 1200px) and (max-width: 1600px) {
+    .sidebar {
+        width: var(--laptop-sidebar-width);
+    }
+
+    .sidebar.collapsed {
+        width: var(--laptop-sidebar-collapsed);
+    }
+
+    /* Adjust content margin for smaller sidebar */
+    .content {
+        margin-left: var(--laptop-sidebar-width);
+    }
+
+    .sidebar.collapsed + .content {
+        margin-left: var(--laptop-sidebar-collapsed);
+    }
+}
+
 .sidebar-header {
     padding: 0 20px 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -951,6 +971,15 @@ header {
     margin-bottom: 30px;
 }
 
+/* Laptop-specific dashboard grid */
+@media screen and (min-width: 1200px) and (max-width: 1600px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(auto-fill, minmax(var(--laptop-grid-min-width), 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+}
+
 /* Stats Grid - Responsive Layout */
 .stats-grid {
     display: flex;
@@ -1082,11 +1111,27 @@ header {
     margin-bottom: 30px;
     position: relative;
     overflow: hidden;
+    min-height: 200px;
 }
 
 .chart-container canvas {
     max-width: 100%;
     max-height: 100%;
+}
+
+/* Laptop-specific chart container adjustments */
+@media screen and (min-width: 1200px) and (max-width: 1600px) {
+    .chart-container {
+        height: var(--laptop-chart-height);
+        margin-bottom: 1.5rem;
+    }
+
+    /* Optimize chart container for laptop aspect ratios */
+    .chart-container.dashboard-chart {
+        aspect-ratio: 16/10;
+        height: auto;
+        min-height: var(--laptop-chart-height);
+    }
 }
 
 /* Demographic chart specific styling */
@@ -1252,24 +1297,45 @@ header {
    Responsive Design - Fixed Breakpoints
    ==================================== */
 
-/* Large Desktop (1200px+) - Enhanced Layout */
-@media (min-width: 1200px) {
+/* Large Desktop (1601px+) - Enhanced Layout for true desktop screens */
+@media (min-width: 1601px) {
     .container-fluid {
         padding-left: 2rem;
         padding-right: 2rem;
     }
-    
+
     .dashboard-grid {
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         gap: 30px;
     }
-    
+
     .stat-card .card-body {
         padding: 2rem 1.5rem;
     }
-    
+
     .chart-card .card-body {
         padding: 2.5rem;
+    }
+}
+
+/* Laptop Desktop (1200px-1600px) - Optimized for laptop screens */
+@media (min-width: 1200px) and (max-width: 1600px) {
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: repeat(auto-fill, minmax(var(--laptop-grid-min-width), 1fr));
+        gap: 1.5rem;
+    }
+
+    .stat-card .card-body {
+        padding: 1.25rem 1rem;
+    }
+
+    .chart-card .card-body {
+        padding: 1.5rem;
     }
 }
 

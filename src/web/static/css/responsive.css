@@ -4,6 +4,43 @@
    ==================================== */
 
 /* ====================================
+   Screen Density and Laptop-Specific Variables
+   ==================================== */
+:root {
+    /* Base scaling factors for different screen densities */
+    --laptop-scale-factor: 1;
+    --desktop-scale-factor: 1;
+
+    /* Laptop-specific layout variables */
+    --laptop-sidebar-width: 200px;
+    --laptop-sidebar-collapsed: 60px;
+    --laptop-grid-min-width: 220px;
+    --laptop-chart-height: 280px;
+
+    /* Desktop layout variables (original values) */
+    --desktop-sidebar-width: 250px;
+    --desktop-sidebar-collapsed: 70px;
+    --desktop-grid-min-width: 280px;
+    --desktop-chart-height: 400px;
+}
+
+/* High-DPI laptop screens (13-15 inch, 1920x1080+) */
+@media screen and (min-width: 1200px) and (max-width: 1600px) and (min-resolution: 120dpi) {
+    :root {
+        --laptop-scale-factor: 1.1;
+        --laptop-grid-min-width: 200px;
+        --laptop-chart-height: 260px;
+    }
+}
+
+/* Standard laptop screens (13-15 inch, typical laptop resolutions) */
+@media screen and (min-width: 1200px) and (max-width: 1600px) {
+    :root {
+        --laptop-scale-factor: 1.05;
+    }
+}
+
+/* ====================================
    Base Responsive Improvements
    ==================================== */
 
@@ -195,32 +232,58 @@
    Chart Responsive Improvements
    ==================================== */
 
-/* Responsive chart containers */
+/* Responsive chart containers with aspect ratio support */
 .chart-container {
     position: relative;
     width: 100%;
     height: 300px;
+    min-height: 200px;
+    aspect-ratio: 16/9;
 }
 
+/* Mobile chart sizing */
 @media (max-width: 767px) {
     .chart-container {
         height: 250px;
+        aspect-ratio: 4/3;
     }
 }
 
 @media (max-width: 480px) {
     .chart-container {
         height: 200px;
+        aspect-ratio: 4/3;
     }
 }
 
-/* Large screen chart improvements */
-@media (min-width: 1200px) {
+/* Laptop-specific chart improvements */
+@media screen and (min-width: 1200px) and (max-width: 1600px) {
     .chart-container {
-        height: 350px;
+        height: var(--laptop-chart-height);
+        aspect-ratio: 16/10; /* Better for laptop screens */
+    }
+
+    /* Reduce chart padding for better space utilization */
+    .chart-card .card-body {
+        padding: 1.5rem 1rem;
+    }
+
+    /* Optimize chart controls for laptop screens */
+    .chart-controls {
+        gap: 0.5rem;
+        padding: 0.75rem;
     }
 }
 
+/* Desktop chart improvements */
+@media (min-width: 1601px) {
+    .chart-container {
+        height: var(--desktop-chart-height);
+        aspect-ratio: 16/9;
+    }
+}
+
+/* Large desktop screens */
 @media (min-width: 1400px) {
     .chart-container {
         height: 400px;
@@ -390,6 +453,175 @@
 @media (min-width: 2560px) {
     .card-content-text {
         max-width: 75ch;
+    }
+}
+
+/* ====================================
+   Laptop-Specific Layout Optimizations
+   ==================================== */
+
+/* Laptop screens: Optimize grid layouts and spacing */
+@media screen and (min-width: 1200px) and (max-width: 1600px) {
+    /* Dashboard grid optimizations */
+    .dashboard-grid {
+        grid-template-columns: repeat(auto-fill, minmax(var(--laptop-grid-min-width), 1fr));
+        gap: 1.5rem;
+    }
+
+    .dashboard-stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+    }
+
+    .dashboard-charts-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+
+    /* Reduce container padding for better space utilization */
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    /* Optimize card spacing */
+    .card {
+        margin-bottom: 1rem;
+    }
+
+    .card-body {
+        padding: 1.25rem;
+    }
+
+    /* Stat card optimizations */
+    .stat-card {
+        min-height: 140px;
+    }
+
+    .stat-card .card-body {
+        padding: 1.25rem 1rem;
+    }
+
+    /* Responsive grid improvements */
+    .responsive-grid {
+        gap: var(--spacing-4);
+    }
+
+    .responsive-grid-lg-4 {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.25rem;
+    }
+
+    .responsive-grid-lg-3 {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+    }
+}
+
+/* Laptop typography and spacing adjustments */
+@media screen and (min-width: 1200px) and (max-width: 1600px) and (min-resolution: 120dpi) {
+    /* Slightly increase font sizes for high-DPI laptop screens */
+    body {
+        font-size: calc(var(--font-size-base) * var(--laptop-scale-factor));
+    }
+
+    .card-title {
+        font-size: calc(1.125rem * var(--laptop-scale-factor));
+    }
+
+    .page-title h1 {
+        font-size: calc(1.75rem * var(--laptop-scale-factor));
+    }
+
+    /* Adjust button sizes for better touch targets */
+    .btn {
+        padding: calc(var(--spacing-3) * var(--laptop-scale-factor)) calc(var(--spacing-6) * var(--laptop-scale-factor));
+        min-height: 40px;
+    }
+
+    .btn-sm {
+        padding: calc(var(--spacing-2) * var(--laptop-scale-factor)) calc(var(--spacing-4) * var(--laptop-scale-factor));
+        min-height: 36px;
+    }
+}
+
+/* ====================================
+   Overflow Prevention and Content Fitting
+   ==================================== */
+
+/* Prevent horizontal overflow on all screen sizes */
+* {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ensure content containers don't overflow */
+.container-fluid,
+.container-responsive,
+.main-layout,
+.content {
+    overflow-x: hidden;
+    max-width: 100vw;
+}
+
+/* Prevent text overflow in cards and components */
+.card-title,
+.page-title h1,
+.stat-label {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+/* Responsive images and media */
+img,
+video,
+canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Table responsiveness improvements */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Chart container overflow prevention */
+.chart-container {
+    overflow: hidden;
+    contain: layout style;
+}
+
+.chart-container canvas {
+    max-width: 100% !important;
+    max-height: 100% !important;
+}
+
+/* Laptop-specific overflow fixes */
+@media screen and (min-width: 1200px) and (max-width: 1600px) {
+    /* Ensure sidebar doesn't cause horizontal scroll */
+    .main-layout {
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
+
+    /* Prevent content from extending beyond viewport */
+    .content {
+        max-width: calc(100vw - var(--laptop-sidebar-width));
+        overflow-x: hidden;
+    }
+
+    .sidebar.collapsed + .content {
+        max-width: calc(100vw - var(--laptop-sidebar-collapsed));
+    }
+
+    /* Ensure grid items don't overflow their containers */
+    .dashboard-grid > *,
+    .dashboard-stats-grid > *,
+    .dashboard-charts-grid > * {
+        min-width: 0;
+        overflow: hidden;
     }
 }
 

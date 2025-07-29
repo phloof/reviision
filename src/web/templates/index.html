@@ -66,8 +66,32 @@
         }
     }
 
+    /* Laptop - optimized for smaller screens */
+    @media (min-width: 992px) and (max-width: 1600px) {
+        .dashboard-stats-container {
+            padding: 0;
+            margin: 0 auto 1.5rem auto;
+        }
+
+        .dashboard-stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+        }
+
+        .stat-card {
+            min-height: 140px;
+            display: flex;
+            align-items: center;
+        }
+
+        .stat-card .card-body {
+            width: 100%;
+            padding: 1.25rem 1rem;
+        }
+    }
+
     /* Desktop - match demographics page */
-    @media (min-width: 992px) {
+    @media (min-width: 1601px) {
         .dashboard-stats-container {
             padding: 0;
             margin: 0 auto 2rem auto;
@@ -126,8 +150,20 @@
         }
     }
 
+    /* Laptop - optimized for smaller screens */
+    @media (min-width: 992px) and (max-width: 1600px) {
+        .dashboard-charts-container {
+            padding: 0;
+        }
+
+        .dashboard-charts-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+    }
+
     /* Desktop - match demographics page */
-    @media (min-width: 992px) {
+    @media (min-width: 1601px) {
         .dashboard-charts-container {
             padding: 0;
         }

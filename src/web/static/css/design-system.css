@@ -128,7 +128,20 @@
     --font-size-4xl: 2.25rem;     /* 36px */
     --font-size-5xl: 3rem;        /* 48px */
     --font-size-6xl: 3.75rem;     /* 60px */
-    
+
+    /* Fluid Typography for Responsive Design */
+    --font-size-xs-fluid: clamp(0.7rem, 0.65rem + 0.25vw, 0.75rem);
+    --font-size-sm-fluid: clamp(0.8rem, 0.75rem + 0.25vw, 0.875rem);
+    --font-size-base-fluid: clamp(0.9rem, 0.85rem + 0.25vw, 1rem);
+    --font-size-lg-fluid: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+    --font-size-xl-fluid: clamp(1.1rem, 1.05rem + 0.25vw, 1.25rem);
+    --font-size-2xl-fluid: clamp(1.3rem, 1.2rem + 0.5vw, 1.5rem);
+    --font-size-3xl-fluid: clamp(1.6rem, 1.4rem + 1vw, 1.875rem);
+
+    /* Laptop-specific scaling factors */
+    --laptop-font-scale: 1.05;
+    --desktop-font-scale: 1;
+
     /* Font Weights */
     --font-weight-thin: 100;
     --font-weight-light: 300;
