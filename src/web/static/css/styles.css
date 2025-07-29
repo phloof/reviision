@@ -147,23 +147,32 @@ body {
     width: var(--sidebar-width-collapsed);
 }
 
-/* Laptop-specific sidebar adjustments */
+/* Laptop-specific sidebar adjustments - height scaling only */
 @media screen and (min-width: 1200px) and (max-width: 1600px) {
     .sidebar {
-        width: var(--laptop-sidebar-width);
+        /* Keep original width, but optimize content scaling */
+        font-size: 0.9rem;
     }
 
-    .sidebar.collapsed {
-        width: var(--laptop-sidebar-collapsed);
+    .sidebar .nav-link {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
     }
 
-    /* Adjust content margin for smaller sidebar */
-    .content {
-        margin-left: var(--laptop-sidebar-width);
+    .sidebar .nav-link i {
+        font-size: 1rem;
+        width: 1.2rem;
     }
 
-    .sidebar.collapsed + .content {
-        margin-left: var(--laptop-sidebar-collapsed);
+    /* Optimize sidebar navigation spacing */
+    .sidebar .nav-item {
+        margin-bottom: 0.25rem;
+    }
+
+    /* Reduce logo/brand area height */
+    .sidebar-brand {
+        padding: 1rem;
+        font-size: 1.1rem;
     }
 }
 

@@ -12,8 +12,8 @@
     --desktop-scale-factor: 1;
 
     /* Laptop-specific layout variables */
-    --laptop-sidebar-width: 200px;
-    --laptop-sidebar-collapsed: 60px;
+    --laptop-sidebar-width: 250px; /* Reverted to original width */
+    --laptop-sidebar-collapsed: 70px; /* Reverted to original width */
     --laptop-grid-min-width: 220px;
     --laptop-chart-height: 280px;
 
@@ -606,14 +606,14 @@ canvas {
         overflow-x: hidden;
     }
 
-    /* Prevent content from extending beyond viewport */
+    /* Prevent content from extending beyond viewport - using original sidebar width */
     .content {
-        max-width: calc(100vw - var(--laptop-sidebar-width));
+        max-width: calc(100vw - 250px); /* Original sidebar width */
         overflow-x: hidden;
     }
 
     .sidebar.collapsed + .content {
-        max-width: calc(100vw - var(--laptop-sidebar-collapsed));
+        max-width: calc(100vw - 70px); /* Original collapsed width */
     }
 
     /* Ensure grid items don't overflow their containers */
@@ -622,6 +622,46 @@ canvas {
     .dashboard-charts-grid > * {
         min-width: 0;
         overflow: hidden;
+    }
+
+    /* Settings page specific laptop fixes */
+    .settings-page-layout {
+        overflow-x: hidden;
+    }
+
+    .settings-content-container {
+        min-width: 0;
+        overflow-x: hidden;
+    }
+
+    /* Database management section fixes */
+    .d-flex.justify-between {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .d-flex.gap-3 {
+        flex-wrap: wrap;
+        gap: 0.75rem !important;
+    }
+
+    /* Metric cards responsive grid */
+    .d-grid.desktop-grid-cols-4 {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 1rem;
+    }
+
+    /* Button group responsiveness */
+    .btn-group-laptop {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .btn-group-laptop .btn {
+        flex: 0 1 auto;
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
     }
 }
 

@@ -494,7 +494,32 @@
 }
 
 /* Responsive card sizing for different screen sizes */
-@media (min-width: 1200px) {
+@media (min-width: 1200px) and (max-width: 1600px) {
+    /* Laptop-specific card sizing */
+    .card {
+        min-width: 220px; /* Reduced for laptop screens */
+    }
+
+    .card-body {
+        padding: var(--spacing-6); /* Reduced padding */
+    }
+
+    .card-header {
+        padding: var(--spacing-6); /* Reduced padding */
+    }
+
+    /* Stats cards should have reasonable max width */
+    .card.stat-card {
+        max-width: 350px;
+    }
+
+    /* Chart cards can be wider but not too wide */
+    .card.chart-card {
+        max-width: 500px;
+    }
+}
+
+@media (min-width: 1601px) {
     .card {
         min-width: 300px;
     }

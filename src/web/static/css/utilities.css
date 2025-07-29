@@ -447,6 +447,55 @@
     }
 }
 
+/* ====================================
+   Laptop-Specific Utility Classes
+   ==================================== */
+
+/* Grid utilities for laptop screens */
+@media screen and (min-width: 1200px) and (max-width: 1600px) {
+    .laptop-grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .laptop-grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+    }
+
+    .laptop-flex-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .laptop-text-sm {
+        font-size: 0.85rem;
+    }
+
+    .laptop-p-sm {
+        padding: 0.75rem;
+    }
+
+    .laptop-gap-sm {
+        gap: 0.75rem;
+    }
+
+    /* Overflow prevention utilities */
+    .laptop-overflow-hidden {
+        overflow-x: hidden;
+        max-width: 100%;
+    }
+
+    .laptop-no-wrap {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
 .section {
     padding-top: var(--spacing-12);
     padding-bottom: var(--spacing-12);
