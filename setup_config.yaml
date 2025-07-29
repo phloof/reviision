@@ -1,87 +1,314 @@
 # ReViision Setup Configuration
 # Configure this file for your specific deployment environment
 
-# Environment name (used for identification)
-environment: "pi_testbench"
+# Default environment name (used for identification)
+environment: "desktop_development"
 
-# Network Configuration
-network:
-  # Pi Network Settings
-  pi_ip: "192.168.1.60"  # Pi's IP on main network
-  pi_hotspot_ssid: "ReViision-TestBench"
-  pi_hotspot_password: "testbench2024"
-  pi_hotspot_network: "192.168.4.0/24"  # Hotspot network range
-  
-  # Camera Settings
-  camera_ip: "192.168.4.31"  # Camera IP on hotspot network
-  camera_port: 554  # RTSP port on camera
-  camera_username: "reviision"
-  camera_password: "reviision"
-  
-  # Port Forwarding (for external access)
-  external_port: 8554  # Port on Pi for external access
-  enable_port_forwarding: true
+# Main System Configuration (Desktop/Server)
+main_system:
+  # Application Settings
+  app:
+    # Encryption settings
+    encryption_key: ""  # Leave empty to generate new key
+    encryption_passphrase: ""  # Alternative to key - will derive key from passphrase
 
-# Application Settings
-app:
-  # Encryption (leave empty to generate new key)
-  encryption_key: ""
-  
-  # Camera Configuration
-  camera_type: "rtsp"  # rtsp, usb, mp4
-  camera_url_template: "rtsp://{username}:{password}@{host}:{port}/stream1"  # Creates 'url' field in config
-  
-  # Database
-  database_path: "reviision.db"
+    # Camera Configuration
+    camera:
+      type: "usb"  # usb, rtsp, rtsps, mp4
+      device: 0  # USB device ID or file path
+      fps: 30
+      resolution: [1920, 1080]
+      # For RTSP cameras (use credential references for security)
+      url: ""  # Will be set by credential system
+      credential_ref: ""  # Reference to stored credentials
 
-# Deployment Settings
-deployment:
-  # Service configuration
-  create_systemd_service: true
-  service_name: "reviision"
-  
-  # Auto-start configuration
-  enable_autostart: true
-  
-  # Log level
-  log_level: "INFO"
+    # Database Configuration
+    database:
+      type: "sqlite"
+      path: "data/reviision.db"
 
-# Alternative Environments (examples for different deployments)
+    # Web Interface
+    web:
+      host: "0.0.0.0"
+      port: 5000
+      debug: false
+      secret_key: ""  # Will be generated if empty
+
+    # Analysis Settings
+    analysis:
+      demographics:
+        enabled: true
+        detection_interval: 2
+        min_face_size: 15
+        confidence_threshold: 0.3
+
+      path:
+        enabled: true
+        max_path_history: 100
+        min_path_points: 5
+
+      dwell_time:
+        enabled: true
+        min_dwell_time: 3.0
+
+      heatmap:
+        enabled: true
+        resolution: [640, 480]
+        decay_factor: 0.1
+
+      correlation:
+        enabled: true
+        min_data_points: 10
+        significance_threshold: 0.2
+
+  # Deployment Settings
+  deployment:
+    # Service configuration
+    create_systemd_service: false  # Set to true for Linux production
+    service_name: "reviision"
+    service_user: "reviision"  # User to run service as
+
+    # Auto-start configuration
+    enable_autostart: false
+
+    # Log level
+    log_level: "INFO"
+
+    # Performance settings
+    performance:
+      frame_analysis:
+        min_interval_ms: 100
+        frame_skip_factor: 3
+        enable_motion_detection: true
+
+      yolo:
+        batch_size: 1
+        half_precision: false
+        device: "cpu"  # cpu or cuda
+
+# Pi Testbench Configuration
+pi_testbench:
+  # Network Configuration
+  network:
+    # WiFi Hotspot Settings
+    hotspot:
+      ssid: "ReViision-TestBench"
+      password: "testbench2024"
+      interface: "wlan1"
+      ip_range: "192.168.4.0/24"
+      gateway: "192.168.4.1"
+      dhcp_range: "192.168.4.10,192.168.4.50"
+
+    # Internet Connection
+    internet:
+      method: "wifi"  # wifi, ethernet, disabled
+      wifi_ssid: ""  # Set during setup
+      wifi_password: ""  # Set during setup
+      interface: "wlan0"
+
+    # ReViision Server Connection
+    server:
+      host: "192.168.4.10"  # Main system IP on hotspot network
+      port: 5000
+      protocol: "http"
+      username: "admin"
+      password: "admin"
+      timeout: 10
+      retry_attempts: 3
+      retry_delay: 5
+
+  # Data Collection Settings
+  data:
+    polling:
+      analytics: 15  # seconds
+      system_status: 60
+      network_status: 120
+
+    cache:
+      max_age: 3600  # seconds
+      max_entries: 1000
+
+  # System Settings
+  system:
+    startup_delay: 30  # seconds
+    health_check_interval: 300
+    auto_restart: true
+
+  # Deployment Settings
+  deployment:
+    create_systemd_service: true
+    service_name: "reviision-pi"
+    service_user: "admin"  # Pi user
+    enable_autostart: true
+    log_level: "INFO"
+
+# Alternative Environment Configurations
 environments:
-  phone_demo:
-    network:
-      pi_ip: "192.168.43.100"  # Static IP on phone hotspot
-      pi_hotspot_ssid: "ReViision-Demo"
-      pi_hotspot_password: "demo2024"
-      camera_ip: "192.168.4.31"
-      camera_port: 554
-      external_port: 8554
-      enable_port_forwarding: true
-      phone_hotspot_network: "192.168.43.0/24"  # Typical phone hotspot range
-    app:
-      log_level: "INFO"
-    deployment:
-      create_systemd_service: false  # Skip service for demo
-      
-  production:
-    network:
-      pi_ip: "10.0.1.100"
-      camera_ip: "10.0.1.200"
-      external_port: 8554
-    app:
-      log_level: "WARNING"
-  
-  development:
-    network:
-      pi_ip: "192.168.1.50"
-      camera_ip: "192.168.1.51"
-      enable_port_forwarding: false
-    app:
-      log_level: "DEBUG"
-  
+  # Production Desktop/Server Deployment
+  desktop_production:
+    main_system:
+      app:
+        camera:
+          type: "rtsp"
+          credential_ref: "production_camera"
+        web:
+          host: "0.0.0.0"
+          port: 5000
+          debug: false
+        analysis:
+          demographics:
+            detection_interval: 5  # Less frequent for production
+          correlation:
+            enabled: true
+      deployment:
+        create_systemd_service: true
+        service_user: "reviision"
+        enable_autostart: true
+        log_level: "WARNING"
+        performance:
+          yolo:
+            device: "cuda"  # Use GPU if available
+            half_precision: true
+
+  # Development Environment
+  desktop_development:
+    main_system:
+      app:
+        camera:
+          type: "mp4"
+          device: "test_videos/sample.mp4"
+        web:
+          debug: true
+          port: 5000
+        analysis:
+          demographics:
+            detection_interval: 1  # More frequent for testing
+      deployment:
+        create_systemd_service: false
+        log_level: "DEBUG"
+
+  # Pi Testbench with Phone Hotspot
+  pi_phone_demo:
+    pi_testbench:
+      network:
+        hotspot:
+          ssid: "ReViision-Demo"
+          password: "demo2024"
+        internet:
+          method: "wifi"
+          wifi_ssid: "Phone_Hotspot"  # Connect to phone hotspot
+        server:
+          host: "192.168.43.100"  # Phone hotspot IP range
+      deployment:
+        log_level: "INFO"
+
+  # Pi Testbench Production
+  pi_production:
+    pi_testbench:
+      network:
+        hotspot:
+          ssid: "ReViision-Analytics"
+          password: "analytics2024"
+        internet:
+          method: "ethernet"  # Stable ethernet connection
+        server:
+          host: "10.0.1.100"  # Production server IP
+          protocol: "https"  # Secure connection
+      data:
+        polling:
+          analytics: 30  # Less frequent polling
+      deployment:
+        log_level: "WARNING"
+
+  # Corporate Environment
   corporate:
-    network:
-      pi_ip: "172.16.0.100"
-      pi_hotspot_ssid: "ReViision-Corp"
-      camera_ip: "172.16.0.200"
-      external_port: 9554 
+    main_system:
+      app:
+        camera:
+          type: "rtsp"
+          credential_ref: "corporate_camera"
+        web:
+          host: "172.16.0.100"
+          port: 8080  # Non-standard port
+        database:
+          type: "sqlite"
+          path: "/opt/reviision/data/reviision.db"
+      deployment:
+        create_systemd_service: true
+        service_user: "reviision"
+        log_level: "INFO"
+
+    pi_testbench:
+      network:
+        hotspot:
+          ssid: "ReViision-Corp"
+          password: "corporate2024"
+        internet:
+          method: "wifi"
+          wifi_ssid: "Corp-WiFi"
+        server:
+          host: "172.16.0.100"
+          port: 8080
+
+  # Offline Demo Environment
+  offline_demo:
+    main_system:
+      app:
+        camera:
+          type: "mp4"
+          device: "demo_videos/retail_demo.mp4"
+        web:
+          host: "127.0.0.1"  # Local only
+          port: 5000
+      deployment:
+        create_systemd_service: false
+        log_level: "INFO"
+
+    pi_testbench:
+      network:
+        hotspot:
+          ssid: "ReViision-Offline"
+          password: "offline2024"
+        internet:
+          method: "disabled"  # No internet connection
+        server:
+          host: "192.168.4.1"  # Pi itself
+          port: 5000
+      data:
+        polling:
+          analytics: 60  # Slower polling for demo
+
+# Credential Templates (for setup script to create)
+credential_templates:
+  rtsp_camera:
+    service: "rtsp"
+    keys:
+      - "url"
+      - "username"
+      - "password"
+    example:
+      url: "rtsp://camera.local:554/stream1"
+      username: "admin"
+      password: "password123"
+
+  production_camera:
+    service: "production_camera"
+    keys:
+      - "url"
+      - "username"
+      - "password"
+    example:
+      url: "rtsp://10.0.1.200:554/stream1"
+      username: "reviision"
+      password: "secure_password"
+
+  corporate_camera:
+    service: "corporate_camera"
+    keys:
+      - "url"
+      - "username"
+      - "password"
+    example:
+      url: "rtsp://172.16.0.200:554/stream1"
+      username: "corp_user"
+      password: "corp_password"
