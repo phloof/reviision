@@ -146,6 +146,8 @@ cython_debug/
 
 # Retail Analytics specific
 *.db
+*.db-shm
+*.db-wal
 *.log
 temp_frame.jpg
 .salt
