@@ -96,6 +96,9 @@ def create_app(config, db):
 
     # Helper to run SocketIO in main if needed (used by main.py)
     def run_with_socketio(*args, **kwargs):
+        # Set allow_unsafe_werkzeug=True by default if not specified
+        if 'allow_unsafe_werkzeug' not in kwargs:
+            kwargs['allow_unsafe_werkzeug'] = True
         socketio.run(app, *args, **kwargs)
     app.run_with_socketio = run_with_socketio
 

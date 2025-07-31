@@ -237,9 +237,9 @@ def main():
         
         # Run web server (SocketIO if available)
         if hasattr(app, 'run_with_socketio'):
-            app.run_with_socketio(host=config['web']['host'],port=config['web']['port'],debug=args.debug)
+            app.run_with_socketio(host=config['web']['host'],port=config['web']['port'],debug=args.debug,allow_unsafe_werkzeug=True)
         else:
-            app.run(host=config['web']['host'],port=config['web']['port'],debug=args.debug)
+            app.run(host=config['web']['host'],port=config['web']['port'],debug=args.debug,allow_unsafe_werkzeug=True)
         
     except KeyboardInterrupt:
         logger.info("Shutting down...")
