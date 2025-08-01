@@ -1,7 +1,7 @@
 # ReViision
 ## Retail Vision + Reiterative Improvement
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
 
 **ReViision** is a comprehensive retail analytics platform that leverages advanced computer vision and machine learning to provide actionable insights into customer behaviour. The system enables retailers to optimise store layouts, improve customer experience, and make data-driven decisions through real-time analysis of foot traffic patterns, demographic insights, and behavioural analytics.
 
@@ -915,9 +915,9 @@ tail -f pi_testbench/logs/pi_testbench.log
 
 - **Ultralytics** for the YOLOv8 object detection framework
 - **InsightFace** for facial analysis capabilities
+- **DeepFace** for advanced facial recognition and analysis
 - **OpenCV** community for computer vision tools
 - **Flask** team for the web framework
-- **Contributors** who have helped improve ReViision
 
 ---
 

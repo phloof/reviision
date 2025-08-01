@@ -2486,6 +2486,131 @@ class SQLiteDatabase:
                 "message": f"Failed to get dwell time statistics: {str(e)}"
             }
 
+    def get_database_statistics(self):
+        """
+        Get overall database statistics including total records, file size, and date ranges
+
+        Returns:
+            dict: Database statistics
+        """
+        try:
+            import os
+            from datetime import datetime
+
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
+            # Get total records from main tables
+            total_records = 0
+
+            # Count persons
+            cursor.execute('SELECT COUNT(*) FROM persons')
+            persons_count = cursor.fetchone()[0]
+            total_records += persons_count
+
+            # Count detections
+            cursor.execute('SELECT COUNT(*) FROM detections')
+            detections_count = cursor.fetchone()[0]
+            total_records += detections_count
+
+            # Count demographics
+            cursor.execute('SELECT COUNT(*) FROM demographics')
+            demographics_count = cursor.fetchone()[0]
+            total_records += demographics_count
+
+            # Count dwell times
+            cursor.execute('SELECT COUNT(*) FROM dwell_times')
+            dwell_times_count = cursor.fetchone()[0]
+            total_records += dwell_times_count
+
+            # Get database file size
+            db_size = 0
+            if os.path.exists(self.db_path):
+                db_size = os.path.getsize(self.db_path)
+
+            # Get oldest record timestamp
+            oldest_timestamp = None
+            timestamps = []
+
+            # Check persons table
+            cursor.execute('SELECT MIN(first_detected) FROM persons WHERE first_detected IS NOT NULL')
+            result = cursor.fetchone()[0]
+            if result:
+                timestamps.append(result)
+
+            # Check detections table
+            cursor.execute('SELECT MIN(timestamp) FROM detections WHERE timestamp IS NOT NULL')
+            result = cursor.fetchone()[0]
+            if result:
+                timestamps.append(result)
+
+            # Check demographics table
+            cursor.execute('SELECT MIN(timestamp) FROM demographics WHERE timestamp IS NOT NULL')
+            result = cursor.fetchone()[0]
+            if result:
+                timestamps.append(result)
+
+            # Check dwell_times table
+            cursor.execute('SELECT MIN(start_time) FROM dwell_times WHERE start_time IS NOT NULL')
+            result = cursor.fetchone()[0]
+            if result:
+                timestamps.append(result)
+
+            if timestamps:
+                oldest_timestamp = min(timestamps)
+
+            # Get latest record timestamp
+            latest_timestamp = None
+            timestamps = []
+
+            # Check persons table
+            cursor.execute('SELECT MAX(first_detected) FROM persons WHERE first_detected IS NOT NULL')
+            result = cursor.fetchone()[0]
+            if result:
+                timestamps.append(result)
+
+            # Check detections table
+            cursor.execute('SELECT MAX(timestamp) FROM detections WHERE timestamp IS NOT NULL')
+            result = cursor.fetchone()[0]
+            if result:
+                timestamps.append(result)
+
+            # Check demographics table
+            cursor.execute('SELECT MAX(timestamp) FROM demographics WHERE timestamp IS NOT NULL')
+            result = cursor.fetchone()[0]
+            if result:
+                timestamps.append(result)
+
+            # Check dwell_times table
+            cursor.execute('SELECT MAX(start_time) FROM dwell_times WHERE start_time IS NOT NULL')
+            result = cursor.fetchone()[0]
+            if result:
+                timestamps.append(result)
+
+            if timestamps:
+                latest_timestamp = max(timestamps)
+
+            return {
+                "success": True,
+                "total_records": total_records,
+                "database_size_bytes": db_size,
+                "oldest_record": oldest_timestamp,
+                "latest_record": latest_timestamp,
+                "breakdown": {
+                    "persons": persons_count,
+                    "detections": detections_count,
+                    "demographics": demographics_count,
+                    "dwell_times": dwell_times_count
+                }
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting database statistics: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to get database statistics: {str(e)}"
+            }
+
 
     def close(self):
         """Close database connection"""

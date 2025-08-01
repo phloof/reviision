@@ -455,7 +455,7 @@
                             <i class="fas fa-chart-line text-info"></i>
                             Analysis Configuration
                         </h2>
-                        <button class="btn btn-info" id="save-analysis-settings">
+                        <button class="btn btn-primary" id="save-analysis-settings">
                             <i class="fas fa-save"></i>
                             Save Changes
                         </button>
@@ -654,6 +654,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const activeSection = document.getElementById(targetSection + '-section');
             if (activeSection) {
                 activeSection.classList.remove('d-none');
+
+                // Load database statistics when database section is shown
+                if (targetSection === 'database') {
+                    loadDatabaseStatistics();
+                }
             }
         });
     });
@@ -816,6 +821,84 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+    }
+
+    // Database statistics loading function
+    async function loadDatabaseStatistics() {
+        try {
+            // Show loading state
+            document.getElementById('total-records').textContent = '...';
+            document.getElementById('database-size').textContent = '...';
+            document.getElementById('oldest-record').textContent = '...';
+            document.getElementById('latest-record').textContent = '...';
+
+            const response = await fetch('/api/database/statistics');
+            const data = await response.json();
+
+            if (data.success) {
+                // Update total records
+                document.getElementById('total-records').textContent = data.total_records.toLocaleString();
+
+                // Format and update database size
+                const sizeFormatted = formatFileSize(data.database_size_bytes);
+                document.getElementById('database-size').textContent = sizeFormatted;
+
+                // Format and update oldest record
+                if (data.oldest_record) {
+                    const oldestDate = new Date(data.oldest_record);
+                    document.getElementById('oldest-record').textContent = formatDate(oldestDate);
+                } else {
+                    document.getElementById('oldest-record').textContent = '--';
+                }
+
+                // Format and update latest record
+                if (data.latest_record) {
+                    const latestDate = new Date(data.latest_record);
+                    document.getElementById('latest-record').textContent = formatDate(latestDate);
+                } else {
+                    document.getElementById('latest-record').textContent = '--';
+                }
+            } else {
+                // Show error state
+                document.getElementById('total-records').textContent = 'Error';
+                document.getElementById('database-size').textContent = 'Error';
+                document.getElementById('oldest-record').textContent = 'Error';
+                document.getElementById('latest-record').textContent = 'Error';
+
+                showNotification('Failed to load database statistics: ' + (data.message || 'Unknown error'), 'error');
+            }
+        } catch (error) {
+            console.error('Error loading database statistics:', error);
+
+            // Show error state
+            document.getElementById('total-records').textContent = 'Error';
+            document.getElementById('database-size').textContent = 'Error';
+            document.getElementById('oldest-record').textContent = 'Error';
+            document.getElementById('latest-record').textContent = 'Error';
+
+            showNotification('Error loading database statistics: ' + error.message, 'error');
+        }
+    }
+
+    // Helper function to format file size
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    // Helper function to format date
+    function formatDate(date) {
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+
+    // Load database statistics on page load if database section is active
+    if (document.querySelector('.settings-nav-link[data-section="database"]').classList.contains('active')) {
+        loadDatabaseStatistics();
     }
 });
 </script>

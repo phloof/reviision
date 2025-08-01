@@ -1808,6 +1808,21 @@ def get_historical_dwell_time():
         logger.error(f"Error getting historical dwell time: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
+@web_bp.route('/api/database/statistics', methods=['GET'])
+@require_auth()
+def get_database_statistics():
+    """
+    Get database statistics including total records, file size, and date ranges
+    """
+    try:
+        # Get database statistics
+        stats = analysis_service.database.get_database_statistics()
+
+        return jsonify(stats)
+    except Exception as e:
+        logger.error(f"Error getting database statistics: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
 # ============================================================================
 # Zone Management Routes
 # ============================================================================

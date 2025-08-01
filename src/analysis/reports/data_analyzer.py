@@ -158,30 +158,56 @@ class DataAnalyzer:
             'total_groups_represented': len([p for p in percentages.values() if p > 5])
         }
     
-    def _analyze_gender_distribution(self, gender_dist: Dict[str, int]) -> Dict[str, Any]:
+    def _analyze_gender_distribution(self, gender_dist: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze gender distribution patterns"""
         if not gender_dist:
             return {'error': 'No gender data available'}
-        
-        total = sum(gender_dist.values())
+
+        # Normalize gender data to handle different formats
+        normalized_counts = {}
+
+        for gender_key, value in gender_dist.items():
+            # Handle nested dictionary format: {'display_name': 'Male', 'count': 67}
+            if isinstance(value, dict):
+                count = value.get('count', 0)
+                # Use the original key (should be lowercase like 'male', 'female')
+                normalized_key = gender_key.lower()
+            else:
+                # Handle direct count format or display name keys
+                count = value
+                # Normalize display names to lowercase keys
+                if gender_key.lower() in ['male', 'man', 'm']:
+                    normalized_key = 'male'
+                elif gender_key.lower() in ['female', 'woman', 'f']:
+                    normalized_key = 'female'
+                else:
+                    normalized_key = gender_key.lower()
+
+            if count > 0:  # Only include non-zero counts
+                normalized_counts[normalized_key] = count
+
+        if not normalized_counts:
+            return {'error': 'No valid gender data available'}
+
+        total = sum(normalized_counts.values())
         if total == 0:
             return {'error': 'No gender data available'}
-        
+
         # Calculate percentages
-        percentages = {gender: (count / total) * 100 for gender, count in gender_dist.items()}
-        
+        percentages = {gender: (count / total) * 100 for gender, count in normalized_counts.items()}
+
         # Analyze balance
         male_pct = percentages.get('male', 0) / 100
         female_pct = percentages.get('female', 0) / 100
-        
+
         balance_score = 1 - abs(male_pct - female_pct)  # 1 = perfect balance, 0 = completely skewed
-        
+
         balance_level = (
             'Balanced' if balance_score >= self.BENCHMARKS['gender_balance']['balanced_threshold']
             else 'Slightly Skewed' if balance_score >= 0.2
             else 'Heavily Skewed'
         )
-        
+
         return {
             'distribution': percentages,
             'balance_score': balance_score,
@@ -196,31 +222,65 @@ class DataAnalyzer:
             return {'error': 'No emotion data available'}
 
         # Handle both formats: Dict[str, int] and Dict[str, Dict[str, Any]]
-        counts = {}
-        for emotion, value in emotions.items():
+        normalized_counts = {}
+        for emotion_key, value in emotions.items():
             if isinstance(value, dict):
                 # New format: {'display_name': 'Happy', 'count': 40}
-                counts[emotion] = value.get('count', 0)
+                count = value.get('count', 0)
+                # Use the original key (should be lowercase like 'happy', 'sad')
+                normalized_key = emotion_key.lower()
             else:
-                # Old format: direct integer values
-                counts[emotion] = value
+                # Old format: direct integer values or display name keys
+                count = value
+                # Normalize emotion names to lowercase for consistent categorization
+                normalized_key = emotion_key.lower()
 
-        total = sum(counts.values())
+            if count > 0:  # Only include non-zero counts
+                normalized_counts[normalized_key] = count
+
+        if not normalized_counts:
+            return {'error': 'No valid emotion data available'}
+
+        total = sum(normalized_counts.values())
         if total == 0:
             return {'error': 'No emotion data available'}
 
-        # Calculate percentages
-        percentages = {emotion: (count / total) * 100 for emotion, count in counts.items()}
-        
-        # Categorize emotions
-        positive_emotions = ['happy', 'joy', 'surprise']
-        negative_emotions = ['sad', 'angry', 'fear', 'disgust']
-        neutral_emotions = ['neutral']
-        
-        positive_score = sum(percentages.get(emotion, 0) for emotion in positive_emotions) / 100
-        negative_score = sum(percentages.get(emotion, 0) for emotion in negative_emotions) / 100
-        neutral_score = sum(percentages.get(emotion, 0) for emotion in neutral_emotions) / 100
-        
+        # Calculate percentages using normalized keys
+        percentages = {emotion: (count / total) * 100 for emotion, count in normalized_counts.items()}
+
+        # Categorize emotions with comprehensive mapping
+        # Map various emotion names to categories (case-insensitive)
+        positive_emotions = ['happy', 'joy', 'surprise', 'surprised', 'excitement', 'pleased', 'content']
+        negative_emotions = ['sad', 'angry', 'fear', 'disgust', 'upset', 'frustrated', 'disappointed', 'worried']
+        neutral_emotions = ['neutral', 'calm', 'relaxed']
+
+        # Calculate scores using case-insensitive matching
+        positive_score = 0
+        negative_score = 0
+        neutral_score = 0
+
+        for emotion, percentage in percentages.items():
+            emotion_lower = emotion.lower()
+            if emotion_lower in positive_emotions:
+                positive_score += percentage
+            elif emotion_lower in negative_emotions:
+                negative_score += percentage
+            elif emotion_lower in neutral_emotions:
+                neutral_score += percentage
+            else:
+                # For unknown emotions, try to categorize based on common patterns
+                if any(pos in emotion_lower for pos in ['happy', 'joy', 'smile', 'laugh']):
+                    positive_score += percentage
+                elif any(neg in emotion_lower for neg in ['sad', 'angry', 'mad', 'upset']):
+                    negative_score += percentage
+                else:
+                    neutral_score += percentage
+
+        # Convert to 0-1 scale
+        positive_score = positive_score / 100
+        negative_score = negative_score / 100
+        neutral_score = neutral_score / 100
+
         # Overall sentiment
         sentiment_score = positive_score - negative_score
         sentiment_level = (
@@ -230,7 +290,7 @@ class DataAnalyzer:
             else 'Negative' if sentiment_score > -0.3
             else 'Very Negative'
         )
-        
+
         return {
             'distribution': percentages,
             'positive_score': positive_score,
@@ -238,7 +298,7 @@ class DataAnalyzer:
             'neutral_score': neutral_score,
             'sentiment_score': sentiment_score,
             'sentiment_level': sentiment_level,
-            'dominant_emotion': max(percentages.items(), key=lambda x: x[1])[0]
+            'dominant_emotion': max(percentages.items(), key=lambda x: x[1])[0] if percentages else 'unknown'
         }
     
     def _analyze_historical_summary(self, data: Dict[str, Any]) -> Dict[str, Any]:
