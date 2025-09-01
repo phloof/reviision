@@ -38,7 +38,7 @@
 - **Raspberry Pi Testbench**: Portable field deployment with WiFi hotspot management
 - **Docker Support**: Containerised deployment for easy scaling and management
 
-## 🏗️ System Architecture
+## 🏗 System Architecture
 
 ReViision follows a modular, service-oriented architecture designed for scalability and maintainability:
 
@@ -73,7 +73,7 @@ ReViision follows a modular, service-oriented architecture designed for scalabil
 - **Database Module**: SQLite storage with optimised schema for analytics data
 - **Security Module**: Encrypted credential management and secure communication protocols
 
-## 📋 Requirements
+##  Requirements
 
 ### Hardware Requirements
 
@@ -115,7 +115,7 @@ Core dependencies are automatically installed via `requirements.txt`:
 - **Database**: SQLAlchemy 2.0+
 - **Security**: cryptography 41.0+, PyJWT 2.8+
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### 1. Clone the Repository
 ```bash
@@ -168,9 +168,9 @@ Open your browser and navigate to:
 - Username: `admin`
 - Password: `admin`
 
-> ⚠️ **Security Note**: Change default credentials immediately in production environments.
+> **Security Note**: Change default credentials immediately in production environments.
 
-## 📦 Installation Guide
+##  Installation Guide
 
 ### Desktop/Server Installation
 
@@ -903,7 +903,7 @@ tail -f pi_testbench/logs/pi_testbench.log
 - **Web Server**: `web.log`
 - **Database**: `database.log`
 
-## 📚 Additional Resources
+##  Additional Resources
 
 ### Third-Party Licenses
 - **YOLOv8**: AGPL-3.0 License
@@ -911,7 +911,7 @@ tail -f pi_testbench/logs/pi_testbench.log
 - **OpenCV**: Apache 2.0 License
 - **Flask**: BSD-3-Clause License
 
-## 🙏 Acknowledgements
+##  Acknowledgements
 
 - **Ultralytics** for the YOLOv8 object detection framework
 - **InsightFace** for facial analysis capabilities
