@@ -5,6 +5,10 @@
 
 ReViision is a retail analytics platform that uses computer vision and machine learning to deliver real‑time insights into customer behaviour. It helps retailers optimise layouts, improve customer experience, and support data‑driven decisions with live and historical analytics.
 
+## Example Image
+![alt text](https://github.com/phloof/reviision/blob/master/example.png?raw=true)
+
+
 ## Key features
 
 - **Computer vision and analytics**: Person detection and multi‑object tracking (YOLOv8), age/gender/emotion analysis (InsightFace/DeepFace), path and dwell analysis, heatmaps, correlation analysis
